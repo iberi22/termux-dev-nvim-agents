@@ -54,7 +54,7 @@ install_prerequisites() {
     pkg update -y >/dev/null 2>&1
     
     # Install essential tools
-    for tool in curl wget git; do
+    for tool in curl wget git unzip; do
         if ! command -v $tool >/dev/null 2>&1; then
             echo -e "${YELLOW}Installing $tool...${NC}"
             pkg install -y $tool >/dev/null 2>&1
@@ -92,6 +92,7 @@ download_setup() {
         "03-ai-integration.sh"
         "04-workflows-setup.sh"
         "05-ssh-setup.sh"
+        "06-fonts-setup.sh"
         "test-installation.sh"
     )
     
@@ -123,8 +124,15 @@ run_installation() {
     
     cd "$INSTALL_DIR"
     
-    # Run complete installation (option 7)
-    echo "7" | ./setup.sh
+    # Request storage permission once (optional but helpful)
+    if [ ! -d "$HOME/storage" ]; then
+        echo -e "${YELLOW}🔐 Requesting storage access permission...${NC}"
+        termux-setup-storage || true
+        sleep 1
+    fi
+
+    # Run complete installation in automatic mode
+    ./setup.sh auto
     
     echo -e "${GREEN}🎉 Installation completed successfully!${NC}"
     echo -e "${CYAN}📍 Installation directory: $INSTALL_DIR${NC}"
