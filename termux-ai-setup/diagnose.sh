@@ -61,7 +61,7 @@ echo -e "\n${CYAN}=== Modules Check ===${NC}"
 MODULES_DIR="modules"
 if [[ -d "$MODULES_DIR" ]]; then
     echo -e "${GREEN}✅ modules directory exists${NC}"
-    
+
     REQUIRED_MODULES=(
         "00-base-packages.sh"
         "01-zsh-setup.sh"
@@ -72,7 +72,7 @@ if [[ -d "$MODULES_DIR" ]]; then
         "06-fonts-setup.sh"
         "test-installation.sh"
     )
-    
+
     MISSING_MODULES=()
     for module in "${REQUIRED_MODULES[@]}"; do
         if [[ -f "$MODULES_DIR/$module" ]]; then
@@ -87,7 +87,7 @@ if [[ -d "$MODULES_DIR" ]]; then
             MISSING_MODULES+=("$module")
         fi
     done
-    
+
     if [ ${#MISSING_MODULES[@]} -gt 0 ]; then
         echo -e "\n${RED}❌ Missing modules detected!${NC}"
         echo -e "${YELLOW}💡 Re-run the installer to fix:${NC}"
@@ -101,7 +101,7 @@ fi
 echo -e "\n${CYAN}=== Configuration Files ===${NC}"
 if [[ -d "config/neovim/lua/plugins" ]]; then
     echo -e "${GREEN}✅ config directory structure exists${NC}"
-    
+
     CONFIGS=("ai.lua" "ui.lua")
     for config in "${CONFIGS[@]}"; do
         if [[ -f "config/neovim/lua/plugins/$config" ]]; then

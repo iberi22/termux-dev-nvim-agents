@@ -81,7 +81,7 @@ download_setup() {
         echo -e "${RED}❌ Failed to download setup script${NC}"
         exit 1
     fi
-    
+
     # Download diagnostic tool
     echo -e "${CYAN}  → diagnose.sh${NC}"
     if wget -q "$BASE_URL/diagnose.sh" -O diagnose.sh; then
@@ -115,7 +115,7 @@ download_setup() {
             failed_modules+=("$module")
         fi
     done
-    
+
     # Report any failures
     if [ ${#failed_modules[@]} -gt 0 ]; then
         echo -e "${RED}❌ Failed to download these modules:${NC}"
