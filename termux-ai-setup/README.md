@@ -7,14 +7,17 @@
 ### ⚡ One-Command Install (Optimized)
 
 ```bash
-pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
 **What this does:**
 
-1. Updates Termux repositories
-2. Installs `wget` if not available
-3. Downloads and runs the installation script automatically
+1. **Sets up storage permissions** (required for file operations)
+2. Updates Termux repositories
+3. Installs `wget` if not available
+4. Downloads and runs the installation script automatically
+
+> **Note:** The `termux-setup-storage` command will request Android storage permissions. Accept when prompted to ensure proper functionality.
 
 ### 🔧 Manual Installation (Alternative)
 
@@ -22,8 +25,8 @@ pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com
 # Step 1: Install wget (if needed)
 pkg update && pkg install -y wget
 
-# Step 2: Download complete setup using installer
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+# Step 2: Set up storage permissions and download complete setup
+termux-setup-storage && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 
 # Alternative: Download and run setup manually (not recommended)
 # wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
@@ -58,8 +61,10 @@ wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/
 **Instalación rápida (optimizada):**
 
 ```bash
-pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
+
+> **Nota:** El comando `termux-setup-storage` solicitará permisos de almacenamiento de Android. Acepta cuando se te solicite.
 
 **Características principales:**
 
@@ -76,8 +81,10 @@ pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com
 **Quick install (optimized):**
 
 ```bash
-pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
+
+> **Note:** The `termux-setup-storage` command will request Android storage permissions. Accept when prompted.
 
 **Key features:**
 
@@ -94,8 +101,10 @@ pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com
 **Instalação rápida (otimizada):**
 
 ```bash
-pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
+
+> **Nota:** O comando `termux-setup-storage` solicitará permissões de armazenamento do Android. Aceite quando solicitado.
 
 **Características principais:**
 
@@ -371,4 +380,4 @@ Built with modern tools and inspired by the developer community:
 
 **🚀 Transform your Android device into a powerful AI development environment!**
 
-**Quick start:** `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash`
+**Quick start:** `termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash`
