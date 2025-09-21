@@ -81,6 +81,14 @@ download_setup() {
         echo -e "${RED}❌ Failed to download setup script${NC}"
         exit 1
     fi
+    
+    # Download diagnostic tool
+    echo -e "${CYAN}  → diagnose.sh${NC}"
+    if wget -q "$BASE_URL/diagnose.sh" -O diagnose.sh; then
+        echo -e "${GREEN}    ✅ Downloaded diagnostic tool${NC}"
+    else
+        echo -e "${YELLOW}    ⚠️  Could not download diagnostic tool${NC}"
+    fi
 
     # Download modules directory
     mkdir -p modules config/neovim/lua/plugins
@@ -97,26 +105,57 @@ download_setup() {
     )
 
     echo -e "${YELLOW}Downloading modules...${NC}"
+    local failed_modules=()
     for module in "${modules[@]}"; do
-        if ! wget -q "$BASE_URL/modules/$module" -O "modules/$module"; then
-            echo -e "${YELLOW}⚠️  Warning: Could not download module $module${NC}"
+        echo -e "${CYAN}  → $module${NC}"
+        if wget -q "$BASE_URL/modules/$module" -O "modules/$module"; then
+            echo -e "${GREEN}    ✅ Downloaded${NC}"
+        else
+            echo -e "${RED}    ❌ Failed to download${NC}"
+            failed_modules+=("$module")
         fi
     done
+    
+    # Report any failures
+    if [ ${#failed_modules[@]} -gt 0 ]; then
+        echo -e "${RED}❌ Failed to download these modules:${NC}"
+        for failed in "${failed_modules[@]}"; do
+            echo -e "${RED}  - $failed${NC}"
+        done
+        echo -e "${YELLOW}⚠️  Installation may be incomplete${NC}"
+    fi
 
     # Download Neovim configs
     echo -e "${YELLOW}Downloading Neovim configurations...${NC}"
     local configs=("ai.lua" "ui.lua")
     for config in "${configs[@]}"; do
-        if ! wget -q "$BASE_URL/config/neovim/lua/plugins/$config" -O "config/neovim/lua/plugins/$config"; then
-            echo -e "${YELLOW}⚠️  Warning: Could not download config $config${NC}"
+        echo -e "${CYAN}  → $config${NC}"
+        if wget -q "$BASE_URL/config/neovim/lua/plugins/$config" -O "config/neovim/lua/plugins/$config"; then
+            echo -e "${GREEN}    ✅ Downloaded${NC}"
+        else
+            echo -e "${RED}    ❌ Failed to download config $config${NC}"
         fi
     done
 
     # Make scripts executable
     chmod +x setup.sh
-    chmod +x modules/*.sh
+    chmod +x diagnose.sh 2>/dev/null || true
+    chmod +x modules/*.sh 2>/dev/null || true
 
-    echo -e "${GREEN}✅ Download completed${NC}"
+    # Final verification
+    echo -e "${BLUE}🔍 Verifying downloads...${NC}"
+    local essential_files=("setup.sh" "modules/00-base-packages.sh" "modules/06-fonts-setup.sh")
+    for file in "${essential_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            echo -e "${GREEN}  ✅ $file${NC}"
+        else
+            echo -e "${RED}  ❌ Missing: $file${NC}"
+            echo -e "${RED}❌ Critical file missing. Installation cannot continue.${NC}"
+            exit 1
+        fi
+    done
+
+    echo -e "${GREEN}✅ Download completed and verified${NC}"
 }
 
 run_installation() {
@@ -137,6 +176,10 @@ run_installation() {
     echo -e "${GREEN}🎉 Installation completed successfully!${NC}"
     echo -e "${CYAN}📍 Installation directory: $INSTALL_DIR${NC}"
     echo -e "${CYAN}🔄 Please restart your terminal or run: exec \$SHELL${NC}"
+    echo -e "\n${BLUE}📋 Useful commands:${NC}"
+    echo -e "${CYAN}  • Run setup menu: cd ~/termux-ai-setup && ./setup.sh${NC}"
+    echo -e "${CYAN}  • Diagnose problems: cd ~/termux-ai-setup && ./diagnose.sh${NC}"
+    echo -e "${CYAN}  • Test installation: cd ~/termux-ai-setup && ./setup.sh (option 9)${NC}"
 }
 
 main() {

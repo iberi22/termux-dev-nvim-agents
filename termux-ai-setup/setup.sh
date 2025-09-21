@@ -85,8 +85,15 @@ run_module() {
     local module_path="${MODULES_DIR}/${module_name}.sh"
 
     if [[ ! -f "$module_path" ]]; then
-        echo -e "${RED}❌ Module not found: ${module_name}${NC}"
+        echo -e "${RED}❌ Module not found: ${module_path}${NC}"
+        echo -e "${YELLOW}💡 Try re-running the installer:${NC}"
+        echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
         return 1
+    fi
+
+    if [[ ! -x "$module_path" ]]; then
+        echo -e "${YELLOW}⚠️  Making ${module_name} executable...${NC}"
+        chmod +x "$module_path"
     fi
 
     echo -e "${BLUE}🔄 Running: ${module_name}${NC}"
@@ -202,10 +209,16 @@ main() {
                 ;;
             7)
                 # Fonts menu: allow user to select font interactively
-                if bash "${MODULES_DIR}/06-fonts-setup.sh" menu; then
-                    echo -e "${GREEN}✅ Font configured successfully${NC}"
+                if [[ -f "${MODULES_DIR}/06-fonts-setup.sh" ]]; then
+                    if bash "${MODULES_DIR}/06-fonts-setup.sh" menu; then
+                        echo -e "${GREEN}✅ Font configured successfully${NC}"
+                    else
+                        echo -e "${YELLOW}⚠️  Font configuration skipped or failed${NC}"
+                    fi
                 else
-                    echo -e "${YELLOW}⚠️  Font configuration skipped or failed${NC}"
+                    echo -e "${RED}❌ Fonts module not found${NC}"
+                    echo -e "${YELLOW}💡 Re-run the installer to download missing modules:${NC}"
+                    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
                 fi
                 ;;
             8)
