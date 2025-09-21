@@ -1,169 +1,12 @@
-#!/bin/bash#!/bin/bash
-
-
-
-# Módulo 03: Integración Nativa de IA - CLIs con OAuth2# ====================================
-
-# Reemplaza sistema de recomendaciones con instalación nativa de CLIs# MÓDULO: Asistentes CLI Nativos + Auto-login
-
-# Soporte: Gemini (OAuth), Qwen (OAuth), OpenAI (API Key)# Instala y configura CLIs nativos con autenticación mejorada
-
-# ====================================
-
-# Colores para output
-
-RED='\033[0;31m'set -euo pipefail
-
-GREEN='\033[0;32m'
-
-YELLOW='\033[1;33m'# Colores
-
-BLUE='\033[0;34m'RED='\033[0;31m'
-
-PURPLE='\033[0;35m'GREEN='\033[0;32m'
-
-CYAN='\033[0;36m'YELLOW='\033[1;33m'
-
-WHITE='\033[1;37m'BLUE='\033[0;34m'
-
-NC='\033[0m'PURPLE='\033[0;35m'
-
-CYAN='\033[0;36m'
-
-# DirectoriosNC='\033[0m'
-
-TOOLS_DIR="$HOME/termux-ai-tools"
-
-WRAP_DIR="$PREFIX/bin"echo -e "${BLUE}🤖 Configurando Asistentes CLI Nativos...${NC}"
-
-SHIMS_DIR="$TOOLS_DIR/shims"
-
-# Directorios de configuración
-
-# Función para marcar progresoTERMUX_AI_DIR="$HOME/.termux-ai"
-
-mark() {SHIMS_DIR="$TERMUX_AI_DIR/shims"
-
-    echo -e "${GREEN}✅ $1${NC}"WRAP_DIR="$TERMUX_AI_DIR/bin"
-
-}
-
-# Crear directorios necesarios
-
-# Verificar requisitos del sistemamkdir -p "$SHIMS_DIR" "$WRAP_DIR"
-
-check_requirements() {
-
-    mark "Verificando requisitos del sistema..."# Función para marcar progreso
-
-    mark() {
-
-    # Verificar Node.js    echo -e "${GREEN}[✓] $1${NC}"
-
-    if ! command -v node >/dev/null 2>&1; then}
-
-        echo -e "${YELLOW}📦 Instalando Node.js...${NC}"
-
-        pkg install nodejs -y# Función para verificar si un comando existe
-
-    fiis_cmd() {
-
-        command -v "$1" >/dev/null 2>&1
-
-    # Verificar npm}
-
-    if ! command -v npm >/dev/null 2>&1; then
-
-        echo -e "${YELLOW}📦 Instalando npm...${NC}"# Función para verificar requisitos
-
-        pkg install npm -ycheck_requirements() {
-
-    fi    echo -e "${BLUE}🔍 Verificando requisitos...${NC}"
-
-
-
-    # Verificar expect para automatización    # Verificar Node.js
-
-    if ! command -v expect >/dev/null 2>&1; then    if ! is_cmd node; then
-
-        echo -e "${YELLOW}📦 Instalando expect...${NC}"        echo -e "${YELLOW}📦 Instalando Node.js...${NC}"
-
-        pkg install expect -y        pkg install -y nodejs
-
-    fi    fi
-
-
-
-    # Crear directorios necesarios    # Verificar npm
-
-    mkdir -p "$TOOLS_DIR" "$SHIMS_DIR"    if ! is_cmd npm; then
-
-            echo -e "${YELLOW}📦 Instalando npm...${NC}"
-
-    # Configurar variables de entorno SSL para Android        pkg install -y nodejs-lts
-
-    export SSL_CERT_FILE="$PREFIX/etc/tls/cert.pem"    fi
-
-    export SSL_CERT_DIR="$PREFIX/etc/tls/certs"
-
-    export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"    # Verificar expect para scripts de auto-login
-
-    export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"    if ! is_cmd expect; then
-
-    export CURL_CA_BUNDLE="$SSL_CERT_FILE"        echo -e "${YELLOW}📦 Instalando expect para auto-login...${NC}"
-
-            pkg install -y expect
-
-    # Variables para compilación en Android    fi
-
-    export GYP_DEFINES="android_ndk_path=''"
-
-    export npm_config_build_from_source=true    # Verificar certificados SSL
-
-    export npm_config_python="$(command -v python3)"    if [[ ! -f "$PREFIX/etc/tls/cert.pem" ]]; then
-
-    export CC=clang        echo -e "${YELLOW}📦 Instalando certificados SSL...${NC}"
-
-    export CXX=clang++        pkg install -y ca-certificates
-
-        fi
-
-    mark "Requisitos verificados"
-
-}    # Verificar ripgrep para evitar errores de plataforma
-
-    if ! is_cmd rg; then
-
-# Crear shims para dependencias problemáticas        echo -e "${YELLOW}📦 Instalando ripgrep...${NC}"
-
-create_shims() {        pkg install -y ripgrep
-
-    mark "Creando shims para compatibilidad Android..."    fi
-
-
-
-    # Shim para ripgrep (requerido por algunos paquetes)    mark "Requisitos verificados y instalados"
-
-    cat > "$SHIMS_DIR/rg-shim.js" <<'EOF'}
-
-// Shim para ripgrep en Android/Termux
-
-const fs = require('fs');# Función principal para instalar asistentes
-
-const path = require('path');install_assistants() {
-
-    mark "Preparando shims y entorno para CLIs…"
-
-// Crear ejecutable dummy de ripgrep si no existe
-
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Module 03: Install native AI CLIs (without menus or auto-login)
-# Objective: install OpenAI Codex CLI, Google Gemini CLI and Qwen Code CLI
-# Authentication: each CLI handles its own flow (OAuth2 or API key) natively
+# ====================================
+# MÓDULO 03: Integración de CLIs de IA
+# Instala CLIs nativos: OpenAI Codex, Google Gemini, Qwen Code
+# Autenticación: cada CLI maneja su propio flujo (OAuth/API key)
+# ====================================
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -178,81 +21,100 @@ err() { echo -e "${RED}✗${NC} $*"; }
 
 is_cmd() { command -v "$1" >/dev/null 2>&1; }
 
-ensure_basics() {
-    note "Checking basic requirements (node, npm, certificates)…"
+ensure_prereqs() {
+    note "Verificando requisitos (Node 22 LTS, npm, certificados SSL)…"
     if ! is_cmd node; then
-        warn "Node.js not found. Installing…"
-        pkg install -y nodejs >/dev/null
+        warn "Node.js no encontrado. Instalando LTS…"
+        pkg install -y nodejs-lts >/dev/null
     fi
     if ! is_cmd npm; then
-        warn "npm not found. Installing…"
+        warn "npm no encontrado. Instalando…"
         pkg install -y nodejs-lts >/dev/null || true
     fi
-    # Common SSL certificates in Android/Termux
+
+    # Comprobar versión mayor de Node (preferir 22)
+    if is_cmd node; then
+        NODE_VER=$(node -v 2>/dev/null || echo "v0.0.0")
+        NODE_MAJOR=${NODE_VER#v}
+        NODE_MAJOR=${NODE_MAJOR%%.*}
+        if [[ "$NODE_MAJOR" != "22" ]]; then
+            warn "Node actual ($NODE_VER) no es 22.x. Intentando asegurar LTS…"
+            pkg install -y nodejs-lts >/dev/null || true
+        else
+            ok "Node ${NODE_VER} (22.x) detectado"
+        fi
+    fi
+
+    # Certificados SSL comunes en Termux
     export SSL_CERT_FILE="${PREFIX:-/data/data/com.termux/files/usr}/etc/tls/cert.pem"
     export SSL_CERT_DIR="${PREFIX:-/data/data/com.termux/files/usr}/etc/tls/certs"
     export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
     export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
     export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-    ok "Basic requirements ready"
+
+    # Paquete 'expect' opcional
+    if ! is_cmd expect; then
+        pkg install -y expect >/dev/null || true
+    fi
+
+    ok "Requisitos verificados"
 }
 
 npm_install_global() {
     local pkg_name="$1"
+    note "Instalando paquete global: $pkg_name"
     if npm list -g --depth=0 "$pkg_name" >/dev/null 2>&1; then
-        ok "$pkg_name already installed"
+        ok "$pkg_name ya estaba instalado"
+        return 0
+    fi
+    if npm i -g "$pkg_name" >/dev/null 2>&1; then
+        ok "$pkg_name instalado"
+        return 0
     else
-        note "Installing $pkg_name (global)…"
-        if npm i -g "$pkg_name" >/dev/null 2>&1; then
-            ok "$pkg_name installed"
-        else
-            err "Failed installing $pkg_name"
-            return 1
-        fi
+        err "Fallo al instalar $pkg_name"
+        return 1
     fi
 }
 
-install_codex() {
-    note "Installing OpenAI Codex CLI (@openai/codex)…"
-    # Official: npm i -g @openai/codex
-    npm_install_global "@openai/codex" || return 1
-    ok "Codex ready. Login with: 'codex login' and choose 'Sign in with ChatGPT' (OAuth)"
-}
+install_codex() { note "Instalando OpenAI Codex CLI (@openai/codex)…"; npm_install_global "@openai/codex"; }
+install_gemini() { note "Instalando Google Gemini CLI (@google/gemini-cli)…"; npm_install_global "@google/gemini-cli"; }
+install_qwen() { note "Instalando Qwen Code CLI (@qwen-code/qwen-code)…"; npm_install_global "@qwen-code/qwen-code"; }
 
-install_gemini_cli() {
-    note "Installing Google Gemini CLI (@google/gemini-cli)…"
-    npm_install_global "@google/gemini-cli" || return 1
-    ok "Gemini CLI ready. First run: 'gemini' and sign in with your Google account (OAuth)"
-}
-
-install_qwen_cli() {
-    note "Installing Qwen Code CLI (@qwen-code/qwen-code)…"
-    npm_install_global "@qwen-code/qwen-code" || return 1
-    ok "Qwen CLI ready. To use: 'qwen' or 'qwen-code' depending on exposed binary"
+verify_binaries() {
+    note "Verificando binarios instalados…"
+    local ok_all=true
+    command -v codex >/dev/null 2>&1 || ok_all=false
+    command -v gemini >/dev/null 2>&1 || ok_all=false
+    if ! command -v qwen >/dev/null 2>&1 && ! command -v qwen-code >/dev/null 2>&1; then ok_all=false; fi
+    if [[ "$ok_all" == true ]]; then
+        ok "CLIs verificados en PATH"
+        return 0
+    else
+        warn "Algún CLI no se registró en PATH. Reinicia la sesión o añade '$(npm bin -g 2>/dev/null)' al PATH"
+        return 1
+    fi
 }
 
 main() {
-    echo -e "${BLUE}==> Installing native AI CLIs (simple)${NC}"
-    ensure_basics
+    echo -e "${BLUE}🤖 Instalando CLIs nativos de IA…${NC}"
+    ensure_prereqs
 
-    # Install the 3 requested CLIs
-    install_codex || warn "Codex could not be installed now; try again later"
-    install_gemini_cli || warn "Gemini CLI could not be installed now"
-    install_qwen_cli || warn "Qwen CLI could not be installed now"
+    install_codex || warn "@openai/codex no pudo instalarse ahora"
+    install_gemini || warn "@google/gemini-cli no pudo instalarse ahora"
+    install_qwen || warn "@qwen-code/qwen-code no pudo instalarse ahora"
+
+    verify_binaries || true
 
     echo
-    ok "Installation completed"
-    echo -e "${CYAN}Next steps:${NC}"
-    echo "  - codex        # run 'codex login' and choose ChatGPT (OAuth)"
-    echo "  - gemini       # run 'gemini' and complete Google sign-in (OAuth)"
-    echo "  - qwen         # or qwen-code, depending on exposed binary"
+    ok "Instalación de CLIs finalizada"
+    echo -e "${CYAN}Siguientes pasos:${NC}"
+    echo "  - codex        # Ejecuta 'codex login' (elige Sign in with ChatGPT - OAuth)"
+    echo "  - gemini       # Ejecuta 'gemini' y completa el login de Google (OAuth)"
+    echo "  - qwen         # o 'qwen-code', según el binario expuesto"
     echo
-    echo -e "${YELLOW}Notes for Termux:${NC}"
-    echo "  - If login opens a URL, use: termux-open-url <URL>"
-    echo "  - Make sure you have an Android browser configured"
-    echo "  - If you see SSL errors, restart the session and try again"
+    echo -e "${YELLOW}Notas para Termux:${NC}"
+    echo "  - Si se abre una URL para login, usa: termux-open-url <URL>"
+    echo "  - Asegúrate de tener un navegador Android configurado"
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-    main "$@"
-fi
+main "$@"

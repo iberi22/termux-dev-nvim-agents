@@ -23,94 +23,114 @@ pkg update -y
 echo -e "${YELLOW}⬆️  Upgrading existing packages...${NC}"
 pkg upgrade -y
 
-# Essential packages list
-PACKAGES=(
+# Mirror warning/help at start
+echo -e "${YELLOW}💡 Please ensure your mirrors are up to date!${NC}"
+
+# Essential packages list (optimized for speed and efficiency)
+ESSENTIAL_PACKAGES=(
     # Basic system tools
     "curl"
     "wget"
     "git"
     "unzip"
     "zip"
-    "tar"
-    "gzip"
 
-    # Development
-    "nodejs"
-    "npm"
+    # Core development tools
+    "nodejs-lts"
     "python"
-    "python-pip"
 
-    # Editors and search tools
-    "vim"
+    # Essential editors and tools
     "nano"
-    "ripgrep"
-    "fd"
-    "fzf"
+    "vim"
     "tree"
     "htop"
 
-    # Compilers and build tools
+    # Network and utilities
+    "openssh"
+    "jq"
+    "ca-certificates"
+)
+
+# Optional packages (installed separately for better error handling)
+OPTIONAL_PACKAGES=(
+    # Advanced search tools
+    "ripgrep"
+    "fd"
+    "fzf"
+
+    # Build tools (only if needed)
     "gcc"
     "clang"
-    "cmake"
     "make"
-    "pkg-config"
 
-    # Network tools
-    "openssh"
-    "rsync"
-
-    # Additional utilities
-    "jq"
+    # Modern replacements
     "bat"
     "exa"
-    "lsd"
     "zoxide"
 )
 
-echo -e "${YELLOW}📋 Installing ${#PACKAGES[@]} essential packages...${NC}"
+# Function to install packages with retries
+install_package_with_retry() {
+    local package=$1
+    local max_retries=3
+    local retry_count=0
 
-# Install packages with error handling
+    while [[ $retry_count -lt $max_retries ]]; do
+        echo -e "${BLUE}📦 Installing: ${package} (attempt $((retry_count + 1))/${max_retries})${NC}"
+
+        if pkg install -y "$package" 2>/dev/null; then
+            echo -e "${GREEN}✅ ${package} installed successfully${NC}"
+            return 0
+        else
+            retry_count=$((retry_count + 1))
+            if [[ $retry_count -lt $max_retries ]]; then
+                echo -e "${YELLOW}⚠️ Retrying ${package} in 2 seconds...${NC}"
+                sleep 2
+            fi
+        fi
+    done
+
+    echo -e "${RED}❌ Failed to install ${package} after ${max_retries} attempts${NC}"
+    return 1
+}
+
+echo -e "${YELLOW}📋 Installing ${#ESSENTIAL_PACKAGES[@]} essential packages...${NC}"
+
+# Install essential packages with error handling and retries
 failed_packages=()
 successful_packages=()
 
-for package in "${PACKAGES[@]}"; do
-    echo -e "${BLUE}📦 Installing: ${package}${NC}"
-
-    if pkg install -y "$package" 2>/dev/null; then
-        echo -e "${GREEN}✅ ${package} installed successfully${NC}"
+for package in "${ESSENTIAL_PACKAGES[@]}"; do
+    if install_package_with_retry "$package"; then
         successful_packages+=("$package")
     else
-        echo -e "${RED}❌ Error installing: ${package}${NC}"
         failed_packages+=("$package")
     fi
 done
 
-# Install additional Python tools with pip
-echo -e "${YELLOW}🐍 Installing additional Python tools...${NC}"
+# Install optional packages (less critical)
+echo -e "\n${YELLOW}📋 Installing ${#OPTIONAL_PACKAGES[@]} optional packages...${NC}"
+optional_failed=()
+optional_successful=()
 
-PYTHON_PACKAGES=(
-    "requests"
-    "rich"
-    "typer"
-    "httpx"
-    "pydantic"
-)
+for package in "${OPTIONAL_PACKAGES[@]}"; do
+    echo -e "${BLUE}📦 Installing optional: ${package}${NC}"
+
+    if pkg install -y "$package" 2>/dev/null; then
+        echo -e "${GREEN}✅ ${package} installed successfully${NC}"
+        optional_successful+=("$package")
+    else
+        echo -e "${YELLOW}⚠️ Optional package ${package} failed (continuing...)${NC}"
+        optional_failed+=("$package")
+    fi
+done
+
+# Skip Python packages installation for minimal setup
+# Users can install specific packages later as needed
+echo -e "${YELLOW}🐍 Python installed successfully. Use 'pip install <package>' to add libraries as needed.${NC}"
 
 pip_failed=()
 pip_successful=()
-
-for py_package in "${PYTHON_PACKAGES[@]}"; do
-    echo -e "${BLUE}🐍 Instalando: ${py_package}${NC}"
-
-    if pip install "$py_package" 2>/dev/null; then
-        echo -e "${GREEN}✅ ${py_package} instalado correctamente${NC}"
-        pip_successful+=("$py_package")
-    else
-        echo -e "${RED}❌ Error instalando: ${py_package}${NC}"
-        pip_failed+=("$py_package")
-    fi
-done
 
 # Configurar Git si no está configurado
 echo -e "${YELLOW}⚙️ Configurando Git...${NC}"
@@ -127,7 +147,7 @@ fi
 # Configurar aliases útiles
 echo -e "${YELLOW}🔧 Configurando aliases útiles...${NC}"
 
-# Crear archivo de aliases si no existe
+# Crear archivo de aliases si no existe (con condicionales para evitar errores)
 ALIASES_FILE="$HOME/.bash_aliases"
 cat > "$ALIASES_FILE" << 'EOF'
 # Aliases útiles para desarrollo
@@ -148,11 +168,11 @@ alias gp='git push'
 alias gl='git log --oneline'
 alias gd='git diff'
 
-# Herramientas modernas
-alias cat='bat'
-alias ls='exa --icons'
-alias find='fd'
-alias cd='z'
+# Herramientas modernas (solo si existen)
+if command -v bat >/dev/null 2>&1; then alias cat='bat'; fi
+if command -v exa >/dev/null 2>&1; then alias ls='exa --icons'; fi
+if command -v fd >/dev/null 2>&1; then alias find='fd'; fi
+if command -v zoxide >/dev/null 2>&1; then alias cd='z'; fi
 
 # Termux específicos
 alias apt='pkg'
@@ -165,60 +185,82 @@ if ! grep -q "source ~/.bash_aliases" "$HOME/.bashrc" 2>/dev/null; then
     echo "source ~/.bash_aliases" >> "$HOME/.bashrc"
 fi
 
+# Ensure ~/bin and npm global bin are in PATH for future sessions
+mkdir -p "$HOME/bin"
+NPM_GBIN=$(npm bin -g 2>/dev/null || echo "")
+if ! grep -q 'export PATH="$HOME/bin' "$HOME/.bashrc" 2>/dev/null; then
+    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+if [[ -n "$NPM_GBIN" ]] && ! grep -q "$NPM_GBIN" "$HOME/.bashrc" 2>/dev/null; then
+    echo "export PATH=\"$NPM_GBIN:\$PATH\"" >> "$HOME/.bashrc"
+fi
+
 # Crear directorio de desarrollo
 mkdir -p "$HOME/dev"
 mkdir -p "$HOME/.config"
 
-# Resumen de instalación
-echo -e "\n${GREEN}📊 RESUMEN DE INSTALACIÓN${NC}"
+# Installation summary
+echo -e "\n${GREEN}📊 INSTALLATION SUMMARY${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-echo -e "${GREEN}✅ Paquetes instalados correctamente (${#successful_packages[@]}):${NC}"
+echo -e "${GREEN}✅ Essential packages installed (${#successful_packages[@]}/${#ESSENTIAL_PACKAGES[@]}):${NC}"
 for package in "${successful_packages[@]}"; do
     echo -e "   • $package"
 done
 
 if [[ ${#failed_packages[@]} -gt 0 ]]; then
-    echo -e "\n${RED}❌ Paquetes que fallaron (${#failed_packages[@]}):${NC}"
+    echo -e "\n${RED}❌ Essential packages failed (${#failed_packages[@]}):${NC}"
     for package in "${failed_packages[@]}"; do
         echo -e "   • $package"
     done
 fi
 
-echo -e "\n${GREEN}✅ Paquetes Python instalados correctamente (${#pip_successful[@]}):${NC}"
-for package in "${pip_successful[@]}"; do
+echo -e "\n${GREEN}✅ Optional packages installed (${#optional_successful[@]}/${#OPTIONAL_PACKAGES[@]}):${NC}"
+for package in "${optional_successful[@]}"; do
     echo -e "   • $package"
 done
 
-if [[ ${#pip_failed[@]} -gt 0 ]]; then
-    echo -e "\n${RED}❌ Paquetes Python que fallaron (${#pip_failed[@]}):${NC}"
-    for package in "${pip_failed[@]}"; do
+if [[ ${#optional_failed[@]} -gt 0 ]]; then
+    echo -e "\n${YELLOW}⚠️ Optional packages skipped (${#optional_failed[@]}):${NC}"
+    for package in "${optional_failed[@]}"; do
         echo -e "   • $package"
     done
 fi
 
-# Verificar instalaciones críticas
-echo -e "\n${BLUE}🔍 Verificando instalaciones...${NC}"
+# Verify critical installations
+echo -e "\n${BLUE}🔍 Verifying critical installations...${NC}"
 
-critical_tools=("git" "curl" "nodejs" "python" "npm")
+# Map of tools and their version commands
+declare -A tools_commands=(
+    ["git"]="git --version"
+    ["curl"]="curl --version"
+    ["node"]="node --version"
+    ["python"]="python --version"
+    ["npm"]="npm --version"
+)
+
 all_critical_ok=true
 
-for tool in "${critical_tools[@]}"; do
+for tool in "${!tools_commands[@]}"; do
     if command -v "$tool" >/dev/null 2>&1; then
-        version=$(${tool} --version 2>/dev/null | head -n1 || echo "N/A")
+        version=$(${tools_commands[$tool]} 2>/dev/null | head -n1 || echo "N/A")
         echo -e "${GREEN}✅ ${tool}: ${version}${NC}"
     else
-        echo -e "${RED}❌ ${tool}: No encontrado${NC}"
+        echo -e "${RED}❌ ${tool}: Not found${NC}"
         all_critical_ok=false
     fi
 done
 
 if $all_critical_ok; then
-    echo -e "\n${GREEN}🎉 ¡Instalación de paquetes básicos completada exitosamente!${NC}"
-    echo -e "${YELLOW}💡 Tip: Reinicia el terminal para aplicar todos los cambios${NC}"
+    echo -e "\n${GREEN}🎉 Base packages installation completed successfully!${NC}"
+    echo -e "${GREEN}🚀 Development environment is ready to use${NC}"
+    echo -e "${YELLOW}💡 Tip: Restart terminal to apply all changes${NC}"
+    echo -e "${BLUE}📝 Note: Install additional Python packages with: pip install <package>${NC}"
+    echo -e "${BLUE}📦 Install more tools as needed with: pkg install <package>${NC}"
     exit 0
 else
-    echo -e "\n${RED}⚠️ Algunas herramientas críticas no se instalaron correctamente${NC}"
-    echo -e "${YELLOW}🔧 Puedes intentar instalarlas manualmente con: pkg install <nombre_paquete>${NC}"
+    echo -e "\n${RED}⚠️ Some critical tools failed to install${NC}"
+    echo -e "${YELLOW}🔧 Try installing them manually with: pkg install <package_name>${NC}"
+    echo -e "${YELLOW}🔄 Or run this script again to retry${NC}"
     exit 1
 fi

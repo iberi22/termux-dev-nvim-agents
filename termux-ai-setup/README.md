@@ -4,15 +4,25 @@
 
 ## 🎯 Quick Installation
 
-### One-Command Install
+### ⚡ One-Command Install (Optimized)
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
-### Manual Installation (Termux)
+**What this does:**
+
+1. Updates Termux repositories
+2. Installs `wget` if not available
+3. Downloads and runs the installation script automatically
+
+### 🔧 Manual Installation (Alternative)
 
 ```bash
+# Step 1: Install wget (if needed)
+pkg update && pkg install -y wget
+
+# Step 2: Download and run setup
 wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
 chmod +x setup.sh
 ./setup.sh
@@ -42,10 +52,10 @@ chmod +x setup.sh
 
 ### Entorno de desarrollo con IA para Termux
 
-**Instalación rápida:**
+**Instalación rápida (optimizada):**
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
 **Características principales:**
@@ -60,10 +70,10 @@ wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/
 
 ### AI-powered development environment for Termux
 
-**Quick install:**
+**Quick install (optimized):**
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
 **Key features:**
@@ -78,10 +88,10 @@ wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/
 
 ### Ambiente de desenvolvimento com IA para Termux
 
-**Instalação rápida:**
+**Instalação rápida (otimizada):**
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
 **Características principais:**
@@ -109,6 +119,7 @@ After installation, use the interactive menu:
 │  7. 🖋️  Install Nerd Fonts + Set Font         │
 │  8. 🌟 Complete Installation (Automatic)       │
 │  9. 🧪 Run Installation Tests                  │
+│ 10. 🧹 Clean and Reinstall from Scratch        │
 │  0. 🚪 Exit                                     │
 └─────────────────────────────────────────────────┘
 ```
@@ -230,6 +241,25 @@ npm --version
 ./setup.sh
 # Select option 5: Configure AI Integration
 ```
+
+## 🧹 Clean and Reinstall
+
+If your environment is in a broken state and you want a fresh start:
+
+```bash
+cd ~/termux-ai-setup
+./setup.sh
+# Select option 10: Clean and Reinstall from Scratch
+```
+
+This will:
+
+- Remove Neovim configs and caches
+- Remove AI workflows and ai-* wrappers
+- Uninstall AI CLIs (codex, gemini, qwen) globally from npm
+- Remove Termux custom font
+- Optionally remove Zsh/Oh My Zsh and SSH keys
+- Offer to run a full reinstall automatically
 
 ## 📊 Installation Stats
 

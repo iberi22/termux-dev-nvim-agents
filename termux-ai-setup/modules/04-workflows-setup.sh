@@ -21,11 +21,13 @@ echo -e "${BLUE}🔄 Configurando workflows de IA para desarrollo...${NC}"
 WORKFLOWS_DIR="$HOME/.config/ai-workflows"
 TEMPLATES_DIR="$WORKFLOWS_DIR/templates"
 AGENTS_DIR="$WORKFLOWS_DIR/agents"
+BIN_DIR="$HOME/bin"
 
 # Crear estructura de directorios
 mkdir -p "$WORKFLOWS_DIR"
 mkdir -p "$TEMPLATES_DIR"
 mkdir -p "$AGENTS_DIR"
+mkdir -p "$BIN_DIR"
 
 # Función para obtener recomendaciones de Gemini
 get_workflow_recommendations() {
@@ -475,7 +477,7 @@ EOF
 chmod +x "$WORKFLOWS_DIR/run-workflow.sh"
 
 # Crear script de inicialización de proyecto con IA
-cat > "$HOME/bin/ai-init-project" << 'EOF'
+cat > "$BIN_DIR/ai-init-project" << 'EOF'
 #!/bin/bash
 
 # ====================================
@@ -618,7 +620,66 @@ echo -e "3. Usar workflows: run-workflow.sh ai-developer analyze-code src/"
 echo -e "4. Generar docs: run-workflow.sh documentation-generator generate-docs ."
 EOF
 
-chmod +x "$HOME/bin/ai-init-project"
+chmod +x "$BIN_DIR/ai-init-project"
+
+# Crear wrappers ai-* en ~/bin para acciones comunes
+cat > "$BIN_DIR/ai-code-review" << 'EOF'
+#!/bin/bash
+set -euo pipefail
+TARGET="${1:-.}"
+if [[ -x "$HOME/.config/ai-workflows/run-workflow.sh" ]]; then
+  "$HOME/.config/ai-workflows/run-workflow.sh" ai-developer analyze-code "$TARGET"
+else
+  echo "AI workflow runner no encontrado. Ejecuta el setup de workflows (opción 6)." >&2
+  exit 1
+fi
+EOF
+
+cat > "$BIN_DIR/ai-generate-docs" << 'EOF'
+#!/bin/bash
+set -euo pipefail
+TARGET="${1:-.}"
+if [[ -x "$HOME/.config/ai-workflows/run-workflow.sh" ]]; then
+  "$HOME/.config/ai-workflows/run-workflow.sh" documentation-generator generate-docs "$TARGET"
+else
+  echo "AI workflow runner no encontrado. Ejecuta el setup de workflows (opción 6)." >&2
+  exit 1
+fi
+EOF
+
+cat > "$BIN_DIR/ai-project-analysis" << 'EOF'
+#!/bin/bash
+set -euo pipefail
+TARGET="${1:-.}"
+if [[ -x "$HOME/.config/ai-workflows/run-workflow.sh" ]]; then
+  "$HOME/.config/ai-workflows/run-workflow.sh" ai-developer analyze-code "$TARGET"
+else
+  echo "AI workflow runner no encontrado. Ejecuta el setup de workflows (opción 6)." >&2
+  exit 1
+fi
+EOF
+
+cat > "$BIN_DIR/ai-help" << 'EOF'
+#!/bin/bash
+set -euo pipefail
+cat <<HELP
+AI Helper Commands:
+  ai-code-review <path>     # Analiza y revisa código en <path> (por defecto .)
+  ai-generate-docs <path>   # Genera documentación para el proyecto en <path>
+  ai-project-analysis <path># Análisis general del proyecto
+  ai-init-project <name> [dir] # Inicializa un proyecto con workflows IA
+
+Workflows runner:
+  ~/.config/ai-workflows/run-workflow.sh <agent> <task> [args]
+
+AI CLIs (si instalados):
+  codex   # 'codex login' para OAuth con ChatGPT
+  gemini  # Inicia flujo OAuth con Google
+  qwen    # Inicia flujo OAuth con qwen.ai
+HELP
+EOF
+
+chmod +x "$BIN_DIR/ai-code-review" "$BIN_DIR/ai-generate-docs" "$BIN_DIR/ai-project-analysis" "$BIN_DIR/ai-help"
 
 # Crear configuración global de workflows
 cat > "$WORKFLOWS_DIR/config.yaml" << 'EOF'
@@ -681,6 +742,7 @@ echo -e "   • Documentation Generator: Generación automática de docs"
 echo -e "${GREEN}✅ Scripts creados:${NC}"
 echo -e "   • run-workflow.sh: Ejecutor principal de workflows"
 echo -e "   • ai-init-project: Inicializador de proyectos con IA"
+echo -e "   • ai-code-review / ai-generate-docs / ai-project-analysis / ai-help"
 
 echo -e "${GREEN}✅ Configuración:${NC}"
 echo -e "   • Templates POML para agentes personalizados"

@@ -77,16 +77,45 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${CYAN}                    TESTS DE PAQUETES BÁSICOS${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-# Tests de paquetes básicos
+# Tests de paquetes básicos (esenciales)
 run_test "curl instalado" "command -v curl"
 run_test "wget instalado" "command -v wget"
 run_test "git instalado" "command -v git"
 run_test "node instalado" "command -v node"
 run_test "python instalado" "command -v python"
-run_test "ripgrep instalado" "command -v rg"
-run_test "fd instalado" "command -v fd"
-run_test "fzf instalado" "command -v fzf"
-run_test "lazygit instalado" "command -v lazygit"
+
+# Herramientas opcionales: no deben fallar el test global si no están
+echo -en "${YELLOW}🔍 Test: ripgrep opcional... ${NC}"
+if command -v rg >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+echo -en "${YELLOW}🔍 Test: fd opcional... ${NC}"
+if command -v fd >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+echo -en "${YELLOW}🔍 Test: fzf opcional... ${NC}"
+if command -v fzf >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+echo -en "${YELLOW}🔍 Test: lazygit opcional... ${NC}"
+if command -v lazygit >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
 echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${CYAN}                      TESTS DE ZSH${NC}"
@@ -134,7 +163,7 @@ echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━�
 echo -e "${CYAN}                   TESTS DE INTEGRACIÓN IA${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-# Tests de integración IA
+# Tests de integración IA (scripts)
 run_test "Directorio bin existe" "test -d ~/bin"
 run_test "Script ai-code-review" "test -f ~/bin/ai-code-review"
 run_test "Script ai-generate-docs" "test -f ~/bin/ai-generate-docs"
@@ -149,6 +178,31 @@ run_test "ai-help ejecutable" "test -x ~/bin/ai-help"
 
 # Test de variable de entorno PATH
 run_test_with_output "~/bin en PATH" "echo \$PATH" "/bin"
+
+# Tests de CLIs IA instalados con npm
+echo -en "${YELLOW}🔍 Test: Codex CLI (codex)... ${NC}"
+if command -v codex >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+echo -en "${YELLOW}🔍 Test: Gemini CLI (gemini)... ${NC}"
+if command -v gemini >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+echo -en "${YELLOW}🔍 Test: Qwen CLI (qwen/qwen-code)... ${NC}"
+if command -v qwen >/dev/null 2>&1 || command -v qwen-code >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+else
+    echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
 echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${CYAN}                   TESTS DE WORKFLOWS IA${NC}"
@@ -227,7 +281,7 @@ echo -e "${RED}❌ Tests fallidos: ${TESTS_FAILED}${NC}"
 
 # Calcular porcentaje de éxito
 if [[ $TOTAL_TESTS -gt 0 ]]; then
-    local success_rate=$((TESTS_PASSED * 100 / TOTAL_TESTS))
+    success_rate=$((TESTS_PASSED * 100 / TOTAL_TESTS))
     echo -e "${CYAN}📈 Tasa de éxito: ${success_rate}%${NC}"
 
     if [[ $success_rate -ge 90 ]]; then

@@ -74,9 +74,10 @@ show_main_menu() {
     echo -e "${WHITE}│  7. 🖋️  Install Nerd Fonts + Set Font         │${NC}"
     echo -e "${WHITE}│  8. 🌟 Complete Installation (Automatic)       │${NC}"
     echo -e "${WHITE}│  9. 🧪 Run Installation Tests                  │${NC}"
+    echo -e "${WHITE}│ 10. 🧹 Clean and Reinstall from Scratch        │${NC}"
     echo -e "${WHITE}│  0. 🚪 Exit                                    │${NC}"
     echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
-    echo -e "\n${YELLOW}Select an option [0-9]:${NC} "
+    echo -e "\n${YELLOW}Select an option [0-10]:${NC} "
 }
 
 # Function to run module with error handling
@@ -226,6 +227,9 @@ main() {
                 ;;
             9)
                 run_module "test-installation"
+                ;;
+            10)
+                run_module "99-clean-reset"
                 ;;
             0)
                 echo -e "${GREEN}Thank you for using Termux AI Setup!${NC}"
