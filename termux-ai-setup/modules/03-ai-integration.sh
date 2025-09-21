@@ -159,11 +159,11 @@ const path = require('path');install_assistants() {
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Módulo 03: Instalar CLIs nativos de IA (sin menús ni auto-login)
-# Objetivo: instalar OpenAI Codex CLI, Google Gemini CLI y Qwen Code CLI
-# Autenticación: cada CLI maneja su propio flujo (OAuth2 o API key) de forma nativa
+# Module 03: Install native AI CLIs (without menus or auto-login)
+# Objective: install OpenAI Codex CLI, Google Gemini CLI and Qwen Code CLI
+# Authentication: each CLI handles its own flow (OAuth2 or API key) natively
 
-# Colores
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -179,78 +179,78 @@ err() { echo -e "${RED}✗${NC} $*"; }
 is_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 ensure_basics() {
-    note "Verificando requisitos básicos (node, npm, certificados)…"
+    note "Checking basic requirements (node, npm, certificates)…"
     if ! is_cmd node; then
-        warn "Node.js no encontrado. Instalando…"
+        warn "Node.js not found. Installing…"
         pkg install -y nodejs >/dev/null
     fi
     if ! is_cmd npm; then
-        warn "npm no encontrado. Instalando…"
+        warn "npm not found. Installing…"
         pkg install -y nodejs-lts >/dev/null || true
     fi
-    # Certificados SSL comunes en Android/Termux
+    # Common SSL certificates in Android/Termux
     export SSL_CERT_FILE="${PREFIX:-/data/data/com.termux/files/usr}/etc/tls/cert.pem"
     export SSL_CERT_DIR="${PREFIX:-/data/data/com.termux/files/usr}/etc/tls/certs"
     export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
     export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
     export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-    ok "Requisitos básicos listos"
+    ok "Basic requirements ready"
 }
 
 npm_install_global() {
     local pkg_name="$1"
     if npm list -g --depth=0 "$pkg_name" >/dev/null 2>&1; then
-        ok "$pkg_name ya instalado"
+        ok "$pkg_name already installed"
     else
-        note "Instalando $pkg_name (global)…"
+        note "Installing $pkg_name (global)…"
         if npm i -g "$pkg_name" >/dev/null 2>&1; then
-            ok "$pkg_name instalado"
+            ok "$pkg_name installed"
         else
-            err "Fallo instalando $pkg_name"
+            err "Failed installing $pkg_name"
             return 1
         fi
     fi
 }
 
 install_codex() {
-    note "Instalando OpenAI Codex CLI (@openai/codex)…"
-    # Fuente oficial: https://github.com/openai/codex (npm i -g @openai/codex)
+    note "Installing OpenAI Codex CLI (@openai/codex)…"
+    # Official: npm i -g @openai/codex
     npm_install_global "@openai/codex" || return 1
-    ok "Codex listo. Para usar: ejecuta 'codex' y sigue el login (ChatGPT recomendado)"
+    ok "Codex ready. Login with: 'codex login' and choose 'Sign in with ChatGPT' (OAuth)"
 }
 
 install_gemini_cli() {
-    note "Instalando Google Gemini CLI (@google/gemini-cli)…"
+    note "Installing Google Gemini CLI (@google/gemini-cli)…"
     npm_install_global "@google/gemini-cli" || return 1
-    ok "Gemini CLI listo. Para usar: 'gemini' y sigue su flujo nativo"
+    ok "Gemini CLI ready. First run: 'gemini' and sign in with your Google account (OAuth)"
 }
 
 install_qwen_cli() {
-    note "Instalando Qwen Code CLI (@qwen-code/qwen-code)…"
+    note "Installing Qwen Code CLI (@qwen-code/qwen-code)…"
     npm_install_global "@qwen-code/qwen-code" || return 1
-    ok "Qwen CLI listo. Para usar: 'qwen' o 'qwen-code' según exponga el binario"
+    ok "Qwen CLI ready. To use: 'qwen' or 'qwen-code' depending on exposed binary"
 }
 
 main() {
-    echo -e "${BLUE}==> Instalación de CLIs nativos de IA (simple)${NC}"
+    echo -e "${BLUE}==> Installing native AI CLIs (simple)${NC}"
     ensure_basics
 
-    # Instalar los 3 CLIs solicitados
-    install_codex || warn "Codex no pudo instalarse ahora; reintenta más tarde"
-    install_gemini_cli || warn "Gemini CLI no pudo instalarse ahora"
-    install_qwen_cli || warn "Qwen CLI no pudo instalarse ahora"
+    # Install the 3 requested CLIs
+    install_codex || warn "Codex could not be installed now; try again later"
+    install_gemini_cli || warn "Gemini CLI could not be installed now"
+    install_qwen_cli || warn "Qwen CLI could not be installed now"
 
     echo
-    ok "Instalación finalizada"
-    echo -e "${CYAN}Siguientes pasos:${NC}"
-    echo "  - codex        # inicia el login y configuración (ChatGPT/Key)"
-    echo "  - gemini       # usa OAuth/Key según su flujo nativo"
-    echo "  - qwen         # o qwen-code, según el bin expuesto"
+    ok "Installation completed"
+    echo -e "${CYAN}Next steps:${NC}"
+    echo "  - codex        # run 'codex login' and choose ChatGPT (OAuth)"
+    echo "  - gemini       # run 'gemini' and complete Google sign-in (OAuth)"
+    echo "  - qwen         # or qwen-code, depending on exposed binary"
     echo
-    echo -e "${YELLOW}Notas para Termux:${NC}"
-    echo "  - Si el login abre una URL, usa 'termux-open-url <URL>' si no se abre solo"
-    echo "  - Asegúrate de tener un navegador Android configurado"
-    echo "  - Si ves errores SSL, reinicia la sesión e intenta de nuevo"
+    echo -e "${YELLOW}Notes for Termux:${NC}"
+    echo "  - If login opens a URL, use: termux-open-url <URL>"
+    echo "  - Make sure you have an Android browser configured"
+    echo "  - If you see SSL errors, restart the session and try again"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

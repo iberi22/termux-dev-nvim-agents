@@ -1,31 +1,31 @@
 #!/bin/bash
 
 # ====================================
-# MÓDULO: Instalación de Paquetes Básicos
-# Instala herramientas esenciales para desarrollo
+# MODULE: Base Packages Installation
+# Installs essential development tools
 # ====================================
 
 set -euo pipefail
 
-# Colores
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}📦 Instalando paquetes básicos de Termux...${NC}"
+echo -e "${BLUE}📦 Installing Termux base packages...${NC}"
 
-# Actualizar repositorios
-echo -e "${YELLOW}🔄 Actualizando repositorios...${NC}"
+# Update repositories
+echo -e "${YELLOW}🔄 Updating repositories...${NC}"
 pkg update -y
 
-echo -e "${YELLOW}⬆️  Actualizando paquetes existentes...${NC}"
+echo -e "${YELLOW}⬆️  Upgrading existing packages...${NC}"
 pkg upgrade -y
 
-# Lista de paquetes esenciales
+# Essential packages list
 PACKAGES=(
-    # Herramientas básicas del sistema
+    # Basic system tools
     "curl"
     "wget"
     "git"
@@ -34,13 +34,13 @@ PACKAGES=(
     "tar"
     "gzip"
 
-    # Desarrollo
+    # Development
     "nodejs"
     "npm"
     "python"
     "python-pip"
 
-    # Editores y herramientas de búsqueda
+    # Editors and search tools
     "vim"
     "nano"
     "ripgrep"
@@ -49,18 +49,18 @@ PACKAGES=(
     "tree"
     "htop"
 
-    # Compiladores y herramientas de construcción
+    # Compilers and build tools
     "gcc"
     "clang"
     "cmake"
     "make"
     "pkg-config"
 
-    # Herramientas de red
+    # Network tools
     "openssh"
     "rsync"
 
-    # Utilidades adicionales
+    # Additional utilities
     "jq"
     "bat"
     "exa"
@@ -68,26 +68,26 @@ PACKAGES=(
     "zoxide"
 )
 
-echo -e "${YELLOW}📋 Instalando ${#PACKAGES[@]} paquetes esenciales...${NC}"
+echo -e "${YELLOW}📋 Installing ${#PACKAGES[@]} essential packages...${NC}"
 
-# Instalar paquetes con manejo de errores
+# Install packages with error handling
 failed_packages=()
 successful_packages=()
 
 for package in "${PACKAGES[@]}"; do
-    echo -e "${BLUE}📦 Instalando: ${package}${NC}"
+    echo -e "${BLUE}📦 Installing: ${package}${NC}"
 
     if pkg install -y "$package" 2>/dev/null; then
-        echo -e "${GREEN}✅ ${package} instalado correctamente${NC}"
+        echo -e "${GREEN}✅ ${package} installed successfully${NC}"
         successful_packages+=("$package")
     else
-        echo -e "${RED}❌ Error instalando: ${package}${NC}"
+        echo -e "${RED}❌ Error installing: ${package}${NC}"
         failed_packages+=("$package")
     fi
 done
 
-# Instalar herramientas adicionales con pip
-echo -e "${YELLOW}🐍 Instalando herramientas Python adicionales...${NC}"
+# Install additional Python tools with pip
+echo -e "${YELLOW}🐍 Installing additional Python tools...${NC}"
 
 PYTHON_PACKAGES=(
     "requests"

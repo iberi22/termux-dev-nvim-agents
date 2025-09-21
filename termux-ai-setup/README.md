@@ -1,303 +1,306 @@
 # 🚀 Termux AI Development Environment
 
-**Sistema completo de desarrollo con IA para Termux** - Transforma tu dispositivo Android en un entorno de desarrollo potente con integración avanzada de IA.
+## Professional AI-powered development environment for Termux (Android)
 
-## 📋 Descripción
+## 🎯 Quick Installation
 
-Este proyecto refactoriza y mejora el script original de configuración de Termux, creando un sistema modular y automatizado que incluye:
+### One-Command Install
 
-- ✅ **Instalación modular** con menú interactivo
-- ✅ **Zsh + Oh My Zsh** con recarga automática del terminal
-- ✅ **Neovim completo** con Lazy.nvim, LSP, y plugins de IA
-- ✅ **Integración con IA** (Google Gemini API)
-- ✅ **Workflows avanzados** basados en agents-flows-recipes
-- ✅ **Sistema de testing** con Docker
-- ✅ **Herramientas de desarrollo** modernas
-
-## 🎯 Características Principales
-
-### 🔧 Componentes del Sistema
-
-| Componente | Descripción | Estado |
-|------------|-------------|---------|
-| **Paquetes Base** | Git, Node.js, Python, herramientas CLI | ✅ Completo |
-| **Zsh Setup** | Oh My Zsh, Powerlevel10k, plugins, auto-reload | ✅ Completo |
-| **Neovim** | Configuración completa con LSP, Treesitter, IA | ✅ Completo |
-| **Integración IA** | Scripts para Gemini API, herramientas de análisis | ✅ Completo |
-| **Workflows** | Sistema basado en agents-flows-recipes | ✅ Completo |
-| **Testing** | Tests automatizados, Docker para pruebas | ✅ Completo |
-
-### 🤖 Herramientas de IA Incluidas
-
-- **`ai-code-review`** - Revisión automática de código
-- **`ai-generate-docs`** - Generación de documentación
-- **`ai-project-analysis`** - Análisis completo de proyectos
-- **`ai-help`** - Asistente de ayuda contextual
-- **`ai-init-project`** - Inicialización de proyectos con IA
-
-### 🔄 Workflows Disponibles
-
-- **`ai-developer`** - Desarrollo asistido por IA
-- **`workflow-optimizer`** - Optimización de procesos
-- **`documentation-generator`** - Generación automática de docs
-
-## 🚀 Instalación Rápida
-
-### Prerrequisitos
-- Dispositivo Android con Termux instalado
-- Conexión a internet
-- (Opcional) Google Gemini API key para funciones de IA
-
-### Instalación
-
-1. **Clonar el repositorio:**
 ```bash
-git clone <repo-url>
-cd termux-ai-setup
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
-2. **Ejecutar la instalación:**
+### Manual Installation (Termux)
+
 ```bash
+wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
+chmod +x setup.sh
 ./setup.sh
 ```
 
-3. **Seleccionar "Instalación Completa" (opción 1)**
+## ✨ Features
 
-4. **Configurar API de Gemini (opcional):**
-   - Obtener API key de [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - El script solicitará la API key durante la instalación
+- 🤖 **Native AI CLIs**: OpenAI Codex, Google Gemini, Qwen-code (OAuth flows)
+- ⚡ **Complete Neovim**: LSP, Treesitter, AI plugins
+- 🐚 **Modern Terminal**: Zsh + Oh My Zsh + Powerlevel10k
 
-## 📖 Uso del Sistema
 
-### 🎮 Menú Principal
+## 📦 Components
 
-```bash
-./setup.sh
-```
+| Component | Description | Commands |
+|-----------|-------------|----------|
+| **Base Packages** | Git, Node.js, Python, CLI tools | Essential development tools |
+| **Zsh Setup** | Oh My Zsh, themes, plugins | Modern shell experience |
+| **Neovim Complete** | LSP, Treesitter, AI integration | Full-featured code editor |
+| **AI Integration** | Native CLI tools for AI coding | `codex`, `gemini`, `qwen-code` |
+| **Workflows** | Automated AI-powered tasks | Intelligent development flows |
+| **SSH Config** | GitHub integration setup | Secure git operations |
 
-**Opciones disponibles:**
-- `1` - 🚀 Instalación Completa (Recomendado)
-- `2` - 📦 Instalar Paquetes Básicos
-- `3` - 🎯 Instalar Zsh + Oh My Zsh
-- `4` - ⚡ Instalar Neovim + Lazy
-- `5` - 🤖 Configurar Integración con IA
-- `6` - 🧪 Ejecutar Tests de Instalación
-- `7` - 🔄 Configurar Workflows de IA
-- `0` - � Salir
+## 🚀 Multi-Language Documentation
 
-### 🤖 Comandos de IA
+### 🇪🇸 Español
 
-Después de la instalación, tendrás acceso a estos comandos:
+### Entorno de desarrollo con IA para Termux
+
+**Instalación rápida:**
 
 ```bash
-# Revisar código con IA
-ai-code-review archivo.py
-
-# Generar documentación automática
-ai-generate-docs proyecto/
-
-# Análisis completo de proyecto
-ai-project-analysis .
-
-# Obtener ayuda contextual
-ai-help "¿cómo optimizar este código?"
-
-# Crear nuevo proyecto con workflows de IA
-ai-init-project mi-proyecto
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
-### 🔄 Workflows de IA
+**Características principales:**
+
+- CLIs nativos de IA (OpenAI Codex, Google Gemini, Qwen)
+- Neovim completo con LSP y plugins de IA
+- Terminal moderno con Zsh + Oh My Zsh
+- Workflows de automatización inteligente
+- Instalación modular y profesional
+
+### 🇺🇸 English
+
+### AI-powered development environment for Termux
+
+**Quick install:**
 
 ```bash
-# Usar workflow runner
-~/.config/ai-workflows/run-workflow.sh
-
-# Ejemplos de uso:
-run-workflow.sh ai-developer analyze-code src/
-run-workflow.sh documentation-generator generate-docs .
-run-workflow.sh workflow-optimizer optimize-process
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
-### 🧪 Testing y Validación
+**Key features:**
+
+- Native AI CLIs (OpenAI Codex, Google Gemini, Qwen)
+- Complete Neovim with LSP and AI plugins
+- Modern terminal with Zsh + Oh My Zsh
+- Intelligent automation workflows
+- Professional modular installation
+
+### 🇧🇷 Português
+
+### Ambiente de desenvolvimento com IA para Termux
+
+**Instalação rápida:**
 
 ```bash
-# Ejecutar tests completos
-./setup.sh
-# Seleccionar opción 6 - Tests de Instalación
-
-# O ejecutar directamente
-bash modules/test-installation.sh
-
-# Demo completo del sistema
-./demo.sh
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
 ```
 
-## 📁 Estructura del Proyecto
+**Características principais:**
 
+- CLIs nativos de IA (OpenAI Codex, Google Gemini, Qwen)
+- Neovim completo com LSP e plugins de IA
+- Terminal moderno com Zsh + Oh My Zsh
+- Workflows de automação inteligente
+- Instalação modular e profissional
+
+## 🎮 Interactive Menu
+
+After installation, use the interactive menu:
+
+```text
+┌─────────────────────────────────────────────────┐
+│                  MAIN MENU                      │
+├─────────────────────────────────────────────────┤
+│  1. 📦 Install Base Packages                   │
+│  2. 🐚 Configure Zsh + Oh My Zsh               │
+│  3. ⚡ Install and Configure Neovim            │
+│  4. 🔐 Configure SSH for GitHub                │
+│  5. 🤖 Configure AI Integration                │
+│  6. 🔄 Configure AI Workflows                  │
+│  7. 🖋️  Install Nerd Fonts + Set Font         │
+│  8. 🌟 Complete Installation (Automatic)       │
+│  9. 🧪 Run Installation Tests                  │
+│  0. 🚪 Exit                                     │
+└─────────────────────────────────────────────────┘
 ```
+
+## 🤖 AI Commands
+
+After installation, access these AI-powered commands:
+
+```bash
+# OpenAI Codex (OAuth login)
+codex login
+codex
+
+# Google Gemini CLI (OAuth login)
+gemini
+
+# Qwen Code Assistant
+qwen
+
+# Neovim with AI plugins
+nvim
+```
+
+## 📁 Project Structure
+
+```text
 termux-ai-setup/
-├── setup.sh                   # Script principal con menú interactivo
-├── demo.sh                    # Demostración completa del sistema
-├── modules/                   # Módulos de instalación
-│   ├── 00-base-packages.sh   # Paquetes básicos y herramientas
-│   ├── 01-zsh-setup.sh       # Configuración completa de Zsh
-│   ├── 02-neovim-setup.sh    # Neovim con plugins y LSP
-│   ├── 03-ai-integration.sh  # Integración con APIs de IA
-│   ├── 04-workflows-setup.sh # Workflows basados en agents-flows
-│   └── test-installation.sh  # Suite de tests automatizados
-├── config/                   # Configuraciones predefinidas
-│   └── neovim/              # Configuración modular de Neovim
-│       ├── init.lua         # Configuración principal
-│       └── lua/plugins/     # Plugins organizados por función
-└── logs/                   # Logs de instalación y errores
+├── install.sh              # Quick installer script
+├── setup.sh                # Main interactive setup
+├── modules/                 # Installation modules
+│   ├── 00-base-packages.sh  # Essential tools
+│   ├── 01-zsh-setup.sh      # Zsh configuration
+│   ├── 02-neovim-setup.sh   # Neovim + plugins
+│   ├── 03-ai-integration.sh # AI CLIs setup
+│   ├── 04-workflows-setup.sh# AI workflows
+│   ├── 05-ssh-setup.sh      # SSH/GitHub config
+│   ├── 06-fonts-setup.sh    # Nerd Fonts installer & selector
+│   └── test-installation.sh # Automated tests
+└── config/                  # Configuration files
+    └── neovim/              # Neovim configs
+        └── lua/plugins/     # Plugin configurations
 ```
 
-## ⚙️ Configuración Avanzada
+## 🔧 Requirements
 
-### 🔑 API Keys
+- **Android device** with Termux installed
+- **Internet connection** for downloads
+- **4GB+ RAM** recommended for full features
+- **Storage space**: ~2GB for complete installation
+- A web browser in Android for OAuth login flows
 
-El sistema soporta las siguientes APIs de IA:
+## ⚙️ Configuration
+
+### API Keys (Optional)
 
 ```bash
-# Configurar Gemini API (recomendado)
-export GEMINI_API_KEY="tu-api-key-aquí"
+# Google Gemini API (optional – use OAuth by default)
+export GEMINI_API_KEY="your-api-key-here"
 
-# Configurar OpenAI (opcional)
-export OPENAI_API_KEY="tu-api-key-aquí"
+# OpenAI API (optional – use OAuth ChatGPT login)
+export OPENAI_API_KEY="your-api-key-here"
+
+Note: By default, both Codex and Gemini CLIs support OAuth interactive login. API keys are optional.
 ```
 
-### 🎨 Personalización de Neovim
+### Get API Keys
 
-La configuración de Neovim está modularizada en `config/neovim/lua/plugins/`:
+- **Gemini API**: <https://aistudio.google.com/app/apikey>
+- **OpenAI API**: <https://platform.openai.com/api-keys>
 
-- **`ui.lua`** - Tema, statusline, interfaz
-- **`explorer.lua`** - Neo-tree, navegación de archivos
-- **`telescope.lua`** - Fuzzy finder, búsqueda avanzada
-- **`lsp.lua`** - Language Server Protocol, autocompletado
-- **`treesitter.lua`** - Syntax highlighting avanzado
-- **`ai.lua`** - GitHub Copilot, ChatGPT integration
-- **`dev-tools.lua`** - Git, debugging, testing
+## 🧪 Testing
 
-### 🔄 Workflows Personalizados
-
-Crear nuevos agentes en `~/.config/ai-workflows/agents/`:
-
-```xml
-<poml>
-  <let name="topology">solo</let>
-  <let name="bench_id">mi-agente</let>
-  <let name="providers">{ "gemini": {"model":"gemini-1.5-flash"} }</let>
-
-  <role>
-    Descripción del agente...
-  </role>
-
-  <task>
-    Tareas específicas...
-  </task>
-</poml>
-```
-
-## 🐳 Testing con Docker
-
-> **Nota:** El sistema de testing con Docker ha sido removido. Las pruebas ahora se ejecutan directamente en Termux.
-
-## 🔧 Solución de Problemas
-
-### ❌ Problemas Comunes
-
-**1. Error de instalación de Zsh:**
-```bash
-# Ejecutar módulo específico
-bash modules/01-zsh-setup.sh
-```
-
-**2. Neovim no carga plugins:**
-```bash
-# Reinstalar Neovim
-bash modules/02-neovim-setup.sh
-```
-
-**3. Herramientas de IA no funcionan:**
-```bash
-# Verificar API key
-echo $GEMINI_API_KEY
-
-# Reconfigurar integración
-bash modules/03-ai-integration.sh
-```
-
-**4. Problemas de permisos:**
-```bash
-# Verificar permisos de scripts
-ls -la ~/bin/ai-*
-
-# Re-ejecutar instalación completa
-./setup.sh # Opción 1
-```
-
-### 📋 Diagnóstico
+Run automated tests to verify installation:
 
 ```bash
-# Ejecutar tests completos
-bash modules/test-installation.sh
-
-# Ver logs de instalación
-ls -la ~/.termux-ai-setup/logs/
-
-# Demo interactivo para diagnóstico
-./demo.sh
+cd ~/termux-ai-setup
+./setup.sh
+# Select option 8: Run Installation Tests
 ```
 
-## 🤝 Contribuciones
+## 🔍 Troubleshooting
 
-Este proyecto implementa mejoras solicitadas por el usuario:
+### Common Issues
 
-1. ✅ **Refactorización modular** - Sistema organizado por módulos
-2. ✅ **Auto-reload del terminal** - Zsh se recarga automáticamente
-3. ✅ **Instalación automática** - Todo funciona sin intervención manual
-4. ✅ **Menú de comandos** - Interface interactiva completa
-5. ✅ **Testing con Docker** - Validación en entorno aislado
-6. ✅ **Integración con IA** - Gemini API para recomendaciones
-7. ✅ **Workflows avanzados** - Basado en agents-flows-recipes
+#### 1. Permission denied
 
-### 🔄 Flujo de Desarrollo
+```bash
+chmod +x setup.sh
+chmod +x install.sh
+```
 
-1. El usuario reportó errores en el script original
-2. Se analizó y refactorizó completamente el código
-3. Se implementaron todas las mejoras solicitadas
-4. Se creó sistema de testing y validación
-5. Se documentó completamente el sistema
+#### 2. Network issues
 
-## 📊 Métricas del Proyecto
+```bash
+# Check internet connection
+ping google.com
 
-- **Líneas de código:** ~3000+ líneas
-- **Módulos:** 6 módulos independientes
-- **Tests:** 40+ casos de prueba automatizados
-- **Plugins de Neovim:** 25+ plugins configurados
-- **Herramientas de IA:** 5 scripts personalizados
-- **Workflows:** 3 agentes de IA configurados
+# Update Termux packages
+pkg update && pkg upgrade
+```
 
-## 🎉 Estado del Proyecto
+#### 3. Installation fails
 
-**✅ COMPLETADO** - Todos los objetivos del usuario implementados:
+```bash
+# Run individual modules
+cd ~/termux-ai-setup
+./setup.sh
+# Select specific module from menu
+```
 
-- [x] Script refactorizado y modularizado
-- [x] Instalación automática de Zsh con auto-reload
-- [x] Sistema automatizado con menú de comandos
-- [x] Testing con Docker Desktop
-- [x] Integración con Gemini API
-- [x] Workflows basados en agents-flows-recipes
+#### 4. AI CLIs not working
 
-## 📞 Soporte
+```bash
+# Check Node.js installation
+node --version
+npm --version
 
-Para problemas o mejoras:
+# Reinstall AI integration
+./setup.sh
+# Select option 5: Configure AI Integration
+```
 
-1. **Ejecutar diagnóstico:** `./demo.sh`
-2. **Ver logs:** `~/.termux-ai-setup/logs/`
-3. **Tests:** `bash modules/test-installation.sh`
-4. **Reinstalación:** `./setup.sh` → Opción 1
+## 📊 Installation Stats
+
+- **⏱️ Install time**: 5-15 minutes (depending on internet)
+- **💾 Disk usage**: ~2GB total
+- **🔧 Components**: 50+ packages and tools
+- **🤖 AI CLIs**: 3 native integrations
+- **⚡ Neovim plugins**: 25+ configured
+- **🧪 Tests**: 20+ automated checks
+- **🖋️ Fonts**: FiraCode Nerd Font Mono as default (customizable)
+
+## 🌟 What's Included
+
+### Development Tools
+
+- Git, Node.js, Python, GCC/Clang
+- Modern CLI tools (ripgrep, fd, fzf, bat)
+- Package managers (npm, pip)
+
+### Terminal Experience
+
+- Zsh with Oh My Zsh
+- Powerlevel10k theme
+- Smart autocompletion
+- Syntax highlighting
+
+### Code Editor
+
+- Neovim with Lazy.nvim
+- LSP support for multiple languages
+- Treesitter syntax highlighting
+- AI-powered coding assistance
+
+### AI Integration
+
+- OpenAI Codex CLI
+- Google Gemini CLI
+- Qwen Code Assistant
+- GitHub Copilot integration
+
+### Fonts (Nerd Fonts)
+
+- Default terminal and Neovim font: FiraCode Nerd Font Mono
+- Change font anytime from setup menu → option "Install Nerd Fonts + Set Font"
+- Included top fonts: FiraCode, JetBrainsMono, Hack, CascadiaCode, SourceCodePro, Meslo, UbuntuMono, Mononoki, VictorMono, Iosevka
+
+## 🤝 Contributing
+
+This project welcomes contributions! Areas for improvement:
+
+- Additional AI CLI integrations
+- More language server protocols
+- Enhanced automation scripts
+- Better error handling
+- Documentation improvements
+
+## 📄 License
+
+MIT License - feel free to modify and distribute.
+
+## 🙏 Acknowledgments
+
+Built with modern tools and inspired by the developer community:
+
+- **Termux team** for Android Linux environment
+- **Neovim community** for the amazing editor
+- **Oh My Zsh** for shell improvements
+- **AI providers** for development assistance APIs
 
 ---
 
-**🚀 ¡Disfruta de tu nuevo entorno de desarrollo con IA en Termux!**
+**🚀 Transform your Android device into a powerful AI development environment!**
+
+**Quick start:** `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash`
