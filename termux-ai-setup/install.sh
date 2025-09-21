@@ -101,6 +101,7 @@ download_setup() {
         "04-workflows-setup.sh"
         "05-ssh-setup.sh"
         "06-fonts-setup.sh"
+        "99-clean-reset.sh"
         "test-installation.sh"
     )
 

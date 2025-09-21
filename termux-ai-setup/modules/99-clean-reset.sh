@@ -105,14 +105,24 @@ main() {
   # 9) Ofrecer reinstalación inmediata
   if confirm "¿Deseas iniciar una reinstalación completa ahora?"; then
     # Llamar al instalador principal si está disponible
-    if [[ -f "${BASH_SOURCE[0]%/modules/*}/setup.sh" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SETUP_SCRIPT="${SCRIPT_DIR}/../setup.sh"
+    
+    if [[ -f "$SETUP_SCRIPT" ]]; then
       info "Iniciando reinstalación automática"
-      bash "${BASH_SOURCE[0]%/modules/*}/setup.sh" auto || true
+      bash "$SETUP_SCRIPT" auto || true
+    elif [[ -f "$HOME/termux-ai-setup/setup.sh" ]]; then
+      info "Iniciando reinstalación desde home"
+      bash "$HOME/termux-ai-setup/setup.sh" auto || true
     else
-      warn "No se encontró setup.sh; ejecuta manualmente: ./setup.sh auto"
+      warn "No se encontró setup.sh; ejecuta manualmente:"
+      warn "  cd ~/termux-ai-setup && ./setup.sh auto"
+      warn "O re-ejecuta el instalador:"
+      warn "  wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash"
     fi
   else
-    info "Puedes reinstalar más tarde ejecutando: ./setup.sh auto"
+    info "Puedes reinstalar más tarde ejecutando:"
+    info "  cd ~/termux-ai-setup && ./setup.sh auto"
   fi
 }
 

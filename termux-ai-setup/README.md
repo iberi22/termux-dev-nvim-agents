@@ -22,10 +22,13 @@ pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com
 # Step 1: Install wget (if needed)
 pkg update && pkg install -y wget
 
-# Step 2: Download and run setup
-wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
-chmod +x setup.sh
-./setup.sh
+# Step 2: Download complete setup using installer
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+
+# Alternative: Download and run setup manually (not recommended)
+# wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
+# chmod +x setup.sh
+# ./setup.sh
 ```
 
 ## ✨ Features
@@ -202,16 +205,47 @@ cd ~/termux-ai-setup
 
 ## 🔍 Troubleshooting
 
-### Common Issues
+### 🩺 Quick Diagnosis
 
-#### 1. Permission denied
+First, run the diagnostic tool to identify issues:
 
 ```bash
-chmod +x setup.sh
-chmod +x install.sh
+cd ~/termux-ai-setup
+./diagnose.sh
 ```
 
-#### 2. Network issues
+This will check for:
+
+- Correct directory location
+- Missing or corrupted files
+- System requirements
+- Network connectivity
+
+### Common Issues
+
+#### 1. Module not found errors
+
+```bash
+# Ensure you're in the correct directory
+cd ~/termux-ai-setup
+
+# Run diagnostics
+./diagnose.sh
+
+# If files are missing, re-run installer
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+```
+
+#### 2. Permission denied
+
+```bash
+# Fix permissions for all scripts
+cd ~/termux-ai-setup
+chmod +x setup.sh diagnose.sh
+chmod +x modules/*.sh
+```
+
+#### 3. Network issues
 
 ```bash
 # Check internet connection
@@ -221,16 +255,19 @@ ping google.com
 pkg update && pkg upgrade
 ```
 
-#### 3. Installation fails
+#### 4. Installation fails
 
 ```bash
-# Run individual modules
+# Run diagnostics first
 cd ~/termux-ai-setup
+./diagnose.sh
+
+# Run individual modules
 ./setup.sh
 # Select specific module from menu
 ```
 
-#### 4. AI CLIs not working
+#### 5. AI CLIs not working
 
 ```bash
 # Check Node.js installation
@@ -238,6 +275,7 @@ node --version
 npm --version
 
 # Reinstall AI integration
+cd ~/termux-ai-setup
 ./setup.sh
 # Select option 5: Configure AI Integration
 ```

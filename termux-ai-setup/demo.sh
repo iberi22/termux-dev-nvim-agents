@@ -350,11 +350,21 @@ demo_workflows() {
 demo_run_tests() {
     echo -e "\n${BLUE}🧪 Ejecutando tests de instalación...${NC}"
 
-    if [[ -f modules/test-installation.sh ]]; then
-        echo -e "${CYAN}Ejecutando test completo...${NC}"
-        bash modules/test-installation.sh
-    elif [[ -f ./test-installation.sh ]]; then
-        bash ./test-installation.sh
+    # Detect the correct test script location
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    TEST_SCRIPT=""
+    
+    if [[ -f "${SCRIPT_DIR}/modules/test-installation.sh" ]]; then
+        TEST_SCRIPT="${SCRIPT_DIR}/modules/test-installation.sh"
+    elif [[ -f "modules/test-installation.sh" ]]; then
+        TEST_SCRIPT="modules/test-installation.sh"
+    elif [[ -f "./test-installation.sh" ]]; then
+        TEST_SCRIPT="./test-installation.sh"
+    fi
+    
+    if [[ -n "$TEST_SCRIPT" ]]; then
+        echo -e "${CYAN}Ejecutando test completo desde: ${TEST_SCRIPT}${NC}"
+        bash "$TEST_SCRIPT"
     else
         echo -e "${RED}❌ Script de tests no encontrado${NC}"
         echo -e "${YELLOW}Ejecutando verificación manual...${NC}"
