@@ -107,7 +107,7 @@ main() {
     # Llamar al instalador principal si está disponible
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     SETUP_SCRIPT="${SCRIPT_DIR}/../setup.sh"
-    
+
     if [[ -f "$SETUP_SCRIPT" ]]; then
       info "Iniciando reinstalación automática"
       bash "$SETUP_SCRIPT" auto || true

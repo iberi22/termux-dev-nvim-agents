@@ -61,14 +61,14 @@ check_prerequisites() {
     if [[ ! -d "$MODULES_DIR" ]]; then
         echo -e "${RED}❌ Modules directory not found: $MODULES_DIR${NC}"
         echo -e "${YELLOW}💡 Please ensure you're running this script from the correct location.${NC}"
-        
+
         # Check if we're in the wrong directory but termux-ai-setup exists
         if [[ -d "$HOME/termux-ai-setup" && "$PWD" != "$HOME/termux-ai-setup" ]]; then
             echo -e "${CYAN}📍 Found installation at: $HOME/termux-ai-setup${NC}"
             echo -e "${CYAN}🔄 Please run: cd ~/termux-ai-setup && ./setup.sh${NC}"
             exit 1
         fi
-        
+
         echo -e "${YELLOW}💡 Try re-running the installer:${NC}"
         echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
         exit 1
@@ -113,7 +113,7 @@ run_module() {
     local module_path="${MODULES_DIR}/${module_name}.sh"
 
     echo -e "${BLUE}🔄 Preparing to run: ${module_name}${NC}"
-    
+
     # Debug information
     echo -e "${CYAN}📍 Looking for module at: ${module_path}${NC}"
     echo -e "${CYAN}📁 Current directory: ${PWD}${NC}"
@@ -122,7 +122,7 @@ run_module() {
 
     if [[ ! -f "$module_path" ]]; then
         echo -e "${RED}❌ Module not found: ${module_path}${NC}"
-        
+
         # List available modules for debugging
         if [[ -d "$MODULES_DIR" ]]; then
             echo -e "${CYAN}📋 Available modules in ${MODULES_DIR}:${NC}"
@@ -130,7 +130,7 @@ run_module() {
         else
             echo -e "${RED}� Modules directory doesn't exist: ${MODULES_DIR}${NC}"
         fi
-        
+
         echo -e "${YELLOW}💡 Solutions:${NC}"
         echo -e "${CYAN}  1. Ensure you're in the right directory: cd ~/termux-ai-setup${NC}"
         echo -e "${CYAN}  2. Re-run the installer: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"

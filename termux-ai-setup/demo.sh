@@ -353,7 +353,7 @@ demo_run_tests() {
     # Detect the correct test script location
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     TEST_SCRIPT=""
-    
+
     if [[ -f "${SCRIPT_DIR}/modules/test-installation.sh" ]]; then
         TEST_SCRIPT="${SCRIPT_DIR}/modules/test-installation.sh"
     elif [[ -f "modules/test-installation.sh" ]]; then
@@ -361,7 +361,7 @@ demo_run_tests() {
     elif [[ -f "./test-installation.sh" ]]; then
         TEST_SCRIPT="./test-installation.sh"
     fi
-    
+
     if [[ -n "$TEST_SCRIPT" ]]; then
         echo -e "${CYAN}Ejecutando test completo desde: ${TEST_SCRIPT}${NC}"
         bash "$TEST_SCRIPT"

@@ -110,7 +110,7 @@ if [[ -d "$MODULES_DIR" ]]; then
 
     MISSING_MODULES=()
     BROKEN_MODULES=()
-    
+
     for module in "${REQUIRED_MODULES[@]}"; do
         module_path="$MODULES_DIR/$module"
         if [[ -f "$module_path" ]]; then
@@ -139,11 +139,11 @@ if [[ -d "$MODULES_DIR" ]]; then
     if [ ${#MISSING_MODULES[@]} -gt 0 ]; then
         echo -e "\n${RED}❌ Missing modules detected: ${MISSING_MODULES[*]}${NC}"
     fi
-    
+
     if [ ${#BROKEN_MODULES[@]} -gt 0 ]; then
         echo -e "\n${RED}💥 Corrupted modules detected: ${BROKEN_MODULES[*]}${NC}"
     fi
-    
+
     if [ ${#MISSING_MODULES[@]} -gt 0 ] || [ ${#BROKEN_MODULES[@]} -gt 0 ]; then
         echo -e "\n${YELLOW}💡 Fix by re-running the installer:${NC}"
         echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
