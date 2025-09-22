@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Robust ShellCheck script for Termux AI Setup
-# Usage: ./scripts/lint.sh [files...]
+# Usage: ./scripts/lint.sh [files...] [--staged]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -43,7 +43,7 @@ fi
 lint_file() {
     local file="$1"
     local basename="$(basename "$file")"
-    
+
     echo -e "${BLUE}[LINT] Checking $basename...${NC}"
     # 1) Syntax check first
     if ! bash -n "$file" 2>/dev/null; then
@@ -79,25 +79,59 @@ cd "$PROJECT_ROOT"
 ERROR_COUNT=0
 FILE_COUNT=0
 
-if [[ $# -eq 0 ]]; then
-    # No arguments: check all shell scripts
-    echo "[INFO] No files specified, checking all .sh files (excluding node_modules, .git, .husky)..."
-    while IFS= read -r -d '' file; do
-        if ! lint_file "$file"; then
-            ((ERROR_COUNT++))
+# Check for --staged option
+STAGED_MODE=false
+for arg in "$@"; do
+    if [[ "$arg" == "--staged" ]]; then
+        STAGED_MODE=true
+        break
+    fi
+done
+
+if [[ $# -eq 0 ]] || [[ "$STAGED_MODE" == true ]]; then
+    if [[ "$STAGED_MODE" == true ]]; then
+        # Staged mode: check only staged .sh files
+        echo "[INFO] Checking staged .sh files..."
+        staged_files=()
+        while IFS= read -r file; do
+            if [[ -f "$file" && "$file" == *.sh ]]; then
+                staged_files+=("$file")
+            fi
+        done < <(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep '\.sh$' || true)
+
+        if [[ ${#staged_files[@]} -eq 0 ]]; then
+            echo "[INFO] No staged .sh files found."
+            exit 0
         fi
-        ((FILE_COUNT++))
-    done < <(find . \( -path './.git' -o -path './node_modules' -o -path './.husky' \) -prune -o -name '*.sh' -type f -print0)
-else
-    # Arguments provided: check specific files
-    for file in "$@"; do
-        if [[ -f "$file" && "$file" == *.sh ]]; then
+
+        for file in "${staged_files[@]}"; do
             if ! lint_file "$file"; then
                 ((ERROR_COUNT++))
             fi
             ((FILE_COUNT++))
-        else
-            echo -e "${YELLOW}[SKIP] $file (not a .sh file or doesn't exist)${NC}"
+        done
+    else
+        # No arguments: check all shell scripts
+        echo "[INFO] No files specified, checking all .sh files (excluding node_modules, .git, .husky)..."
+        while IFS= read -r -d '' file; do
+            if ! lint_file "$file"; then
+                ((ERROR_COUNT++))
+            fi
+            ((FILE_COUNT++))
+        done < <(find . \( -path './.git' -o -path './node_modules' -o -path './.husky' \) -prune -o -name '*.sh' -type f -print0)
+    fi
+else
+    # Arguments provided: check specific files (exclude --staged from file list)
+    for file in "$@"; do
+        if [[ "$file" != "--staged" ]]; then
+            if [[ -f "$file" && "$file" == *.sh ]]; then
+                if ! lint_file "$file"; then
+                    ((ERROR_COUNT++))
+                fi
+                ((FILE_COUNT++))
+            else
+                echo -e "${YELLOW}[SKIP] $file (not a .sh file or doesn't exist)${NC}"
+            fi
         fi
     done
 fi

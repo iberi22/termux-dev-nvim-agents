@@ -184,10 +184,10 @@ gemini "explain machine learning basics"
 # Function to start Android emulator
 function Start-AndroidEmulator {
     param([string]$AVDName = "Pixel_7_Pro_API_33")
-    
+
     $env:ANDROID_HOME = "C:\Users\$env:USERNAME\AppData\Local\Android\Sdk"
     $env:PATH = "$env:ANDROID_HOME\emulator;$env:ANDROID_HOME\platform-tools;$env:PATH"
-    
+
     Write-Host "🚀 Starting Android Emulator: $AVDName" -ForegroundColor Green
     emulator -avd $AVDName -gpu host -memory 4096
 }
@@ -202,7 +202,7 @@ function Connect-Termux {
 # Function to install APK
 function Install-APK {
     param([string]$APKPath)
-    
+
     Write-Host "📦 Installing APK: $APKPath" -ForegroundColor Yellow
     adb install $APKPath
 }
@@ -211,7 +211,7 @@ function Install-APK {
 function Get-TermuxAPK {
     $LatestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/termux/termux-app/releases/latest"
     $APKUrl = $LatestRelease.assets | Where-Object { $_.name -like "*universal.apk" } | Select-Object -First 1 -ExpandProperty browser_download_url
-    
+
     Write-Host "📥 Downloading latest Termux APK..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $APKUrl -OutFile "termux-latest.apk"
     Write-Host "✅ Downloaded: termux-latest.apk" -ForegroundColor Green
@@ -223,25 +223,25 @@ function Get-TermuxAPK {
 # Complete setup script
 function Setup-TermuxAI {
     Write-Host "🚀 Starting Complete Termux AI Setup..." -ForegroundColor Magenta
-    
+
     # 1. Download Termux if not exists
     if (!(Test-Path "termux-latest.apk")) {
         Get-TermuxAPK
     }
-    
+
     # 2. Start emulator
     Start-Job -ScriptBlock { Start-AndroidEmulator } -Name "AndroidEmulator"
-    
+
     # 3. Wait for emulator to start
     Write-Host "⏳ Waiting for emulator to start..." -ForegroundColor Yellow
     do {
         Start-Sleep 5
         $devices = adb devices
     } while ($devices -notmatch "device$")
-    
+
     # 4. Install Termux
     Install-APK "termux-latest.apk"
-    
+
     Write-Host "✅ Setup complete! Now open Termux in the emulator and run:" -ForegroundColor Green
     Write-Host "wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash" -ForegroundColor Cyan
 }
@@ -302,7 +302,7 @@ npm cache clean --force
 # High-performance emulator launch
 function Start-HighPerformanceEmulator {
     param([string]$AVDName = "Pixel_7_Pro_API_33")
-    
+
     emulator -avd $AVDName `
         -gpu host `
         -memory 8192 `

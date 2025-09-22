@@ -139,10 +139,10 @@ jobs:
           export HOME=/tmp/test-home
           mkdir -p "$HOME"
           cd "$HOME"
-          
+
           # Test the install script
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh)" || true
-          
+
           # Check if basic files were created
           if [ -d "termux-dev-nvim-agents" ]; then
             echo "✅ Installation directory created"

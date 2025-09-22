@@ -303,18 +303,21 @@ fi
 setup-ai-keys() {
     echo -e "${BLUE}Setting up AI API keys...${NC}"
 
-    read -p "Enter your OpenAI API key (optional): " openai_key
-    read -p "Enter your Gemini API key (optional): " gemini_key
-    read -p "Enter your Claude API key (optional): " claude_key
+    read -r -p "Enter your OpenAI API key (optional): " openai_key
+    read -r -p "Enter your Gemini API key (optional): " gemini_key
+    read -r -p "Enter your Claude API key (optional): " claude_key
 
-    cat > "$HOME/.ai-env" << EOF
+    # Guardar en un archivo seguro
+    cat > "$HOME/.ai-env" <<'AI_ENV'
 # AI API Keys - DO NOT COMMIT TO GIT
-export OPENAI_API_KEY="$openai_key"
-export GEMINI_API_KEY="$gemini_key"
-export ANTHROPIC_API_KEY="$claude_key"
-EOF
+export OPENAI_API_KEY="${openai_key}"
+export GEMINI_API_KEY="${gemini_key}"
+export ANTHROPIC_API_KEY="${claude_key}"
+AI_ENV
 
-    source "$HOME/.ai-env"
+    # Cargar de inmediato
+    # shellcheck disable=SC1090
+    [ -f "$HOME/.ai-env" ] && source "$HOME/.ai-env"
     echo -e "${GREEN}AI API keys configured!${NC}"
 }
 
@@ -333,7 +336,10 @@ if [[ -o interactive ]]; then
 fi
 
 # Cargar configuración local si existe
-[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+if [[ -f "$HOME/.zshrc.local" ]]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.zshrc.local"
+fi
 
 # ====================================
 # FUNCIONES DE MÉTRICAS DE SISTEMA

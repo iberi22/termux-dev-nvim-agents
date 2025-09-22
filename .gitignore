@@ -21,3 +21,12 @@ logs/
 # Temporary files
 .tmp/
 temp/
+
+# Debugging scripts (temporary)
+scripts/check_*.py
+scripts/find_*.py
+scripts/inspect_*.py
+
+# Environment and config files that may contain sensitive info
+.env
+.env.local

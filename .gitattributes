@@ -1,0 +1,15 @@
+# Git attributes for consistent line endings
+# Shell scripts always use LF (prevents CRLF issues on Windows)
+*.sh text eol=lf
+
+# Config files
+*.yml text eol=lf
+*.yaml text eol=lf  
+*.json text eol=lf
+
+# Markdown and documentation  
+*.md text eol=lf
+*.txt text eol=lf
+
+# Lua configuration files
+*.lua text eol=lf

@@ -173,10 +173,10 @@ exec bash scripts/lint.sh --staged
    ```bash
    # Edit files
    vim modules/05-ssh-setup.sh
-   
+
    # Lint locally before commit
    bash scripts/lint.sh
-   
+
    # Run tests
    bats tests/bats/*.bats
    ```
@@ -187,7 +187,7 @@ exec bash scripts/lint.sh --staged
    git add .
    git commit -m "Add new SSH helper functionality"
    git push origin feature/new-ssh-helper
-   
+
    # Create PR with auto-merge label for automatic merging
    gh pr create --title "[auto-merge] Add SSH helper" --body "Automated improvement"
    ```
@@ -223,7 +223,7 @@ When CI fails on the main branch:
 # View recent workflow runs
 gh run list
 
-# Check specific workflow status  
+# Check specific workflow status
 gh run view [run-id]
 
 # Re-run failed workflows

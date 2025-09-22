@@ -19,7 +19,7 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# Determine script location with graceful fallbacks  
+# Determine script location with graceful fallbacks
 DEFAULT_INSTALL_DIR="$HOME/termux-dev-nvim-agents"
 
 resolve_script_dir() {

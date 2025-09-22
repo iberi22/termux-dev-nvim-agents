@@ -107,7 +107,7 @@ create_memory_file() {
     info "Creating SSH configuration memory..."
     local user="$(whoami)"
     local install_date="$(date '+%Y-%m-%d %H:%M:%S')"
-    
+
     cat > "$SSH_MEMORY_FILE" <<EOF
 # Termux AI SSH/SFTP Configuration Memory
 # Created: $install_date
@@ -137,10 +137,10 @@ SSH_MEMORY_FILE="$HOME/.ssh/termux-ai-ssh-memory.conf"
 # Load configuration from memory
 if [[ -f "\$SSH_MEMORY_FILE" ]]; then
     source "\$SSH_MEMORY_FILE"
-    
+
     # Wait for network to be available
     sleep 5
-    
+
     # Start SSH service if configured
     if [[ "\${SSH_SERVICE_ENABLED:-false}" == "true" ]]; then
         if ! pgrep -x sshd >/dev/null 2>&1; then
@@ -149,7 +149,7 @@ if [[ -f "\$SSH_MEMORY_FILE" ]]; then
             else
                 sshd -p "\${SSH_PORT:-8022}" >/dev/null 2>&1
             fi
-            
+
             if pgrep -x sshd >/dev/null 2>&1; then
                 echo "SSH service auto-started on port \${SSH_PORT:-8022}"
                 # Show connection info if in interactive mode
@@ -192,14 +192,14 @@ if pgrep -x sshd >/dev/null 2>&1; then
     echo "🟢 SSH server already running on port $PORT"
 else
     echo "🚀 Starting SSH server..."
-    
+
     # Try service manager first, then direct sshd
     if command -v sv-enable >/dev/null 2>&1; then
         sv up sshd >/dev/null 2>&1 || sshd -p "$PORT" >/dev/null 2>&1
     else
         sshd -p "$PORT" >/dev/null 2>&1
     fi
-    
+
     if pgrep -x sshd >/dev/null 2>&1; then
         echo "✅ SSH server started successfully on port $PORT"
     else
@@ -318,7 +318,7 @@ echo
 echo "🛠️ MANAGEMENT COMMANDS:"
 echo "───────────────────────────────────────────────────────────"
 echo "  ssh-local-start  # Start SSH service"
-echo "  ssh-local-stop   # Stop SSH service"  
+echo "  ssh-local-stop   # Stop SSH service"
 echo "  ssh-local-info   # Show this info (current command)"
 echo "  passwd           # Change password"
 echo "═══════════════════════════════════════════════════════════"
@@ -427,15 +427,15 @@ detect_device_ip() {
 
 enable_autostart() {
     info "Enabling SSH auto-start on boot..."
-    
+
     # Create termux:boot directory structure
     mkdir -p "$HOME/.termux/boot"
-    
+
     # Enable termux:boot if available
     if command -v termux-setup-storage >/dev/null 2>&1; then
         info "Termux:Boot support detected"
     fi
-    
+
     success "SSH will auto-start on Termux boot"
 }
 
@@ -443,7 +443,7 @@ show_enhanced_summary() {
     local user="$(whoami)"
     local ip="$(detect_device_ip)"
     local status="🔴 STOPPED"
-    
+
     if pgrep -x sshd >/dev/null 2>&1; then
         status="🟢 RUNNING"
     fi
@@ -482,7 +482,7 @@ show_enhanced_summary() {
     echo "════════════════════════════════════════════════════════════════"
     echo
     info "💡 TIP: Run 'ssh-local-info' anytime to see connection details"
-    
+
     if [[ "$status" == "🔴 STOPPED" ]]; then
         warn "⚠️  SSH service is not running. Use 'ssh-local-start' to start it."
     fi
@@ -491,7 +491,7 @@ show_enhanced_summary() {
 main() {
     info "🔧 Configuring Termux SSH/SFTP server with persistent memory..."
     info "Port: $PORT | Auto-mode: ${AUTO_MODE:+YES}"
-    
+
     ensure_packages
     prepare_directories
     generate_host_keys
@@ -507,7 +507,7 @@ main() {
 
     # Always try to start the service for standalone installations
     local service_started=false
-    
+
     if [[ -n "$AUTO_MODE" ]]; then
         enable_service || start_sshd_once || true
         service_started=true
@@ -528,7 +528,7 @@ main() {
 
     prompt_password
     show_enhanced_summary
-    
+
     # Force show connection info after installation
     echo
     success "🎉 Installation complete! SSH/SFTP server ready for connections."

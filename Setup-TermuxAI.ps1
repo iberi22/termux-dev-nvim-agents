@@ -13,7 +13,7 @@ param(
 # Colors for PowerShell output
 $Colors = @{
     Info = "Cyan"
-    Success = "Green" 
+    Success = "Green"
     Warning = "Yellow"
     Error = "Red"
     Highlight = "Magenta"
@@ -60,36 +60,36 @@ function Show-Help {
 
 function Test-Prerequisites {
     Write-ColorMessage "🔍 Checking prerequisites..." "Info"
-    
+
     # Check if Android SDK exists
     $AndroidHome = $env:ANDROID_HOME
     if (-not $AndroidHome) {
         $AndroidHome = "$env:LOCALAPPDATA\Android\Sdk"
     }
-    
+
     if (-not (Test-Path $AndroidHome)) {
         Write-ColorMessage "❌ Android SDK not found. Please install Android Studio." "Error"
         Write-ColorMessage "Expected location: $AndroidHome" "Warning"
         exit 1
     }
-    
+
     # Set Android environment variables
     $env:ANDROID_HOME = $AndroidHome
     $env:PATH = "$AndroidHome\emulator;$AndroidHome\platform-tools;$env:PATH"
-    
+
     # Check if emulator executable exists
     if (-not (Get-Command "emulator" -ErrorAction SilentlyContinue)) {
         Write-ColorMessage "❌ Android emulator not found in PATH" "Error"
         Write-ColorMessage "Please ensure Android SDK is properly installed" "Warning"
         exit 1
     }
-    
+
     # Check if ADB exists
     if (-not (Get-Command "adb" -ErrorAction SilentlyContinue)) {
         Write-ColorMessage "❌ ADB not found in PATH" "Error"
         exit 1
     }
-    
+
     Write-ColorMessage "✅ Prerequisites verified" "Success"
 }
 
@@ -108,7 +108,7 @@ function Get-AvailableAVDs {
 
 function Start-AndroidEmulator {
     param([string]$AVDName)
-    
+
     # Check if AVD exists
     $AvailableAVDs = & emulator -list-avds
     if ($AvailableAVDs -notcontains $AVDName) {
@@ -116,10 +116,10 @@ function Start-AndroidEmulator {
         Get-AvailableAVDs
         exit 1
     }
-    
+
     Write-ColorMessage "�� Starting Android emulator: $AVDName" "Info"
     Write-ColorMessage "⏳ This may take 2-5 minutes..." "Warning"
-    
+
     # Start emulator in background
     $EmulatorArgs = @(
         "-avd", $AVDName,
@@ -130,9 +130,9 @@ function Start-AndroidEmulator {
         "-camera-back", "none",
         "-camera-front", "none"
     )
-    
+
     Start-Process -FilePath "emulator" -ArgumentList $EmulatorArgs -WindowStyle Minimized
-    
+
     # Wait for emulator to be ready
     Write-ColorMessage "⏳ Waiting for emulator to boot..." "Info"
     do {
@@ -141,26 +141,26 @@ function Start-AndroidEmulator {
         $DeviceReady = $Devices | Where-Object { $_ -match "device$" }
         Write-Host "." -NoNewline
     } while (-not $DeviceReady)
-    
+
     Write-Host ""
     Write-ColorMessage "✅ Android emulator is ready!" "Success"
 }
 
 function Get-TermuxAPK {
     Write-ColorMessage "📥 Downloading latest Termux APK..." "Info"
-    
+
     try {
         # Get latest release info from GitHub
         $LatestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/termux/termux-app/releases/latest"
         $APKAsset = $LatestRelease.assets | Where-Object { $_.name -like "*universal.apk" } | Select-Object -First 1
-        
+
         if (-not $APKAsset) {
             throw "Universal APK not found in latest release"
         }
-        
+
         $APKPath = "termux-latest.apk"
         Invoke-WebRequest -Uri $APKAsset.browser_download_url -OutFile $APKPath -ProgressAction SilentlyContinue
-        
+
         Write-ColorMessage "✅ Downloaded: $APKPath ($([math]::Round((Get-Item $APKPath).Length / 1MB, 2)) MB)" "Success"
         return $APKPath
     }
@@ -173,9 +173,9 @@ function Get-TermuxAPK {
 
 function Install-TermuxAPK {
     param([string]$APKPath)
-    
+
     Write-ColorMessage "📦 Installing Termux APK..." "Info"
-    
+
     # Check if device is connected
     $Devices = & adb devices
     if ($Devices -notmatch "device$") {
@@ -183,7 +183,7 @@ function Install-TermuxAPK {
         Write-ColorMessage "Please ensure emulator is running" "Warning"
         exit 1
     }
-    
+
     # Install APK
     $InstallResult = & adb install $APKPath 2>&1
     if ($InstallResult -like "*Success*") {
@@ -230,17 +230,17 @@ function Main {
     if ($Help) {
         Show-Help
     }
-    
+
     Show-Banner
     Test-Prerequisites
-    
+
     # Step 1: Start emulator (unless skipped)
     if (-not $SkipEmulator) {
         Get-AvailableAVDs | Out-Null
         Start-AndroidEmulator -AVDName $AVDName
     } else {
         Write-ColorMessage "⏭️  Skipping emulator launch (using existing)" "Info"
-        
+
         # Verify device is connected
         $Devices = & adb devices
         if ($Devices -notmatch "device$") {
@@ -248,7 +248,7 @@ function Main {
             exit 1
         }
     }
-    
+
     # Step 2: Download and install Termux
     if (Test-Path "termux-latest.apk") {
         Write-ColorMessage "📦 Using existing Termux APK" "Info"
@@ -256,23 +256,23 @@ function Main {
     } else {
         $APKPath = Get-TermuxAPK
     }
-    
+
     Install-TermuxAPK -APKPath $APKPath
-    
+
     # Step 3: Show instructions or connect to shell
     if ($InstallOnly) {
         Write-ColorMessage "✅ Termux installation complete!" "Success"
         Write-ColorMessage "Run script without -InstallOnly to continue with setup" "Info"
     } else {
         Show-InstallationInstructions
-        
+
         # Ask user if they want to connect to ADB shell
         $ConnectShell = Read-Host "📱 Connect to Android shell now? (y/N)"
         if ($ConnectShell -eq "y" -or $ConnectShell -eq "Y") {
             Connect-ADBShell
         }
     }
-    
+
     Write-ColorMessage "🎉 PowerShell automation complete!" "Success"
 }
 

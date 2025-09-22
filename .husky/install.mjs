@@ -1,6 +1,6 @@
 // Skip Husky install in production, CI, and Docker environments
-if (process.env.NODE_ENV === 'production' || 
-    process.env.CI === 'true' || 
+if (process.env.NODE_ENV === 'production' ||
+    process.env.CI === 'true' ||
     process.env.GITHUB_ACTIONS === 'true' ||
     process.env.DOCKER === 'true' ||
     process.env.HUSKY === '0') {
