@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+
+# ====================================
+# Pre-push Hook - Robust CI Validation
+# Prevents pushing code that would fail CI
+# ====================================
+
+set -euo pipefail
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}🔄 Running pre-push validation...${NC}"
+
+# Get the directory of this script and project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Quick validation - run essential checks only
+run_quick_validation() {
+    local errors=0
+    
+    # 1. Syntax check on modified shell files
+    echo -e "${BLUE}Checking syntax of modified .sh files...${NC}"
+    
+    # Get list of staged .sh files
+    local staged_files
+    mapfile -t staged_files < <(git diff --cached --name-only --diff-filter=ACM | grep '\.sh$' || true)
+    
+    if [[ ${#staged_files[@]} -gt 0 ]]; then
+        for file in "${staged_files[@]}"; do
+            if [[ -f "$file" ]]; then
+                if ! bash -n "$file" 2>/dev/null; then
+                    echo -e "${RED}❌ Syntax error in: $file${NC}"
+                    bash -n "$file" || true
+                    errors=$((errors + 1))
+                else
+                    echo -e "${GREEN}✅ Syntax OK: $file${NC}"
+                fi
+            fi
+        done
+    fi
+    
+    # 2. Quick ShellCheck on critical files if available
+    if command -v shellcheck >/dev/null 2>&1 || command -v npx >/dev/null 2>&1; then
+        echo -e "${BLUE}Running ShellCheck on critical files...${NC}"
+        
+        local critical_files=(
+            "install.sh"
+            "setup.sh"
+            "scripts/lint.sh"
+        )
+        
+        for file in "${critical_files[@]}"; do
+            if [[ -f "$file" ]] && git diff --cached --name-only | grep -q "$file"; then
+                if command -v shellcheck >/dev/null 2>&1; then
+                    if ! shellcheck --rcfile=.shellcheckrc "$file" >/dev/null 2>&1; then
+                        echo -e "${RED}❌ ShellCheck issues in: $file${NC}"
+                        errors=$((errors + 1))
+                    else
+                        echo -e "${GREEN}✅ ShellCheck OK: $file${NC}"
+                    fi
+                elif command -v npx >/dev/null 2>&1; then
+                    if ! npx shellcheck --rcfile=.shellcheckrc "$file" >/dev/null 2>&1; then
+                        echo -e "${RED}❌ ShellCheck issues in: $file${NC}"
+                        errors=$((errors + 1))
+                    else  
+                        echo -e "${GREEN}✅ ShellCheck OK: $file${NC}"
+                    fi
+                fi
+            fi
+        done
+    else
+        echo -e "${YELLOW}⚠️  ShellCheck not available - syntax check only${NC}"
+    fi
+    
+    # 3. Check for forbidden patterns
+    echo -e "${BLUE}Checking for forbidden patterns...${NC}"
+    
+    # Check for CRLF in shell files
+    for file in "${staged_files[@]}"; do
+        if [[ -f "$file" ]] && file "$file" | grep -q CRLF; then
+            echo -e "${RED}❌ CRLF line endings detected in: $file${NC}"
+            echo -e "${YELLOW}   Fix with: dos2unix $file${NC}"
+            errors=$((errors + 1))
+        fi
+    done
+    
+    return $errors
+}
+
+# Full validation - run complete CI suite
+run_full_validation() {
+    echo -e "${BLUE}Running complete CI validation suite...${NC}"
+    
+    if [[ -f "$PROJECT_ROOT/scripts/ci-local.sh" ]]; then
+        if ! bash "$PROJECT_ROOT/scripts/ci-local.sh"; then
+            echo -e "${RED}❌ Full CI validation failed${NC}"
+            return 1
+        fi
+    else
+        echo -e "${YELLOW}⚠️  ci-local.sh not found, running basic checks only${NC}"
+        return 0
+    fi
+}
+
+# Check if we should run full validation
+should_run_full_validation() {
+    # Run full validation if:
+    # 1. CI files are being pushed
+    # 2. More than 5 files are being pushed
+    # 3. Environment variable FULL_VALIDATION=1 is set
+    
+    if [[ "${FULL_VALIDATION:-}" == "1" ]]; then
+        return 0
+    fi
+    
+    local staged_files
+    mapfile -t staged_files < <(git diff --cached --name-only)
+    
+    # Check for CI-related files
+    for file in "${staged_files[@]}"; do
+        if [[ "$file" =~ \.(bats|yml|yaml)$ ]] || [[ "$file" == *"ci"* ]] || [[ "$file" == *"test"* ]]; then
+            return 0
+        fi
+    done
+    
+    # Check number of files
+    if [[ ${#staged_files[@]} -gt 5 ]]; then
+        return 0
+    fi
+    
+    return 1
+}
+
+# Main execution
+main() {
+    cd "$PROJECT_ROOT"
+    
+    echo -e "${BLUE}Pre-push hook: Validating changes...${NC}"
+    
+    # Always run quick validation
+    if ! run_quick_validation; then
+        echo -e "\n${RED}❌ PRE-PUSH BLOCKED: Quick validation failed${NC}"
+        echo -e "${YELLOW}Fix the issues above and try pushing again.${NC}"
+        echo -e "${BLUE}💡 Tip: Run 'bash scripts/ci-local.sh' for detailed validation${NC}"
+        exit 1
+    fi
+    
+    # Decide whether to run full validation
+    if should_run_full_validation; then
+        echo -e "\n${YELLOW}🔍 Running full validation (CI-critical changes detected)...${NC}"
+        
+        if ! run_full_validation; then
+            echo -e "\n${RED}❌ PRE-PUSH BLOCKED: Full CI validation failed${NC}"
+            echo -e "${YELLOW}Your changes would fail in GitHub Actions CI.${NC}"
+            echo -e "${BLUE}💡 Fix issues and try again, or use 'git push --no-verify' to skip (not recommended)${NC}"
+            exit 1
+        fi
+    else
+        echo -e "\n${GREEN}ℹ️  Skipping full validation (quick changes only)${NC}"
+        echo -e "${BLUE}💡 To run full validation: FULL_VALIDATION=1 git push${NC}"
+    fi
+    
+    echo -e "\n${GREEN}✅ Pre-push validation passed! Pushing to remote...${NC}"
+}
+
+# Run main function
+main "$@"

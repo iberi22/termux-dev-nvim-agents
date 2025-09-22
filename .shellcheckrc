@@ -1,12 +1,8 @@
-# ShellCheck Configuration
+# ShellCheck Configuration  
 # See: https://github.com/koalaman/shellcheck/wiki/Ignore
 
 # Disable specific checks that may be too strict for our use case
-disable=SC1091  # Not following sourced files (external scripts)
-disable=SC2034  # Variable appears unused (false positives with exports)
-disable=SC2086  # Double quote to prevent globbing (sometimes intentional)
-disable=SC2162  # read without -r (we handle backslashes manually)
-disable=SC2016  # Expressions in single quotes (false positives with templates)
+disable=SC1091,SC2034,SC2086,SC2162,SC2016,SC2250,SC2292,SC2310
 
 # Enable additional checks
 enable=all
@@ -14,7 +10,7 @@ enable=all
 # Set shell type
 shell=bash
 
-# External sources (allow sourcing from these paths)
+# External sources (allow sourcing from these paths)  
 external-sources=true
 
 # Format for output

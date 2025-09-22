@@ -53,17 +53,31 @@ extract_functions() {
 # Helper function to check if script follows shellcheck rules
 lint_check() {
     local file="$1"
-    if command_exists shellcheck; then
-        # Try with project rcfile first, fallback to default
-        local rcfile="$BATS_PROJECT_ROOT/.shellcheckrc"
-        if [[ -f "$rcfile" ]]; then
-            shellcheck --rcfile="$rcfile" "$file"
+    
+    # Ensure we're in the project root
+    local original_dir="$PWD"
+    cd "$BATS_PROJECT_ROOT" || return 1
+    
+    # Use our project's lint script which handles all the fallback logic
+    if [[ -f "scripts/lint.sh" ]]; then
+        # Run our lint script on the specific file (with full path)
+        local result
+        if bash scripts/lint.sh "$file" >/dev/null 2>&1; then
+            result=0
         else
-            # Fallback to default shellcheck without rcfile
-            shellcheck "$file"
+            result=1
         fi
+        cd "$original_dir"
+        return $result
     else
-        # Skip if shellcheck not available
-        return 0
+        # Fallback to syntax check only (since shellcheck might not be available)
+        local result
+        if bash -n "$file"; then
+            result=0
+        else
+            result=1
+        fi
+        cd "$original_dir"
+        return $result
     fi
 }
