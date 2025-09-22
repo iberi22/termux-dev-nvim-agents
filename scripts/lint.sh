@@ -19,24 +19,45 @@ NC='\033[0m' # No Color
 
 # Resolve shellcheck runner (binary or npx fallback)
 resolve_shellcheck() {
+    # Try system shellcheck first
     if command -v shellcheck >/dev/null 2>&1; then
         echo shellcheck
         return 0
     fi
-    if command -v npx >/dev/null 2>&1; then
-        echo "npx --yes shellcheck"
-        return 0
+    
+    # Try npx with node (check both npx and node availability)
+    if command -v npx >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
+        # Test if npx shellcheck actually works
+        if npx --yes shellcheck --version >/dev/null 2>&1; then
+            echo "npx --yes shellcheck"
+            return 0
+        fi
     fi
-    echo "" # no runner
+    
+    # Try npm shellcheck if npm is available
+    if command -v npm >/dev/null 2>&1; then
+        # Check if shellcheck is installed as npm package
+        if npm list shellcheck >/dev/null 2>&1 || npm list -g shellcheck >/dev/null 2>&1; then
+            echo "npx shellcheck"
+            return 0
+        fi
+    fi
+    
+    echo "" # no runner available
 }
 
 SHELLCHECK_RUNNER="$(resolve_shellcheck)"
+SHELLCHECK_AVAILABLE=true
+
 if [[ -z "$SHELLCHECK_RUNNER" ]]; then
-    echo -e "${RED}[ERROR] ShellCheck not available. Install shellcheck or Node 20+ to use npx shellcheck.${NC}"
+    SHELLCHECK_AVAILABLE=false
+    echo -e "${YELLOW}[WARN] ShellCheck not available - using bash -n syntax check only${NC}"
+    echo -e "${CYAN}For better linting, install ShellCheck:${NC}"
     echo "  Ubuntu/Debian: sudo apt-get install shellcheck"
     echo "  macOS: brew install shellcheck"
     echo "  Windows: scoop install shellcheck"
-    exit 1
+    echo "  Node.js: npm install -g shellcheck"
+    echo ""
 fi
 
 # Function to lint a single file
@@ -51,25 +72,28 @@ lint_file() {
         return 1
     fi
 
-    # 2) ShellCheck (may be npx wrapper). If the runner can't execute (e.g. node not found), warn and continue.
-    SHELLCHECK_CMD=( ${SHELLCHECK_RUNNER} --rcfile="$SHELLCHECK_RC" "$file" )
-    # Run shellcheck capturing stderr
-    SHELLCHECK_OUTPUT=""
-    if output=$( { ${SHELLCHECK_RUNNER} --rcfile="$SHELLCHECK_RC" "$file"; } 2>&1 ); then
-        echo -e "${GREEN}[OK] $basename passed${NC}"
-        return 0
-    else
-        # If the failure looks like an execution problem (node not found / command not found), warn and treat as pass
-        if echo "$output" | grep -E "node: not found|command not found|No such file or directory" >/dev/null 2>&1; then
-            echo -e "${YELLOW}[WARN] ShellCheck runner failed to execute: ${NC}"
-            echo "$output"
-            echo -e "${GREEN}[OK] $basename passed (syntax checked by bash -n)${NC}"
+    # 2) ShellCheck analysis (if available)
+    if [[ "$SHELLCHECK_AVAILABLE" == "true" ]]; then
+        # Run shellcheck capturing stderr
+        if output=$( { ${SHELLCHECK_RUNNER} --rcfile="$SHELLCHECK_RC" "$file"; } 2>&1 ); then
+            echo -e "${GREEN}[OK] $basename passed (bash + shellcheck)${NC}"
             return 0
         else
-            echo -e "${RED}[FAIL] $basename has issues${NC}"
-            echo "$output"
-            return 1
+            # If the failure looks like an execution problem, fallback to syntax-only
+            if echo "$output" | grep -E "node: not found|command not found|No such file or directory|npm ERR!" >/dev/null 2>&1; then
+                echo -e "${YELLOW}[WARN] ShellCheck execution failed, using syntax check only${NC}"
+                echo -e "${GREEN}[OK] $basename passed (syntax checked by bash -n)${NC}"
+                return 0
+            else
+                echo -e "${RED}[FAIL] $basename has shellcheck issues${NC}"
+                echo "$output"
+                return 1
+            fi
         fi
+    else
+        # ShellCheck not available, syntax check already passed
+        echo -e "${GREEN}[OK] $basename passed (syntax checked by bash -n)${NC}"
+        return 0
     fi
 }
 
@@ -106,18 +130,18 @@ if [[ $# -eq 0 ]] || [[ "$STAGED_MODE" == true ]]; then
 
         for file in "${staged_files[@]}"; do
             if ! lint_file "$file"; then
-                ((ERROR_COUNT++))
+                ERROR_COUNT=$((ERROR_COUNT + 1))
             fi
-            ((FILE_COUNT++))
+            FILE_COUNT=$((FILE_COUNT + 1))
         done
     else
         # No arguments: check all shell scripts
         echo "[INFO] No files specified, checking all .sh files (excluding node_modules, .git, .husky)..."
         while IFS= read -r -d '' file; do
             if ! lint_file "$file"; then
-                ((ERROR_COUNT++))
+                ERROR_COUNT=$((ERROR_COUNT + 1))
             fi
-            ((FILE_COUNT++))
+            FILE_COUNT=$((FILE_COUNT + 1))
         done < <(find . \( -path './.git' -o -path './node_modules' -o -path './.husky' \) -prune -o -name '*.sh' -type f -print0)
     fi
 else
@@ -126,9 +150,9 @@ else
         if [[ "$file" != "--staged" ]]; then
             if [[ -f "$file" && "$file" == *.sh ]]; then
                 if ! lint_file "$file"; then
-                    ((ERROR_COUNT++))
+                    ERROR_COUNT=$((ERROR_COUNT + 1))
                 fi
-                ((FILE_COUNT++))
+                FILE_COUNT=$((FILE_COUNT + 1))
             else
                 echo -e "${YELLOW}[SKIP] $file (not a .sh file or doesn't exist)${NC}"
             fi
