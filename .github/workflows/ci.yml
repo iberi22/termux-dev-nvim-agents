@@ -26,17 +26,17 @@ jobs:
       - name: Bash syntax check
         run: |
           set -e
-          find termux-ai-setup -type f -name '*.sh' -print0 | xargs -0 -I{} bash -n {}
+          find . -type f -name '*.sh' -print0 | xargs -0 -I{} bash -n {}
 
       - name: ShellCheck
         run: |
           set -e
-          shellcheck -S warning $(git ls-files 'termux-ai-setup/**/*.sh') || true
+          shellcheck -S warning $(git ls-files '**/*.sh') || true
 
       - name: shfmt (diff only)
         run: |
           set -e
-          shfmt -d -i 4 -ci -sr termux-ai-setup || true
+          shfmt -d -i 4 -ci -sr . || true
 
       - name: Install Bats
         run: |
@@ -45,11 +45,10 @@ jobs:
 
       - name: Smoke test
         run: |
-          bash termux-ai-setup/tests/smoke.sh
+          bash tests/smoke.sh
 
       - name: Run Bats tests
         run: |
-          cd termux-ai-setup
           bats tests/bats/test_core.bats
           bats tests/bats/test_ssh_module.bats
           bats tests/bats/test_integration.bats
@@ -62,9 +61,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure executable bits on scripts
         run: |
-          chmod +x termux-ai-setup/*.sh || true
-          chmod +x termux-ai-setup/modules/*.sh || true
-          chmod +x termux-ai-setup/*.ps1 || true
+          chmod +x *.sh || true
+          chmod +x modules/*.sh || true
+          chmod +x *.ps1 || true
 
   notify-failure:
     name: Create Issue on CI Failure
