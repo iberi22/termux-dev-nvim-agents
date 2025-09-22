@@ -1,5 +1,7 @@
 # 🚀 Termux AI Development Environment
 
+[![CI](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml)
+
 ## Professional AI-powered development environment for Termux (Android)
 
 ## 🎯 Quick Installation
@@ -51,6 +53,8 @@ ssh-local-start  # start the daemon manually
 ssh-local-stop   # stop the daemon
 ```
 
+These commands are available immediately after running the module because we symlink them into `$PREFIX/bin` and persist `$HOME/bin` in your PATH for future sessions.
+
 From your computer connect with:
 
 ```bash
@@ -58,6 +62,12 @@ ssh -p 8022 <termux-user>@<device-ip>
 ```
 
 WinSCP / SFTP: protocol `SFTP`, host `<device-ip>`, port `8022`, user `<termux-user>` plus your password or SSH key.
+
+Troubleshooting if helpers are not found:
+
+- Open a new Termux session (or run `exec $SHELL`) to reload PATH.
+- Ensure `$PREFIX/bin` and `$HOME/bin` are in PATH: `echo $PATH`.
+- Re-run the module: `bash modules/07-local-ssh-server.sh`.
 
 ## ✨ Features
 
@@ -118,6 +128,12 @@ ssh -p 8022 <usuario-termux>@<ip-del-dispositivo>
 
 En WinSCP selecciona protocolo `SFTP`, host `<ip-del-dispositivo>`, puerto `8022` y tus credenciales de Termux (contraseña o llave pública).
 
+Si los comandos auxiliares no aparecen inmediatamente:
+
+- Abre una nueva sesión de Termux (o ejecuta `exec $SHELL`) para recargar el PATH.
+- Verifica que `$PREFIX/bin` y `$HOME/bin` estén en tu PATH: `echo $PATH`.
+- Vuelve a ejecutar el módulo: `bash modules/07-local-ssh-server.sh`.
+
 ### 🇺🇸 English
 
 ### AI-powered development environment for Termux
@@ -156,6 +172,12 @@ ssh -p 8022 <usuario-termux>@<ip-do-dispositivo>
 ```
 
 No WinSCP selecione protocolo `SFTP`, host `<ip-do-dispositivo>`, porta `8022` e suas credenciais do Termux.
+
+Se os comandos auxiliares não aparecerem imediatamente:
+
+- Abra uma nova sessão do Termux (ou execute `exec $SHELL`) para recarregar o PATH.
+- Verifique se `$PREFIX/bin` e `$HOME/bin` estão no PATH: `echo $PATH`.
+- Rode novamente o módulo: `bash modules/07-local-ssh-server.sh`.
 
 ### 🇧🇷 Português
 
@@ -416,15 +438,85 @@ This will:
 - Change font anytime from setup menu → option "Install Nerd Fonts + Set Font"
 - Included top fonts: FiraCode, JetBrainsMono, Hack, CascadiaCode, SourceCodePro, Meslo, UbuntuMono, Mononoki, VictorMono, Iosevka
 
+## 🔄 CI/CD & Development Automation
+
+This repository includes comprehensive DevOps automation for professional development workflows:
+
+### 🤖 Automated CI/CD Pipeline
+
+- **GitHub Actions CI**: Automated linting, testing, and quality checks
+- **Auto-Issue Creation**: Automatic GitHub issues on CI failures (main branch)
+- **CodeRabbit Integration**: AI-powered code reviews and issue creation (free for open source)
+- **Auto-Merge**: Automatic PR merging when CI passes and labels match
+- **Comprehensive Testing**: Bats framework for shell script testing
+
+### 🛠️ Local Development Tools
+
+- **ShellCheck Integration**: Robust shell script linting with custom config
+- **Pre-commit Hooks**: Automatic linting before commits
+- **Local Lint Script**: `bash scripts/lint.sh` for comprehensive code quality
+- **Setup Verification**: `bash scripts/verify-setup.sh` for environment validation
+
+### 📋 Repository Setup
+
+**Quick Setup (after cloning):**
+
+```bash
+bash scripts/setup-repo.sh
+```
+
+**Manual Setup Steps:**
+
+1. **Enable CodeRabbit**: Visit [coderabbit.ai](https://app.coderabbit.ai/login) and install for this repo (free for open source)
+2. **Configure Branch Protection**: Set up branch protection rules requiring CI checks
+3. **Install Local Tools**: Run `bash scripts/lint.sh` and set up pre-commit hooks
+4. **Verify Setup**: Run `bash scripts/verify-setup.sh` to check configuration
+
+**Development Commands:**
+
+```bash
+# Lint all shell scripts
+bash scripts/lint.sh
+
+# Run comprehensive tests
+bats tests/bats/*.bats
+
+# Verify repository setup
+bash scripts/verify-setup.sh
+
+# Full repository configuration
+bash scripts/setup-repo.sh
+```
+
+### 🏗️ CI/CD Features
+
+- ✅ **Automated Issue Creation**: CI failures automatically create detailed GitHub issues
+- 🤖 **CodeRabbit Reviews**: AI-powered PR reviews with shell script expertise
+- 🔒 **Quality Gates**: ShellCheck, syntax validation, and comprehensive testing
+- 🚀 **Auto-Deployment**: Passing PRs automatically merge with proper labeling
+- 📊 **Test Coverage**: Bats framework ensures comprehensive shell script testing
+- 🔧 **Local Tools**: Pre-commit hooks and local linting for developer productivity
+
 ## 🤝 Contributing
 
-This project welcomes contributions! Areas for improvement:
+This project welcomes contributions! The automated CI/CD pipeline ensures code quality:
+
+**Development Workflow:**
+
+1. Fork and clone the repository
+2. Run `bash scripts/setup-repo.sh` for full environment setup
+3. Make changes and test locally with `bash scripts/lint.sh`
+4. Create PR - CodeRabbit will automatically review
+5. CI pipeline validates changes and auto-merges when approved
+
+**Areas for Improvement:**
 
 - Additional AI CLI integrations
 - More language server protocols
 - Enhanced automation scripts
 - Better error handling
 - Documentation improvements
+- Extended test coverage
 
 ## 📄 License
 

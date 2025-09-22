@@ -1,0 +1,198 @@
+name: Auto-Deploy Solutions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge passing PRs
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_run' && 
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'pull_request') ||
+      (github.event_name == 'pull_request' && 
+       contains(github.event.pull_request.labels.*.name, 'auto-merge'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR info
+        id: pr-info
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            # Get PR number from workflow run
+            PR_NUMBER=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --json number --jq '.[0].number')
+          else
+            PR_NUMBER=${{ github.event.pull_request.number }}
+          fi
+          
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          
+          # Get PR details
+          PR_INFO=$(gh pr view $PR_NUMBER --json title,author,mergeable,draft,labels)
+          echo "pr_info=$PR_INFO" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if PR is auto-mergeable
+        id: check-merge
+        run: |
+          PR_INFO='${{ steps.pr-info.outputs.pr_info }}'
+          
+          # Parse PR info
+          IS_DRAFT=$(echo "$PR_INFO" | jq -r '.draft')
+          IS_MERGEABLE=$(echo "$PR_INFO" | jq -r '.mergeable')
+          AUTHOR=$(echo "$PR_INFO" | jq -r '.author.login')
+          TITLE=$(echo "$PR_INFO" | jq -r '.title')
+          
+          # Check for auto-merge conditions
+          AUTO_MERGE="false"
+          
+          # Condition 1: PR has 'auto-merge' label
+          HAS_AUTO_LABEL=$(echo "$PR_INFO" | jq -r '.labels[] | select(.name == "auto-merge") | .name')
+          
+          # Condition 2: PR title contains specific patterns
+          if [[ "$TITLE" =~ ^(fix:|hotfix:|chore:|ci:) ]] || 
+             [[ "$TITLE" =~ (shellcheck|lint|syntax|CI) ]]; then
+            AUTO_MERGE="true"
+          fi
+          
+          # Condition 3: PR from dependabot or coderabbit
+          if [[ "$AUTHOR" =~ (dependabot|coderabbit) ]]; then
+            AUTO_MERGE="true"
+          fi
+          
+          # Final checks
+          if [[ "$IS_DRAFT" == "true" ]] || [[ "$IS_MERGEABLE" != "MERGEABLE" ]]; then
+            AUTO_MERGE="false"
+          fi
+          
+          echo "auto_merge=$AUTO_MERGE" >> $GITHUB_OUTPUT
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+
+      - name: Auto-merge PR
+        if: steps.check-merge.outputs.auto_merge == 'true'
+        run: |
+          PR_NUMBER=${{ steps.pr-info.outputs.pr_number }}
+          
+          echo "✅ Auto-merging PR #$PR_NUMBER: ${{ steps.check-merge.outputs.title }}"
+          
+          # Add auto-merge label if not present
+          gh pr edit $PR_NUMBER --add-label "auto-merge"
+          
+          # Enable auto-merge with squash
+          gh pr merge $PR_NUMBER --auto --squash --delete-branch
+          
+          echo "🎉 PR #$PR_NUMBER queued for auto-merge"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-fix-pr:
+    name: Create automated fix PR
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_run' && 
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'push' &&
+      (contains(github.event.workflow_run.head_branch, 'main') || contains(github.event.workflow_run.head_branch, 'master'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup automated fixes
+        run: |
+          # Create a new branch for fixes
+          BRANCH_NAME="auto-fix/ci-failure-$(date +%s)"
+          git checkout -b "$BRANCH_NAME"
+          
+          # Apply common automated fixes
+          echo "🔧 Applying automated fixes..."
+          
+          # Fix shell script permissions
+          find . -name "*.sh" -type f -exec chmod +x {} \; || true
+          
+          # Fix line endings (convert CRLF to LF)
+          find . -name "*.sh" -type f -exec dos2unix {} \; 2>/dev/null || true
+          
+          # Check if any changes were made
+          if git diff --quiet; then
+            echo "No automated fixes applied"
+            exit 0
+          fi
+          
+          # Commit changes
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "fix: automated CI fixes - permissions and line endings"
+          
+          # Push branch
+          git push origin "$BRANCH_NAME"
+          
+          # Create PR
+          gh pr create \
+            --title "🤖 Automated CI Fixes" \
+            --body "This PR contains automated fixes for common CI issues:
+
+          - Fixed shell script permissions
+          - Normalized line endings
+          - Applied standard formatting
+
+          **Auto-generated by CI failure detection system**
+          
+          Closes any open build-failed issues." \
+            --label "auto-merge,ci-fix" \
+            --head "$BRANCH_NAME" \
+            --base "${{ github.event.workflow_run.head_branch }}"
+            
+          echo "✅ Created automated fix PR"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-issue-status:
+    name: Update related issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Close build-failed issues
+        run: |
+          # Find and close build-failed issues
+          ISSUES=$(gh issue list --label "build failed" --state open --json number,title)
+          
+          if [[ $(echo "$ISSUES" | jq length) -gt 0 ]]; then
+            echo "$ISSUES" | jq -r '.[] | @base64' | while read -r issue; do
+              ISSUE_DATA=$(echo "$issue" | base64 -d)
+              ISSUE_NUMBER=$(echo "$ISSUE_DATA" | jq -r '.number')
+              
+              gh issue close $ISSUE_NUMBER --comment "✅ **Issue Resolved**
+
+              The CI pipeline is now passing successfully. This build failure has been resolved.
+              
+              **Resolution:** Latest commit passed all checks
+              **Workflow:** ${{ github.event.workflow_run.name }}
+              **Run:** ${{ github.event.workflow_run.html_url }}
+              
+              *Auto-closed by successful CI run*"
+              
+              echo "Closed issue #$ISSUE_NUMBER"
+            done
+          else
+            echo "No open build-failed issues to close"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

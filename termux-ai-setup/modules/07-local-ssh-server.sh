@@ -165,6 +165,41 @@ EOF
     success "Helper scripts installed in $BIN_DIR"
 }
 
+# Create symlinks in $PREFIX/bin so helpers are available immediately without shell reload
+link_helper_scripts() {
+    mkdir -p "$PREFIX/bin"
+    local tools=(ssh-local-start ssh-local-stop ssh-local-info)
+    for t in "${tools[@]}"; do
+        if [ -f "$BIN_DIR/$t" ]; then
+            ln -sf "$BIN_DIR/$t" "$PREFIX/bin/$t"
+        fi
+    done
+    success "Helper symlinks created in $PREFIX/bin"
+}
+
+# Persist $HOME/bin in PATH for future sessions (bash/zsh)
+persist_path_update() {
+    local export_line='export PATH="$HOME/bin:$PATH"'
+    # bash
+    if [ -f "$HOME/.bashrc" ]; then
+        if ! grep -Fqs "$export_line" "$HOME/.bashrc"; then
+            printf '\n# Added by termux-ai-setup (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.bashrc"
+        fi
+    else
+        printf '#!/data/data/com.termux/files/usr/bin/bash\n%s\n' "$export_line" > "$HOME/.bashrc"
+    fi
+    chmod 644 "$HOME/.bashrc" 2>/dev/null || true
+
+    # zsh
+    if [ -f "$HOME/.zshrc" ]; then
+        if ! grep -Fqs "$export_line" "$HOME/.zshrc"; then
+            printf '\n# Added by termux-ai-setup (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.zshrc"
+        fi
+    fi
+
+    info "Ensured \$HOME/bin is added to PATH for future shells"
+}
+
 enable_service() {
     if command -v sv-enable >/dev/null 2>&1; then
         sv-enable sshd >/dev/null 2>&1 || true
@@ -262,6 +297,8 @@ main() {
     configure_sshd
     write_service
     create_helper_scripts
+    link_helper_scripts
+    persist_path_update
 
     if [[ -n "$AUTO_MODE" ]]; then
         enable_service || start_sshd_once || true

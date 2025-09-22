@@ -38,7 +38,60 @@ Invoke-WebRequest $apk.browser_download_url -OutFile "termux.apk"
 adb install termux.apk
 ```
 
-## 📱 Termux Commands (Run in Android Emulator)
+## � CI/CD & Development Commands
+
+### Repository Setup (One Command)
+```bash
+# Complete CI/CD setup and configuration
+bash scripts/setup-repo.sh
+```
+
+### Development Quality Tools
+```bash
+# Lint all shell scripts with comprehensive checking
+bash scripts/lint.sh
+
+# Verify repository setup and configuration
+bash scripts/verify-setup.sh
+
+# Run comprehensive test suite
+bats tests/bats/*.bats
+
+# Install pre-commit hooks for automatic linting
+cp scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+```
+
+### CI/CD Workflow Commands
+```bash
+# Check GitHub Actions status
+gh run list
+
+# View specific workflow run details
+gh run view [run-id]
+
+# Re-run failed CI workflows
+gh run rerun [run-id] --failed
+
+# Create auto-merge PR
+gh pr create --title "[auto-merge] Description" --body "Auto-merge eligible PR" --label "auto-merge"
+
+# Create CI fix PR
+gh pr create --title "CI: Fix build issues" --body "Automated CI fixes" --label "ci-fix"
+```
+
+### CodeRabbit Integration
+```bash
+# Check CodeRabbit configuration
+cat .coderabbit.yml
+
+# View automated issues created by CodeRabbit
+gh issue list --label "coderabbit-created"
+
+# Monitor CI failure issues
+gh issue list --label "build failed"
+```
+
+## �📱 Termux Commands (Run in Android Emulator)
 
 ### Quick Installation
 ```bash

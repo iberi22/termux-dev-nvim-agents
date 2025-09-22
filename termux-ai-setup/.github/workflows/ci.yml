@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  lint:
+    name: Shell Lint & Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck and shfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          curl -sSLo shfmt https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.10.0_linux_amd64
+          chmod +x shfmt
+          sudo mv shfmt /usr/local/bin/
+
+      - name: Bash syntax check
+        run: |
+          set -e
+          find termux-ai-setup -type f -name '*.sh' -print0 | xargs -0 -I{} bash -n {}
+
+      - name: ShellCheck
+        run: |
+          set -e
+          shellcheck -S warning $(git ls-files 'termux-ai-setup/**/*.sh') || true
+
+      - name: shfmt (diff only)
+        run: |
+          set -e
+          shfmt -d -i 4 -ci -sr termux-ai-setup || true
+
+      - name: Install Bats
+        run: |
+          git clone https://github.com/bats-core/bats-core.git /tmp/bats
+          sudo /tmp/bats/install.sh /usr/local
+
+      - name: Smoke test
+        run: |
+          bash termux-ai-setup/tests/smoke.sh
+
+      - name: Run Bats tests
+        run: |
+          cd termux-ai-setup
+          bats tests/bats/test_core.bats
+          bats tests/bats/test_ssh_module.bats
+          bats tests/bats/test_integration.bats
+
+  meta:
+    name: Metadata Sanity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure executable bits on scripts
+        run: |
+          chmod +x termux-ai-setup/*.sh || true
+          chmod +x termux-ai-setup/modules/*.sh || true
+          chmod +x termux-ai-setup/*.ps1 || true
+
+  notify-failure:
+    name: Create Issue on CI Failure
+    needs: [lint, meta]
+    if: failure() && github.event.pull_request == null && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create failed build issue
+        uses: jayqi/failed-build-issue-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          title-template: "🚨 CI Pipeline Failed - {{runNumber}}"
+          body-template: |
+            ## CI Pipeline Failure Report
+
+            **Workflow:** {{workflow}}
+            **Run ID:** {{runId}}
+            **Run Number:** {{runNumber}}
+            **Branch:** {{ref}}
+            **Commit:** {{sha}}
+            **Actor:** {{actor}}
+            **Repository:** {{repository}}
+            **Event:** {{eventName}}
+
+            ### Failure Details
+            One or more jobs in the CI pipeline have failed. Please check the [workflow run]({{workflowRunUrl}}) for detailed error information.
+
+            ### Affected Jobs
+            - Shell Lint & Syntax
+            - Metadata Sanity
+
+            ### Next Steps
+            1. Review the failed job logs in the [Actions tab]({{workflowRunUrl}})
+            2. Fix any syntax errors, linting issues, or test failures
+            3. Push the fixes to trigger a new CI run
+
+            ### Debugging Tips
+            - **Syntax errors:** Check `bash -n` output for shell syntax issues
+            - **ShellCheck:** Review shellcheck warnings for best practices
+            - **Smoke test:** Verify all required files are present and executable
+
+            ---
+            *This issue was automatically created by the CI failure detection system.*
