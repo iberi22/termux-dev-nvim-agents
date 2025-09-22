@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run shell lint on staged .sh files
+npm run -s lint:shell:staged
