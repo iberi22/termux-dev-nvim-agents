@@ -20,10 +20,10 @@ NC='\033[0m'
 REPO_OWNER="iberi22"
 REPO_NAME="termux-dev-nvim-agents"
 BRANCH="main"
-BASE_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/termux-ai-setup"
+BASE_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}"
 
 # Installation directory
-INSTALL_DIR="$HOME/termux-ai-setup"
+INSTALL_DIR="$HOME/termux-dev-nvim-agents"
 
 show_banner() {
     clear
@@ -179,9 +179,9 @@ run_installation() {
     echo -e "${CYAN}📍 Installation directory: $INSTALL_DIR${NC}"
     echo -e "${CYAN}🔄 Please restart your terminal or run: exec \$SHELL${NC}"
     echo -e "\n${BLUE}📋 Useful commands:${NC}"
-    echo -e "${CYAN}  • Run setup menu: cd ~/termux-ai-setup && ./setup.sh${NC}"
-    echo -e "${CYAN}  • Diagnose problems: cd ~/termux-ai-setup && ./diagnose.sh${NC}"
-    echo -e "${CYAN}  • Test installation: cd ~/termux-ai-setup && ./setup.sh (option 9)${NC}"
+    echo -e "${CYAN}  • Run setup menu: cd ~/termux-dev-nvim-agents && ./setup.sh${NC}"
+    echo -e "${CYAN}  • Diagnose problems: cd ~/termux-dev-nvim-agents && ./diagnose.sh${NC}"
+    echo -e "${CYAN}  • Test installation: cd ~/termux-dev-nvim-agents && ./setup.sh (option 9)${NC}"
 }
 
 main() {

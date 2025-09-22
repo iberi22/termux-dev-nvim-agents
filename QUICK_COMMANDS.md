@@ -5,7 +5,7 @@
 ### Launch Complete Setup
 ```powershell
 # Download and run setup script
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/Setup-TermuxAI.ps1" -OutFile "Setup-TermuxAI.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/Setup-TermuxAI.ps1" -OutFile "Setup-TermuxAI.ps1"
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\Setup-TermuxAI.ps1
 ```
@@ -96,7 +96,7 @@ gh issue list --label "build failed"
 ### Quick Installation
 ```bash
 # One-command complete setup
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 ### Manual Installation
@@ -108,7 +108,7 @@ pkg update && pkg upgrade
 pkg install curl wget git
 
 # Download setup
-wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
+wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh
 
 # Run setup
 chmod +x setup.sh
@@ -125,7 +125,7 @@ codex --help
 gemini --version
 
 # Run full test suite
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh
 # Select option 8: Run Tests
 ```
@@ -179,7 +179,7 @@ ssh-keygen -t ed25519 -C "your.email@example.com"
 
 ## 📁 File Structure
 ```
-termux-ai-setup/
+termux-dev-nvim-agents/
 ├── install.sh                # Quick installer
 ├── setup.sh                 # Main setup script
 ├── Setup-TermuxAI.ps1       # Windows PowerShell automation
@@ -199,8 +199,8 @@ termux-ai-setup/
 ## 🌐 URLs Reference
 
 - **Repository**: https://github.com/iberi22/termux-dev-nvim-agents
-- **Quick Install**: `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash`
-- **Manual Setup**: https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
+- **Quick Install**: `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash`
+- **Manual Setup**: [raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh](https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh)
 - **Gemini API**: https://aistudio.google.com/app/apikey
 - **OpenAI API**: https://platform.openai.com/api-keys
 - **Termux APK**: https://github.com/termux/termux-app/releases
@@ -212,7 +212,7 @@ termux-ai-setup/
 - [ ] Wait for emulator to start
 - [ ] Install Termux APK
 - [ ] Open Termux in emulator
-- [ ] Run: `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash`
+- [ ] Run: `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash`
 - [ ] Configure API keys (optional)
 - [ ] Test AI commands
 - [ ] Start coding! 🚀

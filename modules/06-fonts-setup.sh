@@ -96,7 +96,7 @@ main() {
     # Default to FiraCode
     download_and_set_font "FiraCode" || exit 1
     ok "Default font applied: FiraCode Nerd Font Mono"
-    echo -e "${YELLOW}Tip:${NC} You can change font anytime: cd ~/termux-ai-setup && bash modules/06-fonts-setup.sh menu"
+    echo -e "${YELLOW}Tip:${NC} You can change font anytime: cd ~/termux-dev-nvim-agents && bash modules/06-fonts-setup.sh menu"
     return 0
   fi
 

@@ -9,7 +9,7 @@
 ### ⚡ One-Command Install (Optimized)
 
 ```bash
-termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 **What this does:**
@@ -28,10 +28,10 @@ termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://r
 pkg update && pkg install -y wget
 
 # Step 2: Set up storage permissions and download complete setup
-termux-setup-storage && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 
 # Alternative: Download and run setup manually (not recommended)
-# wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
+# wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh
 # chmod +x setup.sh
 # ./setup.sh
 ```
@@ -39,7 +39,7 @@ termux-setup-storage && wget -qO- https://raw.githubusercontent.com/iberi22/term
 ### Local SSH/SFTP Access (LAN)
 
 ```bash
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh   # choose option 5 "Enable Local SSH/SFTP Access"
 # or run the module directly
 bash modules/07-local-ssh-server.sh
@@ -96,7 +96,7 @@ Troubleshooting if helpers are not found:
 **Instalación rápida (optimizada):**
 
 ```bash
-termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 > **Nota:** El comando `termux-setup-storage` solicitará permisos de almacenamiento de Android. Acepta cuando se te solicite.
@@ -112,7 +112,7 @@ termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://r
 ### Acceso remoto (SSH/SFTP)
 
 ```bash
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh   # selecciona la opción 5 "Enable Local SSH/SFTP Access"
 # o ejecuta el módulo directamente
 bash modules/07-local-ssh-server.sh
@@ -141,7 +141,7 @@ Si los comandos auxiliares no aparecen inmediatamente:
 **Quick install (optimized):**
 
 ```bash
-termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 > **Note:** The `termux-setup-storage` command will request Android storage permissions. Accept when prompted.
@@ -157,7 +157,7 @@ termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://r
 ### Acesso remoto (SSH/SFTP)
 
 ```bash
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh   # escolha a opção 5 "Enable Local SSH/SFTP Access"
 # ou execute o módulo diretamente
 bash modules/07-local-ssh-server.sh
@@ -186,7 +186,7 @@ Se os comandos auxiliares não aparecerem imediatamente:
 **Instalação rápida (otimizada):**
 
 ```bash
-termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 > **Nota:** O comando `termux-setup-storage` solicitará permissões de armazenamento do Android. Aceite quando solicitado.
@@ -243,7 +243,7 @@ nvim
 ## 📁 Project Structure
 
 ```text
-termux-ai-setup/
+termux-dev-nvim-agents/
 ├── install.sh              # Quick installer script
 ├── setup.sh                # Main interactive setup
 ├── modules/                 # Installation modules
@@ -292,7 +292,7 @@ Note: By default, both Codex and Gemini CLIs support OAuth interactive login. AP
 Run automated tests to verify installation:
 
 ```bash
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh
 # Select option 8: Run Installation Tests
 ```
@@ -304,7 +304,7 @@ cd ~/termux-ai-setup
 First, run the diagnostic tool to identify issues:
 
 ```bash
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./diagnose.sh
 ```
 
@@ -321,20 +321,20 @@ This will check for:
 
 ```bash
 # Ensure you're in the correct directory
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 
 # Run diagnostics
 ./diagnose.sh
 
 # If files are missing, re-run installer
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 #### 2. Permission denied
 
 ```bash
 # Fix permissions for all scripts
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 chmod +x setup.sh diagnose.sh
 chmod +x modules/*.sh
 ```
@@ -353,7 +353,7 @@ pkg update && pkg upgrade
 
 ```bash
 # Run diagnostics first
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./diagnose.sh
 
 # Run individual modules
@@ -369,7 +369,7 @@ node --version
 npm --version
 
 # Reinstall AI integration
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh
 # Select option 5: Configure AI Integration
 ```
@@ -379,7 +379,7 @@ cd ~/termux-ai-setup
 If your environment is in a broken state and you want a fresh start:
 
 ```bash
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh
 # Select option 10: Clean and Reinstall from Scratch
 ```
@@ -535,4 +535,4 @@ Built with modern tools and inspired by the developer community:
 
 **🚀 Transform your Android device into a powerful AI development environment!**
 
-**Quick start:** `termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash`
+**Quick start:** `termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash`

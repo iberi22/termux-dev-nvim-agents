@@ -4,7 +4,7 @@
 # TERMUX AI DEVELOPMENT SETUP
 # Modular system to configure Termux with AI
 # Repository: https://github.com/iberi22/termux-dev-nvim-agents
-# Quick install: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+# Quick install: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 # ====================================
 
 set -euo pipefail
@@ -19,8 +19,8 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# Determine script location with graceful fallbacks
-DEFAULT_INSTALL_DIR="$HOME/termux-ai-setup"
+# Determine script location with graceful fallbacks  
+DEFAULT_INSTALL_DIR="$HOME/termux-dev-nvim-agents"
 
 resolve_script_dir() {
     local source="${BASH_SOURCE[0]}"
@@ -111,15 +111,15 @@ check_prerequisites() {
         echo -e "${RED}[x] Modules directory not found: $MODULES_DIR${NC}"
         echo -e "${YELLOW}[!] Please ensure you're running this script from the correct location.${NC}"
 
-        # Check if we're in the wrong directory but termux-ai-setup exists
+        # Check if we're in the wrong directory but repository exists
         if [[ -d "$DEFAULT_INSTALL_DIR" && "$PWD" != "$DEFAULT_INSTALL_DIR" ]]; then
             echo -e "${CYAN}[i] Found installation at: $DEFAULT_INSTALL_DIR${NC}"
-            echo -e "${CYAN}[i] Please run: cd ~/termux-ai-setup && ./setup.sh${NC}"
+            echo -e "${CYAN}[i] Please run: cd ~/termux-dev-nvim-agents && ./setup.sh${NC}"
             exit 1
         fi
 
         echo -e "${YELLOW}[!] Try re-running the installer:${NC}"
-        echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
+        echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
         exit 1
     fi
     # Verify essential modules exist
@@ -178,8 +178,8 @@ run_module() {
         fi
 
         echo -e "${YELLOW}[HINT] Solutions:${NC}"
-        echo -e "${CYAN}  1. Ensure you're in the right directory: cd ~/termux-ai-setup${NC}"
-        echo -e "${CYAN}  2. Re-run the installer: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
+        echo -e "${CYAN}  1. Ensure you're in the right directory: cd ~/termux-dev-nvim-agents${NC}"
+        echo -e "${CYAN}  2. Re-run the installer: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
         return 1
     fi
 
@@ -340,7 +340,7 @@ main() {
                 else
                     echo -e "${RED}[ERR] Fonts module not found${NC}"
                     echo -e "${YELLOW}[HINT] Re-run the installer to download missing modules:${NC}"
-                    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
+                    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
                 fi
                 ;;
             9)

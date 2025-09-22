@@ -205,7 +205,7 @@ function Show-InstallationInstructions {
     Write-Host ""
     Write-ColorMessage "2. 🚀 Run the quick installation command:" "Info"
     Write-Host ""
-    Write-ColorMessage "wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash" "Highlight"
+    Write-ColorMessage "wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash" "Highlight"
     Write-Host ""
     Write-ColorMessage "3. ⏳ Wait for installation to complete (5-15 minutes)" "Info"
     Write-Host ""
@@ -214,7 +214,7 @@ function Show-InstallationInstructions {
     Write-ColorMessage "ALTERNATIVE MANUAL INSTALLATION:" "Info"
     Write-ColorMessage "pkg update && pkg upgrade" "Warning"
     Write-ColorMessage "pkg install curl wget git" "Warning"
-    Write-ColorMessage "wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh" "Warning"
+    Write-ColorMessage "wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh" "Warning"
     Write-ColorMessage "chmod +x setup.sh && ./setup.sh" "Warning"
     Write-Host ""
 }

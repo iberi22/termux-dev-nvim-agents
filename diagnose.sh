@@ -42,14 +42,14 @@ fi
 
 # Check installation directory
 echo -e "\n${CYAN}=== Installation Directory ===${NC}"
-INSTALL_DIR="$HOME/termux-ai-setup"
+INSTALL_DIR="$HOME/termux-dev-nvim-agents"
 if [[ -d "$INSTALL_DIR" ]]; then
     echo -e "${GREEN}✅ Installation directory exists: $INSTALL_DIR${NC}"
     cd "$INSTALL_DIR"
 else
     echo -e "${RED}❌ Installation directory not found: $INSTALL_DIR${NC}"
     echo -e "${YELLOW}💡 Run the installer first:${NC}"
-    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
+    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
     exit 1
 fi
 
@@ -70,11 +70,11 @@ fi
 echo -e "\n${CYAN}=== Directory Context ===${NC}"
 echo -e "${BLUE}Current directory: ${PWD}${NC}"
 echo -e "${BLUE}Home directory: ${HOME}${NC}"
-echo -e "${BLUE}Expected location: ${HOME}/termux-ai-setup${NC}"
+echo -e "${BLUE}Expected location: ${HOME}/termux-dev-nvim-agents${NC}"
 
-if [[ "$PWD" != "$HOME/termux-ai-setup" ]]; then
+if [[ "$PWD" != "$HOME/termux-dev-nvim-agents" ]]; then
     echo -e "${YELLOW}⚠️  You're not in the correct directory!${NC}"
-    echo -e "${CYAN}💡 Change to the correct directory: cd ~/termux-ai-setup${NC}"
+    echo -e "${CYAN}💡 Change to the correct directory: cd ~/termux-dev-nvim-agents${NC}"
 fi
 
 # Check modules
@@ -146,7 +146,7 @@ if [[ -d "$MODULES_DIR" ]]; then
 
     if [ ${#MISSING_MODULES[@]} -gt 0 ] || [ ${#BROKEN_MODULES[@]} -gt 0 ]; then
         echo -e "\n${YELLOW}💡 Fix by re-running the installer:${NC}"
-        echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
+    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
     fi
 else
     echo -e "${RED}❌ modules directory not accessible${NC}"
@@ -206,13 +206,13 @@ echo -e "${PURPLE}╚═══════════════════�
 ISSUES_FOUND=false
 
 # Check for common issues
-if [[ "$PWD" != "$HOME/termux-ai-setup" ]]; then
+if [[ "$PWD" != "$HOME/termux-dev-nvim-agents" ]]; then
     echo -e "${RED}🚨 ISSUE: You're in the wrong directory${NC}"
-    echo -e "${CYAN}   Fix: cd ~/termux-ai-setup${NC}"
+    echo -e "${CYAN}   Fix: cd ~/termux-dev-nvim-agents${NC}"
     ISSUES_FOUND=true
 fi
 
-if [[ ! -d "$HOME/termux-ai-setup/modules" ]] || [[ ${#MISSING_MODULES[@]} -gt 0 ]] || [[ ${#BROKEN_MODULES[@]} -gt 0 ]]; then
+if [[ ! -d "$HOME/termux-dev-nvim-agents/modules" ]] || [[ ${#MISSING_MODULES[@]} -gt 0 ]] || [[ ${#BROKEN_MODULES[@]} -gt 0 ]]; then
     echo -e "${RED}🚨 ISSUE: Installation files are missing or corrupted${NC}"
     echo -e "${CYAN}   Fix: Re-run the installer${NC}"
     ISSUES_FOUND=true
@@ -232,8 +232,8 @@ if [[ "$ISSUES_FOUND" == false ]]; then
     echo -e "${CYAN}   • Start coding: nvim${NC}"
 else
     echo -e "\n${YELLOW}🔧 RECOMMENDED FIXES:${NC}"
-    echo -e "${CYAN}   1. Ensure you're in the right directory: cd ~/termux-ai-setup${NC}"
-    echo -e "${CYAN}   2. Re-run installer if files are missing: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash${NC}"
+    echo -e "${CYAN}   1. Ensure you're in the right directory: cd ~/termux-dev-nvim-agents${NC}"
+    echo -e "${CYAN}   2. Re-run installer if files are missing: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
     echo -e "${CYAN}   3. Run setup: ./setup.sh${NC}"
 fi
 
@@ -245,6 +245,6 @@ if [ ${#MISSING_MODULES[@]} -gt 0 ]; then
     read -r fix_modules
     if [[ "$fix_modules" =~ ^[Yy]$ ]]; then
         echo -e "${BLUE}Re-running installer...${NC}"
-        wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+    wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
     fi
 fi

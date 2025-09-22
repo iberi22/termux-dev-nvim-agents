@@ -40,7 +40,7 @@
 
 ### 📁 Estructura Completa
 ```
-termux-ai-setup/
+termux-dev-nvim-agents/
 ├── setup.sh                    # 🎮 Script principal con menú
 ├── demo.sh                     # 🎪 Demo interactivo completo
 ├── README.md                   # 📚 Documentación completa
@@ -278,7 +278,7 @@ Un sistema completo de desarrollo con IA para Termux que transforma cualquier di
 ```bash
 # Clonar el proyecto
 git clone [repo]
-cd termux-ai-setup
+cd termux-dev-nvim-agents
 
 # Ejecutar instalación completa
 ./setup.sh

@@ -345,7 +345,7 @@ persist_path_update() {
     # bash
     if [ -f "$HOME/.bashrc" ]; then
         if ! grep -Fqs "$export_line" "$HOME/.bashrc"; then
-            printf '\n# Added by termux-ai-setup (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.bashrc"
+            printf '\n# Added by termux-dev-nvim-agents (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.bashrc"
         fi
     else
         printf '#!/data/data/com.termux/files/usr/bin/bash\n%s\n' "$export_line" > "$HOME/.bashrc"
@@ -355,7 +355,7 @@ persist_path_update() {
     # zsh
     if [ -f "$HOME/.zshrc" ]; then
         if ! grep -Fqs "$export_line" "$HOME/.zshrc"; then
-            printf '\n# Added by termux-ai-setup (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.zshrc"
+            printf '\n# Added by termux-dev-nvim-agents (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.zshrc"
         fi
     fi
 

@@ -107,7 +107,7 @@ adb install termux.apk
 ### Quick Installation (One Command)
 ```bash
 # In Termux terminal, run:
-wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 ### Manual Installation (Step by Step)
@@ -119,7 +119,7 @@ pkg update && pkg upgrade
 pkg install curl wget git
 
 # 3. Download setup script
-wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/setup.sh
+wget -O setup.sh https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh
 
 # 4. Make executable and run
 chmod +x setup.sh
@@ -149,7 +149,7 @@ source ~/.zshrc
 ### 2. Test Installation
 ```bash
 # Run automated tests
-cd ~/termux-ai-setup
+cd ~/termux-dev-nvim-agents
 ./setup.sh
 # Select option 8: "🧪 Run Installation Tests"
 
@@ -243,7 +243,7 @@ function Setup-TermuxAI {
     Install-APK "termux-latest.apk"
     
     Write-Host "✅ Setup complete! Now open Termux in the emulator and run:" -ForegroundColor Green
-    Write-Host "wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-setup/install.sh | bash" -ForegroundColor Cyan
+    Write-Host "wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash" -ForegroundColor Cyan
 }
 ```
 

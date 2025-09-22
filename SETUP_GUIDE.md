@@ -15,7 +15,7 @@ This guide walks you through setting up the complete CI/CD automation for the Te
 ```bash
 # Clone the repository (if not already done)
 git clone https://github.com/iberi22/termux-dev-nvim-agents.git
-cd termux-dev-nvim-agents/termux-ai-setup
+cd termux-dev-nvim-agents
 
 # Run comprehensive setup
 bash scripts/setup-repo.sh

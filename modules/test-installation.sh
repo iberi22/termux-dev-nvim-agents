@@ -307,7 +307,7 @@ if [[ $TESTS_FAILED -gt 0 ]]; then
     echo -e "${YELLOW}• Revisa los componentes que fallaron${NC}"
     echo -e "${YELLOW}• Ejecuta los módulos específicos para reinstalar${NC}"
     echo -e "${YELLOW}• Verifica la configuración de API keys si hay errores de IA${NC}"
-    echo -e "${YELLOW}• Consulta los logs en ~/.termux-ai-setup/logs/${NC}"
+    echo -e "${YELLOW}• Consulta los logs en ~/.termux-dev-nvim-agents/logs/${NC}"
 fi
 
 echo -e "${CYAN}• Usa 'run-workflow.sh' para workflows de IA${NC}"
