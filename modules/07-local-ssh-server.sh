@@ -105,8 +105,10 @@ prepare_directories() {
 
 create_memory_file() {
     info "Creating SSH configuration memory..."
-    local user="$(whoami)"
-    local install_date="$(date '+%Y-%m-%d %H:%M:%S')"
+    local user
+    user="$(whoami)"
+    local install_date
+    install_date="$(date '+%Y-%m-%d %H:%M:%S')"
 
     cat > "$SSH_MEMORY_FILE" <<EOF
 # Termux AI SSH/SFTP Configuration Memory
@@ -341,7 +343,7 @@ link_helper_scripts() {
 
 # Persist $HOME/bin in PATH for future sessions (bash/zsh)
 persist_path_update() {
-    local export_line='export PATH="$HOME/bin:$PATH"'
+    local export_line="export PATH=\"\$HOME/bin:\$PATH\""
     # bash
     if [ -f "$HOME/.bashrc" ]; then
         if ! grep -Fqs "$export_line" "$HOME/.bashrc"; then
@@ -440,8 +442,10 @@ enable_autostart() {
 }
 
 show_enhanced_summary() {
-    local user="$(whoami)"
-    local ip="$(detect_device_ip)"
+    local user
+    user="$(whoami)"
+    local ip
+    ip="$(detect_device_ip)"
     local status="🔴 STOPPED"
 
     if pgrep -x sshd >/dev/null 2>&1; then

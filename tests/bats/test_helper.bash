@@ -16,9 +16,12 @@ setup() {
 
 # Teardown function run after each test  
 teardown() {
-    # Clean up temporary directory
+    # Clean up temporary directory safely
     if [[ -n "${BATS_TMPDIR:-}" && -d "$BATS_TMPDIR" ]]; then
-        rm -rf "$BATS_TMPDIR"
+        # Ensure we have permission and the directory is safe to remove
+        if [[ "$BATS_TMPDIR" =~ ^/tmp/ ]] && [[ -w "$BATS_TMPDIR" ]]; then
+            rm -rf "$BATS_TMPDIR" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -51,7 +54,14 @@ extract_functions() {
 lint_check() {
     local file="$1"
     if command_exists shellcheck; then
-        shellcheck --rcfile="$BATS_PROJECT_ROOT/.shellcheckrc" "$file"
+        # Try with project rcfile first, fallback to default
+        local rcfile="$BATS_PROJECT_ROOT/.shellcheckrc"
+        if [[ -f "$rcfile" ]]; then
+            shellcheck --rcfile="$rcfile" "$file"
+        else
+            # Fallback to default shellcheck without rcfile
+            shellcheck "$file"
+        fi
     else
         # Skip if shellcheck not available
         return 0
