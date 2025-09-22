@@ -11,6 +11,8 @@ jobs:
   lint:
     name: Shell Lint & Syntax
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,6 +58,8 @@ jobs:
   meta:
     name: Metadata Sanity
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,3 +113,41 @@ jobs:
 
             ---
             *This issue was automatically created by the CI failure detection system.*
+
+  # Optional job to test installation in a container environment
+  container-test:
+    name: Container Installation Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test-container]')
+    env:
+      HUSKY: 0
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Setup container environment
+        run: |
+          apt-get update
+          apt-get install -y curl git bash wget
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test installation script
+        run: |
+          echo "Testing installation in container environment..."
+          # Simulate Termux-like environment
+          export HOME=/tmp/test-home
+          mkdir -p "$HOME"
+          cd "$HOME"
+          
+          # Test the install script
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh)" || true
+          
+          # Check if basic files were created
+          if [ -d "termux-dev-nvim-agents" ]; then
+            echo "✅ Installation directory created"
+            ls -la termux-dev-nvim-agents/
+          else
+            echo "❌ Installation failed"
+            exit 1
+          fi

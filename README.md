@@ -47,6 +47,54 @@ bash modules/07-local-ssh-server.sh
 
 The module configures a persistent SSH service on port 8022, updates `sshd_config`, and installs helper commands so you can connect from any machine on your network:
 
+## 🛠️ Development Setup (Contribuyentes)
+
+### Pre-commit Hooks con Husky
+
+Este proyecto incluye hooks de pre-commit para validar shell scripts automáticamente durante el desarrollo.
+
+**Configuración inicial:**
+
+```bash
+# Clona el repositorio
+git clone https://github.com/iberi22/termux-dev-nvim-agents.git
+cd termux-dev-nvim-agents
+
+# Instala Node.js (requerido para Husky)
+# Windows: winget install OpenJS.NodeJS
+# macOS: brew install node
+# Ubuntu: sudo apt install nodejs npm
+
+# Instala dependencias de desarrollo (incluye husky + shellcheck)
+npm install
+```
+
+**Uso:**
+
+```bash
+# Lint manual de todos los scripts .sh
+npm run lint:shell
+
+# Lint solo de archivos staged (lo que hace el pre-commit hook)
+npm run lint:shell:staged
+
+# Hacer commit (se ejecutará automáticamente el lint)
+git add .
+git commit -m "fix: improve shell script"
+
+# Saltar hooks si es necesario (emergencia)
+git commit -m "hotfix" --no-verify
+```
+
+**Qué verifica el hook:**
+
+- ✅ **Sintaxis bash** (`bash -n`)
+- ✅ **ShellCheck** (mejores prácticas y detección de errores)
+- ✅ **Solo archivos staged** (eficiencia)
+- ❌ **No afecta CI** (hooks deshabilitados en GitHub Actions)
+
+> **Nota:** Los hooks solo se activan en desarrollo local. En CI/CD, Husky está deshabilitado (`HUSKY=0`) para evitar interferencias.
+
 ```bash
 ssh-local-info   # connection summary (user, IP, commands)
 ssh-local-start  # start the daemon manually

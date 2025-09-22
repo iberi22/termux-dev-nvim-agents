@@ -5,7 +5,7 @@
   "description": "Termux AI development setup scripts with CI and git hooks",
   "license": "MIT",
   "scripts": {
-    "prepare": "husky || true",
+    "prepare": "node .husky/install.mjs",
     "lint:shell": "bash scripts/lint.sh",
     "lint:shell:staged": "bash -lc 'files=$(git diff --cached --name-only --diff-filter=ACMR | grep \\'.sh$\\' || true); [ -z \"$files\" ] || bash scripts/lint.sh $files'"
   },
