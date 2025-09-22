@@ -100,6 +100,7 @@ download_setup() {
         "03-ai-integration.sh"
         "04-workflows-setup.sh"
         "05-ssh-setup.sh"
+        "07-local-ssh-server.sh"
         "06-fonts-setup.sh"
         "99-clean-reset.sh"
         "test-installation.sh"
@@ -145,7 +146,7 @@ download_setup() {
 
     # Final verification
     echo -e "${BLUE}🔍 Verifying downloads...${NC}"
-    local essential_files=("setup.sh" "modules/00-base-packages.sh" "modules/06-fonts-setup.sh")
+    local essential_files=("setup.sh" "modules/00-base-packages.sh" "modules/06-fonts-setup.sh" "modules/07-local-ssh-server.sh")
     for file in "${essential_files[@]}"; do
         if [[ -f "$file" ]]; then
             echo -e "${GREEN}  ✅ $file${NC}"

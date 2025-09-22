@@ -34,6 +34,31 @@ termux-setup-storage && wget -qO- https://raw.githubusercontent.com/iberi22/term
 # ./setup.sh
 ```
 
+### Local SSH/SFTP Access (LAN)
+
+```bash
+cd ~/termux-ai-setup
+./setup.sh   # choose option 5 "Enable Local SSH/SFTP Access"
+# or run the module directly
+bash modules/07-local-ssh-server.sh
+```
+
+The module configures a persistent SSH service on port 8022, updates `sshd_config`, and installs helper commands so you can connect from any machine on your network:
+
+```bash
+ssh-local-info   # connection summary (user, IP, commands)
+ssh-local-start  # start the daemon manually
+ssh-local-stop   # stop the daemon
+```
+
+From your computer connect with:
+
+```bash
+ssh -p 8022 <termux-user>@<device-ip>
+```
+
+WinSCP / SFTP: protocol `SFTP`, host `<device-ip>`, port `8022`, user `<termux-user>` plus your password or SSH key.
+
 ## ✨ Features
 
 - 🤖 **Native AI CLIs**: OpenAI Codex, Google Gemini, Qwen-code (OAuth flows)
@@ -74,6 +99,25 @@ termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://r
 - Workflows de automatización inteligente
 - Instalación modular y profesional
 
+### Acceso remoto (SSH/SFTP)
+
+```bash
+cd ~/termux-ai-setup
+./setup.sh   # selecciona la opción 5 "Enable Local SSH/SFTP Access"
+# o ejecuta el módulo directamente
+bash modules/07-local-ssh-server.sh
+```
+
+El módulo levanta un servicio persistente en el puerto 8022, actualiza `sshd_config` y crea comandos auxiliares (`ssh-local-info`, `ssh-local-start`, `ssh-local-stop`) para conectarte desde tu PC o WinSCP.
+
+Para conectarte desde otro equipo usa:
+
+```bash
+ssh -p 8022 <usuario-termux>@<ip-del-dispositivo>
+```
+
+En WinSCP selecciona protocolo `SFTP`, host `<ip-del-dispositivo>`, puerto `8022` y tus credenciales de Termux (contraseña o llave pública).
+
 ### 🇺🇸 English
 
 ### AI-powered development environment for Termux
@@ -93,6 +137,25 @@ termux-setup-storage && pkg update && pkg install -y wget && wget -qO- https://r
 - Modern terminal with Zsh + Oh My Zsh
 - Intelligent automation workflows
 - Professional modular installation
+
+### Acesso remoto (SSH/SFTP)
+
+```bash
+cd ~/termux-ai-setup
+./setup.sh   # escolha a opção 5 "Enable Local SSH/SFTP Access"
+# ou execute o módulo diretamente
+bash modules/07-local-ssh-server.sh
+```
+
+O módulo cria um serviço no porto 8022, ajusta o `sshd_config` e gera scripts (`ssh-local-info`, `ssh-local-start`, `ssh-local-stop`) para facilitar o acesso via SSH ou WinSCP.
+
+Conexão a partir do seu computador:
+
+```bash
+ssh -p 8022 <usuario-termux>@<ip-do-dispositivo>
+```
+
+No WinSCP selecione protocolo `SFTP`, host `<ip-do-dispositivo>`, porta `8022` e suas credenciais do Termux.
 
 ### 🇧🇷 Português
 

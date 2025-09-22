@@ -126,33 +126,32 @@ check_prerequisites() {
     local essential_modules=("00-base-packages.sh" "test-installation.sh")
     for module in "${essential_modules[@]}"; do
         if [[ ! -f "$MODULES_DIR/$module" ]]; then
-            echo -e "${RED}❌ Essential module missing: $module${NC}"
-            echo -e "${YELLOW}💡 Please re-run the installer to restore missing files.${NC}"
+            echo -e "${RED}âŒ Essential module missing: $module${NC}"
+            echo -e "${YELLOW}ðŸ’¡ Please re-run the installer to restore missing files.${NC}"
             exit 1
         fi
     done
 
-    echo -e "${GREEN}✅ Prerequisites verified${NC}"
+    echo -e "${GREEN}âœ… Prerequisites verified${NC}"
 }
 
 # Function to show main menu
 show_main_menu() {
-    echo -e "${CYAN}┌─────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│                  MAIN MENU                      │${NC}"
-    echo -e "${CYAN}├─────────────────────────────────────────────────┤${NC}"
-    echo -e "${WHITE}│  1. 📦 Install Base Packages                   │${NC}"
-    echo -e "${WHITE}│  2. 🐚 Configure Zsh + Oh My Zsh               │${NC}"
-    echo -e "${WHITE}│  3. ⚡ Install and Configure Neovim            │${NC}"
-    echo -e "${WHITE}│  4. 🔐 Configure SSH for GitHub                │${NC}"
-    echo -e "${WHITE}│  5. 🌐 Enable Local SSH/SFTP Access            │${NC}"
-    echo -e "${WHITE}│  6. 🤖 Configure AI Integration                │${NC}"
-    echo -e "${WHITE}│  7. 🔄 Configure AI Workflows                  │${NC}"
-    echo -e "${WHITE}│  8. 🖋️  Install Nerd Fonts + Set Font         │${NC}"
-    echo -e "${WHITE}│  9. 🌟 Complete Installation (Automatic)       │${NC}"
-    echo -e "${WHITE}│ 10. 🧪 Run Installation Tests                  │${NC}"
-    echo -e "${WHITE}│ 11. 🧹 Clean and Reinstall from Scratch        │${NC}"
-    echo -e "${WHITE}│  0. 🚪 Exit                                    │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
+    echo -e "${CYAN}â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+    echo -e "${CYAN}â”‚                  MAIN MENU                      â”‚${NC}"
+    echo -e "${CYAN}â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤${NC}"
+    echo -e "${WHITE}  1. Install Base Packages${NC}"
+    echo -e "${WHITE}  2. Configure Zsh + Oh My Zsh${NC}"
+    echo -e "${WHITE}  3. Install and Configure Neovim${NC}"
+    echo -e "${WHITE}  4. Configure SSH for GitHub${NC}"
+    echo -e "${WHITE}  5. Enable Local SSH/SFTP Access${NC}"
+    echo -e "${WHITE}  6. Configure AI Integration${NC}"
+    echo -e "${WHITE}  7. Configure AI Workflows${NC}"
+    echo -e "${WHITE}  8. Install Nerd Fonts + Set Font${NC}"
+    echo -e "${WHITE}  9. Complete Installation (Automatic)${NC}"
+    echo -e "${WHITE} 10. Run Installation Tests${NC}"
+    echo -e "${WHITE} 11. Clean and Reinstall from Scratch${NC}"
+    echo -e "${WHITE}  0. Exit${NC}"
     echo -e "\n${YELLOW}Select an option [0-11]:${NC} "
 }
 
@@ -216,7 +215,7 @@ run_module() {
 # Function to request Gemini API key
 setup_gemini_api() {
     if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-    echo -e "${YELLOW}🔑 Gemini API Key Configuration${NC}"
+        echo -e "${YELLOW}ðŸ”‘ Gemini API Key Configuration${NC}"
         echo -e "${CYAN}To get personalized AI recommendations during installation${NC}"
         echo -e "${CYAN}you need a Google Gemini API key.${NC}\n"
         echo -e "${CYAN}Get your API key at: https://aistudio.google.com/app/apikey${NC}\n"
@@ -227,12 +226,12 @@ setup_gemini_api() {
             echo "export GEMINI_API_KEY='$api_key'" >> ~/.bashrc
             echo "export GEMINI_API_KEY='$api_key'" >> ~/.zshrc 2>/dev/null || true
             export GEMINI_API_KEY="$api_key"
-            echo -e "${GREEN}✅ API key configured correctly${NC}"
+            echo -e "${GREEN}âœ… API key configured correctly${NC}"
         else
-            echo -e "${YELLOW}⚠️  Continuing without AI integration${NC}"
+            echo -e "${YELLOW}âš ï¸  Continuing without AI integration${NC}"
         fi
     else
-        echo -e "${GREEN}✅ Gemini API key already configured${NC}"
+        echo -e "${GREEN}âœ… Gemini API key already configured${NC}"
     fi
 }
 
@@ -297,7 +296,7 @@ main() {
 
     # Check if running in automatic mode
     if [[ "${1:-}" == "auto" ]]; then
-        echo -e "${BLUE}🤖 Running in automatic mode...${NC}"
+        echo -e "${BLUE}ðŸ¤– Running in automatic mode...${NC}"
         full_installation
         exit $?
     fi
