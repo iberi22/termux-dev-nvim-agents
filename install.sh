@@ -3,12 +3,14 @@
 # ====================================
 # TERMUX AI SETUP - INSTALADOR RÁPIDO
 # Script de instalación con un comando
+SCRIPT_VERSION="2025-09-22.3"
+SCRIPT_COMMIT="auto"
 # ====================================
 
 set -euo pipefail
 
 # Colores
-RED='\033[0;31m'
+    echo "║      TERMUX AI SETUP - INSTALADOR RÁPIDO  | v${SCRIPT_VERSION}       ║"
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
@@ -48,6 +50,13 @@ check_termux() {
 
     # Crear directorio cache si no existe
     mkdir -p "$HOME/.cache"
+    # Configurar TMP seguro para Termux
+    if [[ ! -w "/tmp" ]]; then
+        export TMPDIR="$HOME/.cache/tmp"
+        export TEMP="$TMPDIR"
+        export TMP="$TMPDIR"
+        mkdir -p "$TMPDIR"
+    fi
 }
 
 install_basic_tools() {

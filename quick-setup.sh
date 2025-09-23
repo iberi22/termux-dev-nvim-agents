@@ -22,13 +22,22 @@ NC='\033[0m'
 # Configuración
 INSTALL_DIR="$HOME/termux-ai-setup"
 LOG_FILE="$HOME/termux-setup.log"
+SCRIPT_VERSION="2025-09-22.3"
+
+# Asegurar TMPDIR usable en Termux
+if [[ ! -w "/tmp" ]]; then
+    export TMPDIR="$HOME/.cache/tmp"
+    export TEMP="$TMPDIR"
+    export TMP="$TMPDIR"
+    mkdir -p "$TMPDIR"
+fi
 
 # Banner principal
 show_banner() {
     clear
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${PURPLE}║                                                                              ║${NC}"
-    echo -e "${PURPLE}║                        🚀 TERMUX AI SETUP 🚀                                ║${NC}"
+    echo -e "${PURPLE}║              🚀 TERMUX AI SETUP  |  v${SCRIPT_VERSION} 🚀                  ║${NC}"
     echo -e "${PURPLE}║                                                                              ║${NC}"
     echo -e "${PURPLE}║                    Sistema Automático de Desarrollo                         ║${NC}"
     echo -e "${PURPLE}║                                                                              ║${NC}"
@@ -43,6 +52,8 @@ log() {
 
 # Función para verificar y actualizar paquetes
 update_packages() {
+    mkdir -p "$HOME/.cache"
+    : > "$LOG_FILE" || true
     echo -e "${CYAN}📦 Actualizando paquetes de Termux...${NC}"
 
     if ! pkg update -y &>> "$LOG_FILE"; then

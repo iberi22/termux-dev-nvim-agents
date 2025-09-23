@@ -1,4 +1,4 @@
-# 🚀 Termux AI Setup - Entorno de Desarrollo con IA
+# 🚀 Termux AI Setup - Entorno de Desarrollo con IA (v2025-09-22.3)
 
 [![CI](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml)
 
