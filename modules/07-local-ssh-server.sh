@@ -18,42 +18,42 @@ PORT="${TERMUX_LOCAL_SSH_PORT:-$default_port}"
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 SSHD_CONFIG="${PREFIX}/etc/ssh/sshd_config"
 SERVICE_DIR="$HOME/.termux/services/sshd"
+HELPER_DIR="$HOME/.local/share/termux-ai/ssh"
 BIN_DIR="$HOME/bin"
 AUTO_MODE="${TERMUX_AI_AUTO:-}"
-SSH_MEMORY_FILE="$HOME/.ssh/termux-ai-ssh-memory.conf"
-STARTUP_SCRIPT="$HOME/.termux/boot/ssh-autostart.sh"
 
 ensure_packages() {
     local packages=(openssh termux-services)
-    for pkg in "${packages[@]}"; do
-        if dpkg -s "$pkg" >/dev/null 2>&1; then
-            info "Package $pkg already installed"
+    for package in "${packages[@]}"; do
+        if dpkg -s "$package" >/dev/null 2>&1; then
+            info "Package $package already installed"
         else
-            info "Installing $pkg..."
-            pkg install -y "$pkg" >/dev/null 2>&1
+            info "Installing $package..."
+            pkg install -y "$package" >/dev/null 2>&1
         fi
     done
 }
 
 generate_host_keys() {
-    local host_dir="$PREFIX/etc/ssh"
-    if ls "$host_dir"/ssh_host_*_key >/dev/null 2>&1; then
-        info "SSH host keys already present"
-    else
-        info "Generating SSH host keys..."
-        ssh-keygen -A >/dev/null 2>&1
-        success "Host keys generated"
+    if ls "$PREFIX/etc/ssh"/ssh_host_*_key >/dev/null 2>&1; then
+        info "SSH host keys already exist"
+        return
     fi
+
+    info "Generating SSH host keys..."
+    ssh-keygen -A >/dev/null 2>&1
+    success "Host keys generated"
 }
 
 backup_config() {
     local backup="${SSHD_CONFIG}.termux-ai.bak"
     if [[ -f "$backup" ]]; then
-        info "Backup already exists at $backup"
-    else
-        cp "$SSHD_CONFIG" "$backup"
-        success "Backup created at $backup"
+        info "Configuration backup already present"
+        return
     fi
+
+    cp "$SSHD_CONFIG" "$backup"
+    success "Backup saved to $backup"
 }
 
 update_config_line() {
@@ -62,7 +62,7 @@ update_config_line() {
     local tmp
     tmp=$(mktemp)
     awk -v pattern="$pattern" -v newline="$replacement" '
-        BEGIN { found=0 }
+        BEGIN {found=0}
         {
             if ($0 ~ "^[#[:space:]]*" pattern) {
                 if (!found) {
@@ -94,274 +94,101 @@ configure_sshd() {
 }
 
 prepare_directories() {
+    mkdir -p "$HELPER_DIR" "$BIN_DIR" "$SERVICE_DIR"
     mkdir -p "$HOME/.ssh"
     chmod 700 "$HOME/.ssh"
     touch "$HOME/.ssh/authorized_keys"
     chmod 600 "$HOME/.ssh/authorized_keys"
-    mkdir -p "$SERVICE_DIR"
-    mkdir -p "$BIN_DIR"
-    mkdir -p "$HOME/.termux/boot"
-}
-
-create_memory_file() {
-    info "Creating SSH configuration memory..."
-    local user
-    user="$(whoami)"
-    local install_date
-    install_date="$(date '+%Y-%m-%d %H:%M:%S')"
-
-    cat > "$SSH_MEMORY_FILE" <<EOF
-# Termux AI SSH/SFTP Configuration Memory
-# Created: $install_date
-# This file stores SSH configuration for standalone installations
-
-SSH_PORT=$PORT
-SSH_USER=$user
-SSH_SERVICE_ENABLED=true
-INSTALL_DATE=$install_date
-STANDALONE_INSTALL=true
-EOF
-    chmod 600 "$SSH_MEMORY_FILE"
-    success "SSH memory file created at $SSH_MEMORY_FILE"
-}
-
-create_boot_script() {
-    info "Creating auto-start boot script..."
-    cat > "$STARTUP_SCRIPT" <<EOF
-#!/data/data/com.termux/files/usr/bin/bash
-# Termux AI SSH Auto-start Script
-# Automatically starts SSH service on Termux boot
-
-set -euo pipefail
-
-SSH_MEMORY_FILE="$HOME/.ssh/termux-ai-ssh-memory.conf"
-
-# Load configuration from memory
-if [[ -f "\$SSH_MEMORY_FILE" ]]; then
-    source "\$SSH_MEMORY_FILE"
-
-    # Wait for network to be available
-    sleep 5
-
-    # Start SSH service if configured
-    if [[ "\${SSH_SERVICE_ENABLED:-false}" == "true" ]]; then
-        if ! pgrep -x sshd >/dev/null 2>&1; then
-            if command -v sv-enable >/dev/null 2>&1; then
-                sv up sshd >/dev/null 2>&1 || sshd -p "\${SSH_PORT:-8022}" >/dev/null 2>&1
-            else
-                sshd -p "\${SSH_PORT:-8022}" >/dev/null 2>&1
-            fi
-
-            if pgrep -x sshd >/dev/null 2>&1; then
-                echo "SSH service auto-started on port \${SSH_PORT:-8022}"
-                # Show connection info if in interactive mode
-                if [[ -t 1 ]]; then
-                    "\$HOME/bin/ssh-local-info" 2>/dev/null || true
-                fi
-            fi
-        fi
-    fi
-fi
-EOF
-    chmod +x "$STARTUP_SCRIPT"
-    success "Boot auto-start script created at $STARTUP_SCRIPT"
-}
-
-write_service() {
-    cat > "$SERVICE_DIR/run" <<EOF
-#!/data/data/com.termux/files/usr/bin/sh
-exec sshd -D -p ${PORT}
-EOF
-    chmod +x "$SERVICE_DIR/run"
-    success "Termux service script created at $SERVICE_DIR"
 }
 
 create_helper_scripts() {
-    cat > "$BIN_DIR/ssh-local-start" <<'EOF'
+    info "Creating helper scripts in $HELPER_DIR"
+
+    cat <<'EOF' > "$HELPER_DIR/ssh-local-start"
 #!/data/data/com.termux/files/usr/bin/bash
-
-SSH_MEMORY_FILE="$HOME/.ssh/termux-ai-ssh-memory.conf"
-
-# Load SSH configuration from memory
-if [[ -f "$SSH_MEMORY_FILE" ]]; then
-    source "$SSH_MEMORY_FILE"
-    PORT="${SSH_PORT:-8022}"
-else
-    PORT="8022"
-fi
-
+set -euo pipefail
 if pgrep -x sshd >/dev/null 2>&1; then
-    echo "🟢 SSH server already running on port $PORT"
-else
-    echo "🚀 Starting SSH server..."
-
-    # Try service manager first, then direct sshd
-    if command -v sv-enable >/dev/null 2>&1; then
-        sv up sshd >/dev/null 2>&1 || sshd -p "$PORT" >/dev/null 2>&1
-    else
-        sshd -p "$PORT" >/dev/null 2>&1
-    fi
-
-    if pgrep -x sshd >/dev/null 2>&1; then
-        echo "✅ SSH server started successfully on port $PORT"
-    else
-        echo "❌ Failed to start SSH server"
-        echo "💡 Try: sshd -d -p $PORT (for debug output)"
-        exit 1
-    fi
+    echo "sshd already running."
+    exit 0
 fi
-
-# Show connection info automatically
-echo
-if command -v ssh-local-info >/dev/null 2>&1; then
-    ssh-local-info
-elif [[ -f "$HOME/scripts/ssh-memory-manager.sh" ]]; then
-    bash "$HOME/scripts/ssh-memory-manager.sh"
-else
-    # Fallback info display
-    echo "📡 SSH server ready - use: ssh -p $PORT $(whoami)@<device-ip>"
-fi
+sshd >/dev/null 2>&1 && echo "SSH server started." || echo "Failed to start sshd."
 EOF
-    chmod +x "$BIN_DIR/ssh-local-start"
 
-    cat > "$BIN_DIR/ssh-local-stop" <<'EOF'
+    cat <<'EOF' > "$HELPER_DIR/ssh-local-stop"
 #!/data/data/com.termux/files/usr/bin/bash
+set -euo pipefail
 if ! pgrep -x sshd >/dev/null 2>&1; then
     echo "sshd is not running."
     exit 0
 fi
 pkill -x sshd && echo "SSH server stopped."
 EOF
-    chmod +x "$BIN_DIR/ssh-local-stop"
 
-    cat > "$BIN_DIR/ssh-local-info" <<EOF
+    cat <<EOF > "$HELPER_DIR/ssh-local-info"
 #!/data/data/com.termux/files/usr/bin/bash
-# Enhanced SSH info with memory support
-
-SSH_MEMORY_FILE="$HOME/.ssh/termux-ai-ssh-memory.conf"
-
-# Load from memory if available
-if [[ -f "\$SSH_MEMORY_FILE" ]]; then
-    source "\$SSH_MEMORY_FILE"
-    PORT="\${SSH_PORT:-${PORT}}"
-    USER="\${SSH_USER:-\$(whoami)}"
-    INSTALL_DATE="\${INSTALL_DATE:-Unknown}"
-else
-    PORT="${PORT}"
-    USER="\$(whoami)"
-    INSTALL_DATE="Unknown"
-fi
-
+set -euo pipefail
+PORT="\${TERMUX_LOCAL_SSH_PORT:-${PORT}}"
+USER="\$(whoami)"
 get_ip() {
     local ip=""
     if command -v ip >/dev/null 2>&1; then
-        ip="\$(ip route get 1.1.1.1 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if(\$i==\"src\") {print \$(i+1); exit}}')"
+        ip="\$(ip route get 1.1.1.1 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if($i==\"src\") {print $(i+1); exit}}')"
         if [ -z "\$ip" ]; then
-            ip="\$(ip -4 addr show wlan0 2>/dev/null | awk '/inet / {print \$2}' | cut -d/ -f1 | head -n1)"
+            ip="\$(ip -4 addr show wlan0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -n1)"
         fi
     fi
     if [ -z "\$ip" ] && command -v ifconfig >/dev/null 2>&1; then
-        ip="\$(ifconfig 2>/dev/null | awk '/inet / && \$2 != \"127.0.0.1\" {print \$2; exit}')"
+        ip="\$(ifconfig 2>/dev/null | awk '/inet / && $2 != \"127.0.0.1\" {print $2; exit}')"
     fi
     echo "\$ip"
 }
-
-get_status() {
-    if pgrep -x sshd >/dev/null 2>&1; then
-        echo "🟢 RUNNING"
-    else
-        echo "🔴 STOPPED"
-    fi
-}
-
 IP="\$(get_ip)"
-STATUS="\$(get_status)"
-[ -z "\$IP" ] && IP="(auto-detection failed)"
+[ -z "\$IP" ] && IP="(not detected)"
+cat <<INFO
+SSH user : \$USER
+SSH port : \$PORT
+Device IP: \$IP
 
-echo "═══════════════════════════════════════════════════════════"
-echo "🔐 TERMUX SSH/SFTP CONNECTION INFO"
-echo "═══════════════════════════════════════════════════════════"
-echo "Status      : \$STATUS"
-echo "Username    : \$USER"
-echo "Port        : \$PORT"
-echo "Device IP   : \$IP"
-echo "Installed   : \$INSTALL_DATE"
-echo
-echo "📡 CONNECTION COMMANDS:"
-echo "───────────────────────────────────────────────────────────"
-echo "SSH from terminal:"
-if [ "\$IP" != "(auto-detection failed)" ]; then
-    echo "  ssh -p \$PORT \$USER@\$IP"
-else
-    echo "  ssh -p \$PORT \$USER@<device-ip>"
-fi
-echo
-echo "SCP file transfer:"
-if [ "\$IP" != "(auto-detection failed)" ]; then
-    echo "  scp -P \$PORT file.txt \$USER@\$IP:~/"
-    echo "  scp -P \$PORT \$USER@\$IP:~/file.txt ."
-else
-    echo "  scp -P \$PORT file.txt \$USER@<device-ip>:~/"
-    echo "  scp -P \$PORT \$USER@<device-ip>:~/file.txt ."
-fi
-echo
-echo "🗂️ SFTP CLIENT SETTINGS (WinSCP, FileZilla):"
-echo "───────────────────────────────────────────────────────────"
-echo "  Protocol: SFTP"
-if [ "\$IP" != "(auto-detection failed)" ]; then
-    echo "  Host    : \$IP"
-else
-    echo "  Host    : <device-ip>"
-fi
-echo "  Port    : \$PORT"
-echo "  Username: \$USER"
-echo "  Password: <your-termux-password>"
-echo
-echo "🛠️ MANAGEMENT COMMANDS:"
-echo "───────────────────────────────────────────────────────────"
-echo "  ssh-local-start  # Start SSH service"
-echo "  ssh-local-stop   # Stop SSH service"
-echo "  ssh-local-info   # Show this info (current command)"
-echo "  passwd           # Change password"
-echo "═══════════════════════════════════════════════════════════"
+SSH command:
+  ssh -p \$PORT \$USER@<device-ip>
+
+SFTP (WinSCP):
+  Host: <device-ip> | Port: \$PORT | Protocol: SFTP
+INFO
 EOF
-    chmod +x "$BIN_DIR/ssh-local-info"
-    success "Helper scripts installed in $BIN_DIR"
+
+    chmod +x "$HELPER_DIR"/ssh-local-*
 }
 
-# Create symlinks in $PREFIX/bin so helpers are available immediately without shell reload
 link_helper_scripts() {
-    mkdir -p "$PREFIX/bin"
-    local tools=(ssh-local-start ssh-local-stop ssh-local-info)
-    for t in "${tools[@]}"; do
-        if [ -f "$BIN_DIR/$t" ]; then
-            ln -sf "$BIN_DIR/$t" "$PREFIX/bin/$t"
+    info "Linking helper scripts into $BIN_DIR"
+    ln -sf "$HELPER_DIR/ssh-local-start" "$BIN_DIR/ssh-local-start"
+    ln -sf "$HELPER_DIR/ssh-local-stop" "$BIN_DIR/ssh-local-stop"
+    ln -sf "$HELPER_DIR/ssh-local-info" "$BIN_DIR/ssh-local-info"
+}
+
+persist_path_update() {
+    local export_line='export PATH="$HOME/bin:$PATH"'
+    local files=("$HOME/.bashrc" "$HOME/.zshrc")
+
+    for file in "${files[@]}"; do
+        if [[ -f "$file" ]]; then
+            if ! grep -F "ssh-local-start" "$file" >/dev/null 2>&1 && ! grep -F "$export_line" "$file" >/dev/null 2>&1; then
+                echo "$export_line" >> "$file"
+            fi
+        else
+            printf '%s\n' "$export_line" >> "$file"
         fi
     done
-    success "Helper symlinks created in $PREFIX/bin"
 }
 
-# Persist $HOME/bin in PATH for future sessions (bash/zsh)
-persist_path_update() {
-    local export_line="export PATH=\"\$HOME/bin:\$PATH\""
-    # bash
-    if [ -f "$HOME/.bashrc" ]; then
-        if ! grep -Fqs "$export_line" "$HOME/.bashrc"; then
-            printf '\n# Added by termux-dev-nvim-agents (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.bashrc"
-        fi
-    else
-        printf '#!/data/data/com.termux/files/usr/bin/bash\n%s\n' "$export_line" > "$HOME/.bashrc"
-    fi
-    chmod 644 "$HOME/.bashrc" 2>/dev/null || true
-
-    # zsh
-    if [ -f "$HOME/.zshrc" ]; then
-        if ! grep -Fqs "$export_line" "$HOME/.zshrc"; then
-            printf '\n# Added by termux-dev-nvim-agents (local SSH helpers)\n%s\n' "$export_line" >> "$HOME/.zshrc"
-        fi
-    fi
-
-    info "Ensured \$HOME/bin is added to PATH for future shells"
+write_service() {
+    cat <<EOF > "$SERVICE_DIR/run"
+#!/data/data/com.termux/files/usr/bin/sh
+exec sshd -D -p ${PORT}
+EOF
+    chmod +x "$SERVICE_DIR/run"
+    success "Termux service script ready"
 }
 
 enable_service() {
@@ -374,7 +201,7 @@ enable_service() {
             return 0
         fi
     else
-        warn "termux-services not available; service not enabled"
+        warn "termux-services command not available; skipping service enable"
         return 1
     fi
     warn "SSH service did not start automatically"
@@ -396,12 +223,12 @@ start_sshd_once() {
 
 prompt_password() {
     if ! command -v passwd >/dev/null 2>&1; then
-        warn "passwd command not found; install termux-tools to set passwords"
+        warn "passwd command not found; install termux-tools to set a password"
         return
     fi
 
     if [[ -n "$AUTO_MODE" ]]; then
-        warn "Auto mode: run 'passwd' later to set your login password or use SSH keys"
+        warn "Auto mode: run 'passwd' later to set your login password or rely on SSH keys"
         return
     fi
 
@@ -413,131 +240,65 @@ prompt_password() {
     fi
 }
 
-detect_device_ip() {
+show_summary() {
+    local user="$(whoami)"
     local ip=""
+
     if command -v ip >/dev/null 2>&1; then
         ip="$(ip route get 1.1.1.1 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')"
-        if [[ -z "$ip" ]]; then
-            ip="$(ip -4 addr show wlan0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -n1)"
-        fi
     fi
     if [[ -z "$ip" ]] && command -v ifconfig >/dev/null 2>&1; then
         ip="$(ifconfig 2>/dev/null | awk '/inet / && $2 != "127.0.0.1" {print $2; exit}')"
     fi
-    echo "$ip"
-}
 
-enable_autostart() {
-    info "Enabling SSH auto-start on boot..."
-
-    # Create termux:boot directory structure
-    mkdir -p "$HOME/.termux/boot"
-
-    # Enable termux:boot if available
-    if command -v termux-setup-storage >/dev/null 2>&1; then
-        info "Termux:Boot support detected"
-    fi
-
-    success "SSH will auto-start on Termux boot"
-}
-
-show_enhanced_summary() {
-    local user
-    user="$(whoami)"
-    local ip
-    ip="$(detect_device_ip)"
-    local status="🔴 STOPPED"
-
-    if pgrep -x sshd >/dev/null 2>&1; then
-        status="🟢 RUNNING"
-    fi
-
-    echo
-    success "SSH/SFTP SERVER CONFIGURED SUCCESSFULLY!"
-    echo "════════════════════════════════════════════════════════════════"
-    echo "📊 Current Status: $status"
-    echo "👤 Username: $user"
-    echo "🔌 Port: $PORT"
-    echo "🌐 Device IP: ${ip:-<auto-detection failed>}"
-    echo "💾 Configuration saved to: $SSH_MEMORY_FILE"
-    echo "🚀 Auto-start enabled: YES"
-    echo
-    echo "📡 QUICK CONNECTION (copy these commands):"
-    echo "────────────────────────────────────────────────────────────────"
+    success "Local SSH/SFTP access configured"
+    info "Username : ${user}"
+    info "Port     : ${PORT}"
     if [[ -n "$ip" ]]; then
-        echo "SSH:  ssh -p $PORT $user@$ip"
-        echo "SCP:  scp -P $PORT file.txt $user@$ip:~/"
+        info "Device IP: ${ip}"
     else
-        echo "SSH:  ssh -p $PORT $user@<device-ip>"
-        echo "SCP:  scp -P $PORT file.txt $user@<device-ip>:~/"
-        warn "⚠️  Replace <device-ip> with your actual device IP"
+        warn "Could not detect device IP automatically"
     fi
-    echo
-    echo "🗂️ SFTP CLIENTS (WinSCP, FileZilla, etc.):"
-    echo "────────────────────────────────────────────────────────────────"
-    echo "Protocol: SFTP | Host: ${ip:-<device-ip>} | Port: $PORT | User: $user"
-    echo
-    echo "🛠️ MANAGEMENT COMMANDS (always available):"
-    echo "────────────────────────────────────────────────────────────────"
-    echo "ssh-local-info    # Show detailed connection info"
-    echo "ssh-local-start   # Start SSH service manually"
-    echo "ssh-local-stop    # Stop SSH service"
-    echo "passwd            # Change login password"
-    echo "════════════════════════════════════════════════════════════════"
-    echo
-    info "💡 TIP: Run 'ssh-local-info' anytime to see connection details"
 
-    if [[ "$status" == "🔴 STOPPED" ]]; then
-        warn "⚠️  SSH service is not running. Use 'ssh-local-start' to start it."
-    fi
+    echo
+    echo "From another machine run:"
+    echo "  ssh -p ${PORT} ${user}@${ip:-<device-ip>}"
+    echo
+    echo "WinSCP / SFTP settings:"
+    echo "  Host: ${ip:-<device-ip>} | Port: ${PORT} | User: ${user}"
+    echo "  Protocol: SFTP"
+    echo
+    echo "Helper commands:"
+    echo "  ssh-local-info   # show connection details"
+    echo "  ssh-local-start  # start the server manually"
+    echo "  ssh-local-stop   # stop the server"
 }
 
 main() {
-    info "🔧 Configuring Termux SSH/SFTP server with persistent memory..."
-    info "Port: $PORT | Auto-mode: ${AUTO_MODE:+YES}"
-
+    info "Configuring local SSH/SFTP server (port ${PORT})"
     ensure_packages
     prepare_directories
+    create_helper_scripts
+    link_helper_scripts
+    persist_path_update
     generate_host_keys
     backup_config
     configure_sshd
     write_service
-    create_memory_file
-    create_boot_script
-    create_helper_scripts
-    link_helper_scripts
-    persist_path_update
-    enable_autostart
-
-    # Always try to start the service for standalone installations
-    local service_started=false
 
     if [[ -n "$AUTO_MODE" ]]; then
         enable_service || start_sshd_once || true
-        service_started=true
     else
-        read -r -p "🚀 Start SSH/SFTP service now? (Y/n): " answer
+        read -r -p "Enable sshd as a background service now? (Y/n): " answer
         if [[ -z "$answer" || "$answer" =~ ^[Yy]$ ]]; then
             enable_service || start_sshd_once || true
-            service_started=true
         else
-            warn "Service not started. Use 'ssh-local-start' to launch manually."
+            warn "Service not enabled. Use 'ssh-local-start' to launch manually."
         fi
     fi
 
-    # Update memory with service status
-    if [[ "$service_started" == true ]] && pgrep -x sshd >/dev/null 2>&1; then
-        sed -i 's/SSH_SERVICE_ENABLED=.*/SSH_SERVICE_ENABLED=true/' "$SSH_MEMORY_FILE" 2>/dev/null || true
-    fi
-
     prompt_password
-    show_enhanced_summary
-
-    # Force show connection info after installation
-    echo
-    success "🎉 Installation complete! SSH/SFTP server ready for connections."
-    info "💾 Configuration saved with persistent memory for standalone use."
-    info "🔄 Service will auto-start on Termux boot."
+    show_summary
 }
 
 main "$@"
