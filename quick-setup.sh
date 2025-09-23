@@ -22,7 +22,19 @@ NC='\033[0m'
 # Configuración
 INSTALL_DIR="$HOME/termux-ai-setup"
 LOG_FILE="$HOME/termux-setup.log"
-SCRIPT_VERSION="2025-09-22.3"
+SCRIPT_VERSION="2025-09-22.4"
+
+# Verbose flag (default: false)
+VERBOSE=false
+
+# Parse flags for verbose
+for arg in "$@"; do
+    case "$arg" in
+        -v|--verbose)
+            VERBOSE=true
+            ;;
+    esac
+done
 
 # Asegurar TMPDIR usable en Termux
 if [[ ! -w "/tmp" ]]; then
@@ -56,14 +68,24 @@ update_packages() {
     : > "$LOG_FILE" || true
     echo -e "${CYAN}📦 Actualizando paquetes de Termux...${NC}"
 
-    if ! pkg update -y &>> "$LOG_FILE"; then
-        echo -e "${RED}❌ Error al actualizar paquetes${NC}"
-        return 1
-    fi
-
-    if ! pkg upgrade -y &>> "$LOG_FILE"; then
-        echo -e "${RED}❌ Error al actualizar paquetes${NC}"
-        return 1
+    if [[ "$VERBOSE" == true ]]; then
+        if ! pkg update -y 2>&1 | tee -a "$LOG_FILE"; then
+            echo -e "${RED}❌ Error al actualizar paquetes${NC}"
+            return 1
+        fi
+        if ! pkg upgrade -y 2>&1 | tee -a "$LOG_FILE"; then
+            echo -e "${RED}❌ Error al actualizar paquetes${NC}"
+            return 1
+        fi
+    else
+        if ! pkg update -y &>> "$LOG_FILE"; then
+            echo -e "${RED}❌ Error al actualizar paquetes${NC}"
+            return 1
+        fi
+        if ! pkg upgrade -y &>> "$LOG_FILE"; then
+            echo -e "${RED}❌ Error al actualizar paquetes${NC}"
+            return 1
+        fi
     fi
 
     echo -e "${GREEN}✅ Paquetes actualizados${NC}"
@@ -81,8 +103,14 @@ install_base_packages() {
 
     for package in "${packages[@]}"; do
         echo -e "${YELLOW}Instalando: $package${NC}"
-        if ! pkg install -y "$package" &>> "$LOG_FILE"; then
-            echo -e "${YELLOW}⚠️ Error instalando $package, continuando...${NC}"
+        if [[ "$VERBOSE" == true ]]; then
+            if ! pkg install -y "$package" 2>&1 | tee -a "$LOG_FILE"; then
+                echo -e "${YELLOW}⚠️ Error instalando $package, continuando...${NC}"
+            fi
+        else
+            if ! pkg install -y "$package" &>> "$LOG_FILE"; then
+                echo -e "${YELLOW}⚠️ Error instalando $package, continuando...${NC}"
+            fi
         fi
     done
 
@@ -106,10 +134,18 @@ setup_zsh() {
         export RUNZSH=no
         export KEEP_ZSHRC=yes
 
-        if sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" &>> "$LOG_FILE"; then
-            echo -e "${GREEN}✅ Oh My Zsh instalado${NC}"
+        if [[ "$VERBOSE" == true ]]; then
+            if sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" 2>&1 | tee -a "$LOG_FILE"; then
+                echo -e "${GREEN}✅ Oh My Zsh instalado${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Error instalando Oh My Zsh${NC}"
+            fi
         else
-            echo -e "${YELLOW}⚠️ Error instalando Oh My Zsh${NC}"
+            if sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" &>> "$LOG_FILE"; then
+                echo -e "${GREEN}✅ Oh My Zsh instalado${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Error instalando Oh My Zsh${NC}"
+            fi
         fi
     fi
 
@@ -170,7 +206,11 @@ setup_ssh() {
         read -p "Ingresa tu email para Git/GitHub: " user_email
 
         if [[ -n "$user_email" ]]; then
-            ssh-keygen -t ed25519 -C "$user_email" -f ~/.ssh/id_ed25519 -N "" &>> "$LOG_FILE"
+            if [[ "$VERBOSE" == true ]]; then
+                ssh-keygen -t ed25519 -C "$user_email" -f ~/.ssh/id_ed25519 -N "" 2>&1 | tee -a "$LOG_FILE"
+            else
+                ssh-keygen -t ed25519 -C "$user_email" -f ~/.ssh/id_ed25519 -N "" &>> "$LOG_FILE"
+            fi
             echo -e "${GREEN}✅ Clave SSH generada${NC}"
 
             # Mostrar clave pública
@@ -237,31 +277,62 @@ install_ai_agents() {
     fi
 
     echo -e "${BLUE}📦 Instalando Gemini CLI...${NC}"
-    if npm install -g @google/gemini-cli &>> "$LOG_FILE"; then
-        echo -e "${GREEN}✅ Gemini CLI instalado${NC}"
+    if [[ "$VERBOSE" == true ]]; then
+        if npm install -g @google/gemini-cli 2>&1 | tee -a "$LOG_FILE"; then
+            echo -e "${GREEN}✅ Gemini CLI instalado${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Error con Gemini CLI, continuando...${NC}"
+        fi
     else
-        echo -e "${YELLOW}⚠️ Error con Gemini CLI, continuando...${NC}"
+        if npm install -g @google/gemini-cli &>> "$LOG_FILE"; then
+            echo -e "${GREEN}✅ Gemini CLI instalado${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Error con Gemini CLI, continuando...${NC}"
+        fi
     fi
 
     echo -e "${BLUE}📦 Instalando OpenAI Codex...${NC}"
-    if npm install -g @openai/codex &>> "$LOG_FILE"; then
-        echo -e "${GREEN}✅ OpenAI Codex instalado${NC}"
-    else
-        # Intentar con nombres alternativos
-        if npm install -g openai-codex &>> "$LOG_FILE"; then
-            echo -e "${GREEN}✅ OpenAI Codex instalado (alternativo)${NC}"
+    if [[ "$VERBOSE" == true ]]; then
+        if npm install -g @openai/codex 2>&1 | tee -a "$LOG_FILE"; then
+            echo -e "${GREEN}✅ OpenAI Codex instalado${NC}"
         else
-            echo -e "${YELLOW}⚠️ Codex CLI no disponible, continuando...${NC}"
+            # Intentar con nombres alternativos
+            if npm install -g openai-codex 2>&1 | tee -a "$LOG_FILE"; then
+                echo -e "${GREEN}✅ OpenAI Codex instalado (alternativo)${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Codex CLI no disponible, continuando...${NC}"
+            fi
+        fi
+    else
+        if npm install -g @openai/codex &>> "$LOG_FILE"; then
+            echo -e "${GREEN}✅ OpenAI Codex instalado${NC}"
+        else
+            # Intentar con nombres alternativos
+            if npm install -g openai-codex &>> "$LOG_FILE"; then
+                echo -e "${GREEN}✅ OpenAI Codex instalado (alternativo)${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Codex CLI no disponible, continuando...${NC}"
+            fi
         fi
     fi
 
     echo -e "${BLUE}📦 Instalando Qwen Code...${NC}"
-    if npm install -g qwen-code &>> "$LOG_FILE"; then
-        echo -e "${GREEN}✅ Qwen Code instalado${NC}"
-    elif npm install -g @qwen/qwen-code &>> "$LOG_FILE"; then
-        echo -e "${GREEN}✅ Qwen Code instalado (scoped)${NC}"
+    if [[ "$VERBOSE" == true ]]; then
+        if npm install -g qwen-code 2>&1 | tee -a "$LOG_FILE"; then
+            echo -e "${GREEN}✅ Qwen Code instalado${NC}"
+        elif npm install -g @qwen/qwen-code 2>&1 | tee -a "$LOG_FILE"; then
+            echo -e "${GREEN}✅ Qwen Code instalado (scoped)${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Qwen CLI no disponible, continuando...${NC}"
+        fi
     else
-        echo -e "${YELLOW}⚠️ Qwen CLI no disponible, continuando...${NC}"
+        if npm install -g qwen-code &>> "$LOG_FILE"; then
+            echo -e "${GREEN}✅ Qwen Code instalado${NC}"
+        elif npm install -g @qwen/qwen-code &>> "$LOG_FILE"; then
+            echo -e "${GREEN}✅ Qwen Code instalado (scoped)${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Qwen CLI no disponible, continuando...${NC}"
+        fi
     fi
 
     echo -e "${GREEN}✅ Agentes de IA configurados${NC}"
@@ -271,10 +342,18 @@ install_ai_agents() {
         echo -e "${YELLOW}🔐 Configurando autenticación OAuth2 para Gemini...${NC}"
         echo -e "${CYAN}Se abrirá el navegador para autenticarte con Google${NC}"
 
-        if gemini auth login; then
-            echo -e "${GREEN}✅ Autenticación Gemini configurada${NC}"
+        if [[ "$VERBOSE" == true ]]; then
+            if gemini auth login 2>&1 | tee -a "$LOG_FILE"; then
+                echo -e "${GREEN}✅ Autenticación Gemini configurada${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Autenticación pendiente - ejecuta 'gemini auth login' más tarde${NC}"
+            fi
         else
-            echo -e "${YELLOW}⚠️ Autenticación pendiente - ejecuta 'gemini auth login' más tarde${NC}"
+            if gemini auth login; then
+                echo -e "${GREEN}✅ Autenticación Gemini configurada${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Autenticación pendiente - ejecuta 'gemini auth login' más tarde${NC}"
+            fi
         fi
     fi
 
@@ -386,6 +465,11 @@ main() {
 
     echo -e "${CYAN}🚀 Iniciando instalación automática de Termux AI Setup${NC}"
     echo -e "${YELLOW}📝 Log: $LOG_FILE${NC}"
+
+    if [[ "$VERBOSE" == true ]]; then
+        echo -e "${YELLOW}Modo verbose activado${NC}"
+        set -x
+    fi
 
     log "Inicio de instalación automática"
 

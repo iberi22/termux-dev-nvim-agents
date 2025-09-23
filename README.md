@@ -1,4 +1,4 @@
-# 🚀 Termux AI Setup - Entorno de Desarrollo con IA (v2025-09-22.3)
+# 🚀 Termux AI Setup - Entorno de Desarrollo con IA (v2025-09-22.4)
 
 [![CI](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml)
 
@@ -112,6 +112,7 @@ npm --version
 ## 🎯 Casos de Uso Comunes
 
 ### Desarrollo Web
+
 ```bash
 : "Crear proyecto React en Termux"
 : "Configurar servidor de desarrollo"

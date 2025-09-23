@@ -3,14 +3,25 @@
 # ====================================
 # TERMUX AI SETUP - INSTALADOR RÁPIDO
 # Script de instalación con un comando
-SCRIPT_VERSION="2025-09-22.3"
+SCRIPT_VERSION="2025-09-22.4"
 SCRIPT_COMMIT="auto"
 # ====================================
 
 set -euo pipefail
 
+# Flag de verbose (por defecto desactivado)
+VERBOSE=false
+
+# Parseo simple de flags (-v|--verbose antes de cualquier acción)
+for arg in "$@"; do
+    case "$arg" in
+        -v|--verbose)
+            VERBOSE=true
+            ;;
+    esac
+done
+
 # Colores
-    echo "║      TERMUX AI SETUP - INSTALADOR RÁPIDO  | v${SCRIPT_VERSION}       ║"
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
@@ -31,7 +42,7 @@ show_banner() {
     clear
     echo -e "${PURPLE}"
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║              TERMUX AI SETUP - INSTALADOR RÁPIDO            ║"
+    echo "║   TERMUX AI SETUP - INSTALADOR RÁPIDO  | v${SCRIPT_VERSION}        ║"
     echo "║         🚀 Instalación automática para Termux AI            ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}\n"
@@ -63,14 +74,22 @@ install_basic_tools() {
     echo -e "${BLUE}📦 Instalando herramientas básicas...${NC}"
 
     # Actualizar paquetes
-    pkg update -y >/dev/null 2>&1
+    if [[ "$VERBOSE" == true ]]; then
+        pkg update -y || true
+    else
+        pkg update -y >/dev/null 2>&1 || true
+    fi
 
     # Instalar herramientas esenciales
     local tools=("curl" "wget" "git" "unzip")
     for tool in "${tools[@]}"; do
         if ! command -v "$tool" >/dev/null 2>&1; then
             echo -e "${YELLOW}Instalando $tool...${NC}"
-            pkg install -y "$tool" >/dev/null 2>&1
+            if [[ "$VERBOSE" == true ]]; then
+                pkg install -y "$tool" || true
+            else
+                pkg install -y "$tool" >/dev/null 2>&1 || true
+            fi
         fi
     done
 
@@ -100,15 +119,23 @@ run_quick_setup() {
     echo -e "${GREEN}✅ Instalador descargado${NC}"
     echo -e "${CYAN}🚀 Iniciando instalación automática...${NC}"
 
-    # Ejecutar instalación automática
-    exec "$temp_dir/quick-setup.sh" --auto
+    # Ejecutar instalación automática (propaga verbose)
+    local args=(--auto)
+    if [[ "$VERBOSE" == true ]]; then
+        args+=(--verbose)
+    fi
+    exec "$temp_dir/quick-setup.sh" "${args[@]}"
 }
 
 # Función principal
 main() {
     show_banner
 
-    echo -e "${CYAN}� Iniciando Termux AI Setup${NC}"
+    echo -e "${CYAN}� Iniciando Termux AI Setup (v${SCRIPT_VERSION})${NC}"
+    if [[ "$VERBOSE" == true ]]; then
+        echo -e "${YELLOW}Modo verbose activado${NC}"
+        set -x
+    fi
     echo -e "${YELLOW}Este script instalará automáticamente:${NC}"
     echo -e "  • Git, Node.js, Zsh con Oh My Zsh"
     echo -e "  • Configuración SSH y Git"
