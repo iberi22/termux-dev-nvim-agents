@@ -45,6 +45,9 @@ check_termux() {
         echo -e "${RED}❌ Gestor de paquetes de Termux no encontrado${NC}"
         exit 1
     fi
+
+    # Crear directorio cache si no existe
+    mkdir -p "$HOME/.cache"
 }
 
 install_basic_tools() {
@@ -72,8 +75,8 @@ run_quick_setup() {
     # URL del quick-setup
     local setup_url="https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/quick-setup.sh"
 
-    # Crear directorio temporal
-    local temp_dir="/tmp/termux-ai-install-$$"
+    # Crear directorio temporal en el espacio del usuario
+    local temp_dir="$HOME/.cache/termux-ai-install-$$"
     mkdir -p "$temp_dir"
 
     # Descargar quick-setup.sh

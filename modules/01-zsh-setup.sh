@@ -242,7 +242,7 @@ alias top='htop'
 # Yazi (explorador de archivos)
 alias y='yazi'
 alias yy='yazi .'
-alias yz='yazi --cwd-file=/tmp/yazi-cwd'
+alias yz='yazi --cwd-file="$HOME/.cache/yazi-cwd"'
 
 # Termux específicos
 alias apt='pkg'

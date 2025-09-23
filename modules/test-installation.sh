@@ -244,7 +244,7 @@ TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
 # Test de creación de proyecto temporal
 echo -en "${YELLOW}🔍 Test: Función ai-init-project... ${NC}"
-TEMP_PROJECT_DIR="/tmp/test-ai-project-$$"
+TEMP_PROJECT_DIR="$HOME/.cache/test-ai-project-$$"
 if ~/bin/ai-init-project "test-project" "$TEMP_PROJECT_DIR" >/dev/null 2>&1; then
     if [[ -f "$TEMP_PROJECT_DIR/README.md" && -d "$TEMP_PROJECT_DIR/.ai" ]]; then
         echo -e "${GREEN}✅ PASSED${NC}"

@@ -360,7 +360,7 @@ tutorial_step_5() {
         wait_for_enter
 
         # Create a sample file for demonstration
-        cat > /tmp/rastafari-demo.txt << 'EOF'
+        cat > "$HOME/.cache/rastafari-demo.txt" << 'EOF'
 🌿 Welcome to Rastafari Neovim! 🌿
 
 This is a sample file to explore.
@@ -371,8 +371,8 @@ Use these keys to navigate:
 One love, one terminal! 💚💛❤️
 EOF
 
-        nvim /tmp/rastafari-demo.txt
-        rm -f /tmp/rastafari-demo.txt
+        nvim "$HOME/.cache/rastafari-demo.txt"
+        rm -f "$HOME/.cache/rastafari-demo.txt"
 
         printf "\n${GREEN}🎉 Great job! You've tried Neovim!${RESET}\n"
     else

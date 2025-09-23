@@ -238,7 +238,7 @@ run_interactive_demo() {
 demo_create_project() {
     echo -e "\n${BLUE}🚀 Creando proyecto de demostración...${NC}"
 
-    local demo_project_dir="/tmp/termux-ai-demo-$$"
+    local demo_project_dir="$HOME/.cache/termux-ai-demo-$$"
 
     if [[ -x ~/bin/ai-init-project ]]; then
         echo -e "${YELLOW}Ejecutando: ai-init-project termux-ai-demo $demo_project_dir${NC}"
@@ -276,7 +276,7 @@ demo_ai_tools_interactive() {
     echo -e "\n${BLUE}🤖 Probando herramientas de IA...${NC}"
 
     # Crear archivo temporal para prueba
-    local temp_file="/tmp/demo_code.py"
+    local temp_file="$HOME/.cache/demo_code.py"
     cat > "$temp_file" << 'EOF'
 def fibonacci(n):
     if n <= 1:
