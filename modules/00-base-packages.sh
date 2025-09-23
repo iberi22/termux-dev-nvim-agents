@@ -137,14 +137,29 @@ pip_successful=()
 
 # Configurar Git si no está configurado
 echo -e "${YELLOW}⚙️ Configurando Git...${NC}"
-if ! git config --global user.name > /dev/null 2>&1; then
-    read -p "Ingresa tu nombre para Git: " git_name
-    git config --global user.name "$git_name"
-fi
 
-if ! git config --global user.email > /dev/null 2>&1; then
-    read -p "Ingresa tu email para Git: " git_email
-    git config --global user.email "$git_email"
+# En modo automático o si ya está configurado
+if [[ "${TERMUX_AI_AUTO:-}" == "true" ]]; then
+    if ! git config --global user.name > /dev/null 2>&1; then
+        git_name="${TERMUX_AI_GIT_NAME:-Termux Developer}"
+        git config --global user.name "$git_name"
+        echo -e "${GREEN}🤖 Git name configurado automáticamente: $git_name${NC}"
+    fi
+    if ! git config --global user.email > /dev/null 2>&1; then
+        git_email="${TERMUX_AI_GIT_EMAIL:-dev@termux.local}"
+        git config --global user.email "$git_email"
+        echo -e "${GREEN}🤖 Git email configurado automáticamente: $git_email${NC}"
+    fi
+else
+    # Modo interactivo solo si no está en modo auto
+    if ! git config --global user.name > /dev/null 2>&1; then
+        read -p "Ingresa tu nombre para Git: " git_name
+        git config --global user.name "$git_name"
+    fi
+    if ! git config --global user.email > /dev/null 2>&1; then
+        read -p "Ingresa tu email para Git: " git_email
+        git config --global user.email "$git_email"
+    fi
 fi
 
 # Configurar aliases útiles

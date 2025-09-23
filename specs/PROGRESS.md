@@ -48,6 +48,49 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - **Launcher** (`start-panel.sh`):
   - Comandos: `install`, `dev`, `build`, `start`, `stop`, `status`
   - Manejo de dependencias Python (venv) y Node.js
+
+## 2025-01-XX - v2.1 (Instalador Robusto)
+
+### Correcciones Críticas del Instalador
+
+- **modules/03-ai-integration.sh**: Solución completa para errores de node-gyp en Termux:
+  - Fix definitivo: `GYP_DEFINES="android_ndk_path=/dev/null"`
+  - Variables npm_config completas para compilación nativa
+  - Detección inteligente de paquetes ya instalados
+  - Verificación robusta con información detallada de PATH
+  - Manejo graceful de errores con continuación de instalación
+
+### Modo No Interactivo Completo
+
+- **TERMUX_AI_AUTO=true**: Instalación completamente desatendida implementada en:
+  - `modules/00-user-setup.sh`: Configuración automática de usuario y Git
+  - `modules/00-base-packages.sh`: Skip de prompts interactivos de Git
+  - `modules/03-ai-integration.sh`: Instalación de CLIs sin OAuth automático
+  - `modules/05-ssh-setup.sh`: Generación de SSH keys sin prompts
+  - `setup.sh`: Deshabilitación de OAuth login automático de Gemini
+
+### Mejoras de Robustez
+
+- **Instalación idempotente**: Detección de componentes ya instalados
+- **Verificación mejorada**: Status detallado de CLIs con ubicación de binarios
+- **Logs informativos**: Progreso claro y información de debug
+- **Manejo de errores**: Continuación graceful ante fallos parciales
+- **Configuración por defecto**: Valores sensatos para modo automático
+
+### Status de CLIs de IA
+
+- ✅ **@google/gemini-cli**: Instalación robusta con manejo de errores node-gyp
+- ⚠️ **@openai/codex**: Opcional, manejo de fallos graceful
+- ⚠️ **@qwen-code/qwen-code**: Opcional, manejo de fallos graceful
+- ✅ **Comando `:`**: Wrapper funcional para consultas rápidas a Gemini
+
+### Autenticación Manual Post-Instalación
+
+- OAuth2 automático deshabilitado para evitar prompts interactivos
+- Autenticación manual requerida post-instalación:
+  - `gemini auth login` para Google Gemini CLI
+  - `codex login` para OpenAI Codex (si disponible)
+  - `qwen setup` para Qwen Code (si disponible)
   - Servidores de desarrollo en puertos 3000 (frontend) y 8000 (backend)
   - Cleanup automático con Ctrl+C
 

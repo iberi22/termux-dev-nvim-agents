@@ -63,6 +63,13 @@ ensure_prereqs() {
     export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
     export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
     export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+    
+    # Configuración especial para node-gyp en Termux (evita error android_ndk_path)
+    export GYP_DEFINES="android_ndk_path=/dev/null"
+    export npm_config_build_from_source=true
+    export npm_config_python="$(command -v python3)"
+    export CC=clang
+    export CXX=clang++
 
     # Paquete 'expect' opcional
     if ! is_cmd expect; then
@@ -81,6 +88,13 @@ npm_install_global() {
         ok "$pkg_name ya estaba instalado"
         return 0
     fi
+
+    # Configurar entorno para node-gyp antes de instalar
+    export GYP_DEFINES="android_ndk_path=/dev/null"
+    export npm_config_build_from_source=true
+    export npm_config_python="$(command -v python3)"
+    export CC=clang
+    export CXX=clang++
 
     # Intentar instalación con manejo de conflictos
     if npm i -g "$pkg_name" --force >/dev/null 2>&1; then
@@ -104,10 +118,24 @@ install_codex() {
 install_gemini() {
     note "Instalando Google Gemini CLI (@google/gemini-cli)…"
 
-    # Remover instalación existente si hay conflictos
+    # Verificar si gemini ya está disponible como comando
+    if command -v gemini >/dev/null 2>&1; then
+        ok "Gemini CLI ya está disponible como comando"
+        return 0
+    fi
+
+    # Verificar instalación existente de paquetes npm
+    local already_installed=false
     if npm list -g --depth=0 "@google/gemini-cli" >/dev/null 2>&1; then
-        warn "Removiendo instalación existente de Gemini CLI..."
+        already_installed=true
+    elif npm list -g --depth=0 "@google/generative-ai-cli" >/dev/null 2>&1; then
+        already_installed=true
+    fi
+
+    if [[ "$already_installed" == true ]]; then
+        warn "Paquete ya instalado pero comando no disponible. Reinstalando..."
         npm uninstall -g "@google/gemini-cli" >/dev/null 2>&1 || true
+        npm uninstall -g "@google/generative-ai-cli" >/dev/null 2>&1 || true
     fi
 
     if ! npm_install_global "@google/gemini-cli"; then
@@ -127,15 +155,41 @@ install_qwen() {
 
 verify_binaries() {
     note "Verificando binarios instalados…"
-    local ok_all=true
-    command -v codex >/dev/null 2>&1 || ok_all=false
-    command -v gemini >/dev/null 2>&1 || ok_all=false
-    if ! command -v qwen >/dev/null 2>&1 && ! command -v qwen-code >/dev/null 2>&1; then ok_all=false; fi
-    if [[ "$ok_all" == true ]]; then
-        ok "CLIs verificados en PATH"
+    local missing_count=0
+    
+    echo -e "${CYAN}Verificando CLIs instalados:${NC}"
+    
+    if command -v codex >/dev/null 2>&1; then
+        ok "✓ codex disponible"
+    else
+        warn "✗ codex no disponible"
+        ((missing_count++))
+    fi
+    
+    if command -v gemini >/dev/null 2>&1; then
+        ok "✓ gemini disponible"
+    else
+        warn "✗ gemini no disponible"
+        ((missing_count++))
+    fi
+    
+    if command -v qwen >/dev/null 2>&1; then
+        ok "✓ qwen disponible"
+    elif command -v qwen-code >/dev/null 2>&1; then
+        ok "✓ qwen-code disponible"
+    else
+        warn "✗ qwen/qwen-code no disponible"
+        ((missing_count++))
+    fi
+    
+    if [[ $missing_count -eq 0 ]]; then
+        ok "Todos los CLIs están disponibles"
         return 0
     else
-        warn "Algún CLI no se registró en PATH. Reinicia la sesión o añade '$(npm bin -g 2>/dev/null)' al PATH"
+        warn "$missing_count CLI(s) no están disponibles. Reinicia la sesión o añade '$(npm bin -g 2>/dev/null)' al PATH"
+        # Mostrar información de PATH para depuración
+        echo -e "${YELLOW}PATH actual contiene:${NC}"
+        echo "$PATH" | tr ':' '\n' | grep -E "(node|npm)" || echo -e "${RED}No se encontraron rutas de Node.js/npm${NC}"
         return 1
     fi
 }
@@ -144,23 +198,41 @@ main() {
     echo -e "${BLUE}🤖 Instalando CLIs nativos de IA…${NC}"
     ensure_prereqs
 
-    install_codex || warn "@openai/codex no pudo instalarse ahora"
-    install_gemini || warn "@google/gemini-cli no pudo instalarse ahora"
-    install_qwen || warn "@qwen-code/qwen-code no pudo instalarse ahora"
+    local install_failures=0
+    
+    if ! install_codex; then
+        warn "@openai/codex no pudo instalarse"
+        ((install_failures++))
+    fi
+    
+    if ! install_gemini; then
+        warn "@google/gemini-cli no pudo instalarse"
+        ((install_failures++))
+    fi
+    
+    if ! install_qwen; then
+        warn "@qwen-code/qwen-code no pudo instalarse"
+        ((install_failures++))
+    fi
 
-    verify_binaries || true
+    verify_binaries || warn "Algunos CLIs pueden no estar disponibles inmediatamente"
 
     echo
-    ok "Instalación de CLIs finalizada"
-    echo -e "${CYAN}Autenticación pendiente:${NC}"
-    echo "  Los CLIs de IA requieren autenticación OAuth2"
-    echo "  Esto se realizará al final de la instalación completa"
+    if [[ $install_failures -eq 0 ]]; then
+        ok "✅ Instalación de CLIs completada exitosamente"
+    else
+        warn "⚠️ Instalación completada con $install_failures fallo(s)"
+    fi
+    
+    echo -e "${CYAN}ℹ️ Autenticación manual requerida:${NC}"
+    echo "  • gemini auth login    # Para Google Gemini"
+    echo "  • codex login          # Para OpenAI Codex (si disponible)"
+    echo "  • qwen setup           # Para Qwen Code (si disponible)"
     echo
-    echo -e "${YELLOW}Comandos disponibles después de autenticación:${NC}"
-    echo "  - codex        # OpenAI Codex CLI"
-    echo "  - gemini       # Google Gemini CLI"
-    echo "  - qwen         # Qwen Code CLI"
-    echo "  - :            # Comando rápido (wrapper de gemini)"
+    echo -e "${YELLOW}Comandos disponibles:${NC}"
+    echo "  • gemini -p \"tu pregunta\"  # Gemini CLI directo"
+    echo "  • : \"tu pregunta\"          # Comando rápido (alias de gemini)"
+    echo "  • codex \"código a generar\" # Codex CLI (si está disponible)"
 }
 
 main "$@"

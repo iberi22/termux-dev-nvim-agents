@@ -3,6 +3,7 @@
 # ====================================
 # MÓDULO: Configuración SSH para GitHub
 # Genera claves SSH, configura ssh-agent y guía la configuración de GitHub
+# MODO NO-INTERACTIVO cuando TERMUX_AI_AUTO está definido
 # ====================================
 
 set -euo pipefail
@@ -69,12 +70,19 @@ get_user_info() {
         echo -e "${WHITE}   Email: $existing_email${NC}"
         echo -e ""
 
-        read -p "¿Usar esta configuración para SSH? (Y/n): " use_existing
-        if [[ "$use_existing" =~ ^[Nn]$ ]]; then
-            get_new_user_info
-        else
+        # En modo automático, usar configuración existente sin preguntar
+        if [[ -n "${TERMUX_AI_AUTO:-}" ]]; then
             USER_NAME="$existing_name"
             USER_EMAIL="$existing_email"
+            echo -e "${GREEN}✅ Usando configuración Git existente automáticamente${NC}"
+        else
+            read -p "¿Usar esta configuración para SSH? (Y/n): " use_existing
+            if [[ "$use_existing" =~ ^[Nn]$ ]]; then
+                get_new_user_info
+            else
+                USER_NAME="$existing_name"
+                USER_EMAIL="$existing_email"
+            fi
         fi
     else
         get_new_user_info
@@ -82,6 +90,16 @@ get_user_info() {
 }
 
 get_new_user_info() {
+    # En modo automático, usar valores por defecto
+    if [[ -n "${TERMUX_AI_AUTO:-}" ]]; then
+        USER_NAME="${USER_NAME:-Termux User}"
+        USER_EMAIL="${USER_EMAIL:-user@example.com}"
+        echo -e "${YELLOW}⚠️ Modo automático: usando valores por defecto${NC}"
+        echo -e "${WHITE}   Nombre: $USER_NAME${NC}"
+        echo -e "${WHITE}   Email: $USER_EMAIL${NC}"
+        return 0
+    fi
+
     while [[ -z "${USER_NAME:-}" ]]; do
         read -p "Ingresa tu nombre completo: " USER_NAME
     done
@@ -108,13 +126,19 @@ check_existing_key() {
         echo -e "${WHITE}$(cat "$PUB_KEY_PATH" 2>/dev/null || echo "Archivo de clave pública no encontrado")${NC}"
         echo -e ""
 
-        read -p "¿Deseas generar una nueva clave? (y/N): " generate_new
-        if [[ "$generate_new" =~ ^[Yy]$ ]]; then
-            echo -e "${YELLOW}🗑️ Eliminando clave existente...${NC}"
-            rm -f "$KEY_PATH" "$PUB_KEY_PATH"
-            return 1
-        else
+        # En modo automático, mantener clave existente
+        if [[ -n "${TERMUX_AI_AUTO:-}" ]]; then
+            echo -e "${GREEN}✅ Manteniendo clave SSH existente (modo automático)${NC}"
             return 0
+        else
+            read -p "¿Deseas generar una nueva clave? (y/N): " generate_new
+            if [[ "$generate_new" =~ ^[Yy]$ ]]; then
+                echo -e "${YELLOW}🗑️ Eliminando clave existente...${NC}"
+                rm -f "$KEY_PATH" "$PUB_KEY_PATH"
+                return 1
+            else
+                return 0
+            fi
         fi
     fi
     return 1

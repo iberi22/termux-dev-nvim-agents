@@ -233,11 +233,12 @@ setup_gemini_cli() {
         npm install -g @google/gemini-cli
     fi
 
-    # Configurar autenticación
-    if ! gemini auth test &>/dev/null; then
-        echo -e "${CYAN}🔐 Configura la autenticación OAuth2 con Google${NC}"
-        gemini auth login
-    fi
+    # Configurar autenticación (DESACTIVADO - solo instala CLI)
+    # if ! gemini auth test &>/dev/null; then
+    #     echo -e "${CYAN}🔐 Configura la autenticación OAuth2 con Google${NC}"
+    #     gemini auth login
+    # fi
+    echo -e "${YELLOW}ℹ️ Autenticación OAuth2 omitida. Usar 'gemini auth login' manualmente si es necesario.${NC}"
 
     echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
 }
@@ -276,8 +277,9 @@ post_installation_setup() {
     fi
     echo ""
 
-    # SSH keys setup
-    echo -e "${YELLOW}🔑 Configuración de Llaves SSH para GitHub${NC}"
+    # SSH keys setup (OPCIONAL - no interactivo)
+    echo -e "${YELLOW}🔑 Configuración de Llaves SSH para GitHub (OPCIONAL)${NC}"
+    echo -e "${CYAN}ℹ️ Para configurar SSH para GitHub, ejecuta: modules/05-ssh-setup.sh${NC}"
     if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
         echo -e "${CYAN}No se encontraron llaves SSH. Generando nuevas llaves...${NC}"
         read -p "Introduce tu email para GitHub: " git_email
