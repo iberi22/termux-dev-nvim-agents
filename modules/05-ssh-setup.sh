@@ -31,10 +31,33 @@ if [[ ! -d "$SSH_DIR" ]]; then
     chmod 700 "$SSH_DIR"
 fi
 
+# Función para cargar configuración de usuario existente
+load_user_config() {
+    local user_config_file="$HOME/.termux_user_config"
+    if [[ -f "$user_config_file" ]]; then
+        source "$user_config_file"
+        if [[ -n "${GIT_NAME:-}" && -n "${GIT_EMAIL:-}" ]]; then
+            USER_NAME="$GIT_NAME"
+            USER_EMAIL="$GIT_EMAIL"
+            echo -e "${GREEN}✅ Usando configuración de usuario existente:${NC}"
+            echo -e "${WHITE}   Nombre: $USER_NAME${NC}"
+            echo -e "${WHITE}   Email: $USER_EMAIL${NC}"
+            return 0
+        fi
+    fi
+    return 1
+}
+
 # Función para obtener información del usuario
 get_user_info() {
     echo -e "${CYAN}📝 Configuración de identidad para GitHub${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+    # Intentar cargar configuración de usuario del setup inicial
+    if load_user_config; then
+        echo -e "${CYAN}🔄 Configuración cargada del setup inicial${NC}"
+        return 0
+    fi
 
     # Intentar obtener configuración existente de Git
     local existing_name=$(git config --global user.name 2>/dev/null || echo "")

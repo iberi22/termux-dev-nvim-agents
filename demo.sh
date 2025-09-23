@@ -123,7 +123,8 @@ demo_ai_tools() {
             echo -e "${WHITE}Agentes disponibles:${NC}"
             for agent_file in ~/.config/ai-workflows/agents/*.poml; do
                 if [[ -f "$agent_file" ]]; then
-                    local agent_name=$(basename "$agent_file" .poml)
+                    local agent_name
+                    agent_name=$(basename "$agent_file" .poml)
                     echo -e "   ${CYAN}• ${agent_name}${NC}"
                 fi
             done
@@ -325,12 +326,14 @@ demo_workflows() {
         if [[ -d ~/.config/ai-workflows/agents ]]; then
             for agent_file in ~/.config/ai-workflows/agents/*.poml; do
                 if [[ -f "$agent_file" ]]; then
-                    local agent_name=$(basename "$agent_file" .poml)
+                    local agent_name
+                    agent_name=$(basename "$agent_file" .poml)
                     echo -e "• ${agent_name}"
 
                     # Mostrar descripción del agente
                     if command -v grep &>/dev/null; then
-                        local description=$(grep -o '<role>.*</role>' "$agent_file" 2>/dev/null | sed 's/<[^>]*>//g' | head -1)
+                        local description
+                        description=$(grep -o '<role>.*</role>' "$agent_file" 2>/dev/null | sed 's/<[^>]*>//g' | head -1)
                         if [[ -n "$description" ]]; then
                             echo -e "  ${CYAN}→ ${description:0:80}...${NC}"
                         fi
@@ -406,10 +409,10 @@ demo_detailed_config() {
     echo -e "\n${CYAN}📁 Archivos de configuración:${NC}"
 
     local config_files=(
-        "~/.zshrc:Configuración de Zsh"
-        "~/.config/nvim/init.lua:Configuración principal de Neovim"
-        "~/.config/ai-workflows/config.yaml:Configuración de workflows"
-        "~/.gitconfig:Configuración de Git"
+        "$HOME/.zshrc:Configuración de Zsh"
+        "$HOME/.config/nvim/init.lua:Configuración principal de Neovim"
+        "$HOME/.config/ai-workflows/config.yaml:Configuración de workflows"
+        "$HOME/.gitconfig:Configuración de Git"
     )
 
     for config_info in "${config_files[@]}"; do
@@ -428,10 +431,10 @@ demo_detailed_config() {
     echo -e "\n${CYAN}📂 Estructura de directorios:${NC}"
 
     local important_dirs=(
-        "~/bin:Scripts ejecutables"
-        "~/.config/nvim:Configuración de Neovim"
-        "~/.config/ai-workflows:Workflows de IA"
-        "~/.oh-my-zsh:Oh My Zsh"
+        "$HOME/bin:Scripts ejecutables"
+        "$HOME/.config/nvim:Configuración de Neovim"
+        "$HOME/.config/ai-workflows:Workflows de IA"
+        "$HOME/.oh-my-zsh:Oh My Zsh"
     )
 
     for dir_info in "${important_dirs[@]}"; do
@@ -440,7 +443,8 @@ demo_detailed_config() {
         local expanded_dir="${dir_path/#\~/$HOME}"
 
         if [[ -d "$expanded_dir" ]]; then
-            local file_count=$(find "$expanded_dir" -type f 2>/dev/null | wc -l)
+            local file_count
+            file_count=$(find "$expanded_dir" -type f 2>/dev/null | wc -l)
             echo -e "${GREEN}✅ ${dir_desc}${NC} (${dir_path}) - ${file_count} archivos"
         else
             echo -e "${RED}❌ ${dir_desc}${NC} (${dir_path})"

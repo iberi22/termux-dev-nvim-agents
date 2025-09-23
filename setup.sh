@@ -140,6 +140,7 @@ show_main_menu() {
     echo -e "${CYAN}┌─────────────────────────────────────────────────┐${NC}"
     echo -e "${CYAN}│                  MAIN MENU                      │${NC}"
     echo -e "${CYAN}├─────────────────────────────────────────────────┤${NC}"
+    echo -e "${WHITE}│  0. 👤 Configure User Setup (Recommended First)│${NC}"
     echo -e "${WHITE}│  1. 📦 Install Base Packages                   │${NC}"
     echo -e "${WHITE}│  2. 🐚 Configure Zsh + Oh My Zsh               │${NC}"
     echo -e "${WHITE}│  3. ⚡ Install and Configure Neovim            │${NC}"
@@ -148,12 +149,13 @@ show_main_menu() {
     echo -e "${WHITE}│  6. 🤖 Configure AI Integration                │${NC}"
     echo -e "${WHITE}│  7. 🔄 Configure AI Workflows                  │${NC}"
     echo -e "${WHITE}│  8. 🖋️  Install Nerd Fonts + Set Font         │${NC}"
+    echo -e "${RED}│  🇯🇲 ${YELLOW}R. ${GREEN}🌈 Rastafari Theme Demo & Config    ${RED}🇯🇲  │${NC}"
     echo -e "${WHITE}│  9. 🌟 Complete Installation (Automatic)       │${NC}"
     echo -e "${WHITE}│ 10. 🧪 Run Installation Tests                  │${NC}"
     echo -e "${WHITE}│ 11. 🧹 Clean and Reinstall from Scratch        │${NC}"
-    echo -e "${WHITE}│  0. 🚪 Exit                                    │${NC}"
+    echo -e "${WHITE}│ 99. 🚪 Exit                                    │${NC}"
     echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
-    echo -e "\n${YELLOW}Select an option [0-11]:${NC} "
+    echo -e "\n${YELLOW}Select an option [0-11, 99]:${NC} "
 }
 
 # Function to run module with error handling
@@ -240,6 +242,12 @@ setup_gemini_api() {
 full_installation() {
     echo -e "${BLUE}[AUTO] Starting complete installation...${NC}"
 
+    # Ejecutar configuración de usuario al inicio
+    echo -e "${PURPLE}🔧 Configuración inicial de usuario${NC}"
+    if ! run_module "00-user-setup"; then
+        echo -e "${YELLOW}⚠️ Error en configuración de usuario, continuando...${NC}"
+    fi
+
     local modules=(
         "00-base-packages"
         "01-zsh-setup"
@@ -307,6 +315,9 @@ main() {
         read -r choice
 
         case $choice in
+            0)
+                run_module "00-user-setup"
+                ;;
             1)
                 run_module "00-base-packages"
                 ;;
@@ -343,6 +354,16 @@ main() {
                     echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
                 fi
                 ;;
+            [Rr])
+                # Rastafari Theme Demo and Configuration
+                echo -e "${RED}🇯🇲 ${YELLOW}Iniciando Demo del Tema Rastafari ${GREEN}🇯🇲${NC}"
+                if [[ -f "${MODULES_DIR}/rastafari-theme-demo.sh" ]]; then
+                    bash "${MODULES_DIR}/rastafari-theme-demo.sh"
+                else
+                    echo -e "${YELLOW}⚠️ Demo no encontrado. Ejecutando configuración Zsh...${NC}"
+                    run_module "01-zsh-setup"
+                fi
+                ;;
             9)
                 full_installation
                 ;;
@@ -352,13 +373,13 @@ main() {
             11)
                 run_module "99-clean-reset"
                 ;;
-            0)
+            99)
                 echo -e "${GREEN}Thank you for using Termux AI Setup!${NC}"
                 log "Setup terminated by user"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[ERROR] Invalid option. Select a number from 0-11.${NC}"
+                echo -e "${RED}[ERROR] Invalid option. Select a number from 0-11, R (Rastafari), or 99.${NC}"
                 sleep 2
                 ;;
         esac

@@ -24,7 +24,7 @@ resolve_shellcheck() {
         echo shellcheck
         return 0
     fi
-    
+
     # Try npx with node (check both npx and node availability)
     if command -v npx >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
         # Test if npx shellcheck actually works
@@ -33,7 +33,7 @@ resolve_shellcheck() {
             return 0
         fi
     fi
-    
+
     # Try npm shellcheck if npm is available
     if command -v npm >/dev/null 2>&1; then
         # Check if shellcheck is installed as npm package
@@ -42,7 +42,7 @@ resolve_shellcheck() {
             return 0
         fi
     fi
-    
+
     echo "" # no runner available
 }
 

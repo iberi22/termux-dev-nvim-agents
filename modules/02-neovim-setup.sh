@@ -210,13 +210,13 @@ if vim.fn.has("termux") == 1 then
   opt.shell = "/data/data/com.termux/files/usr/bin/zsh"
 end
 
--- Configuración de caracteres especiales
+-- Configuración de caracteres especiales (sin Unicode problemático para Termux)
 opt.fillchars = {
-  foldopen = "",
-  foldclose = "",
+  foldopen = "v",
+  foldclose = ">",
   fold = " ",
-  foldsep = " ",
-  diff = "╱",
+  foldsep = "|",
+  diff = "/",
   eob = " ",
 }
 
@@ -1947,8 +1947,62 @@ echo -e "${CYAN}5. Ejecuta :checkhealth para verificar la instalación${NC}"
 
 echo -e "\n${PURPLE}🎉 ¡Neovim listo para desarrollo con IA!${NC}"
 
-# Ejecutar configuración inicial automáticamente
+# Crear script de diagnóstico y corrección
+cat > "$NVIM_CONFIG_DIR/fix-common-issues.sh" << 'EOF'
+#!/bin/bash
+
+echo "🔧 Solucionando problemas comunes de Neovim en Termux..."
+
+# Limpiar caché de Lazy
+echo "🧹 Limpiando caché de Lazy..."
+rm -rf ~/.local/share/nvim/lazy
+rm -rf ~/.local/state/nvim/lazy
+
+# Verificar y crear directorios necesarios
+echo "📁 Verificando directorios..."
+mkdir -p ~/.local/share/nvim
+mkdir -p ~/.local/state/nvim
+mkdir -p ~/.cache/nvim
+
+# Verificar encoding
+echo "🔤 Configurando encoding..."
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# Reinstalar plugins problemáticos de forma individual
+echo "🔄 Reinstalando plugins..."
+nvim --headless "+Lazy! clean" +qa 2>/dev/null || true
+nvim --headless "+Lazy! sync" +qa 2>/dev/null || true
+
+echo "✅ Correcciones aplicadas. Intenta abrir Neovim nuevamente."
+EOF
+
+chmod +x "$NVIM_CONFIG_DIR/fix-common-issues.sh"
+
+# Ejecutar configuración inicial automáticamente con manejo de errores
 echo -e "${BLUE}🔄 Ejecutando configuración inicial...${NC}"
-cd "$NVIM_CONFIG_DIR" && bash first-run.sh
+
+# Configurar variables de entorno para evitar problemas de encoding
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+cd "$NVIM_CONFIG_DIR"
+
+# Intentar la instalación inicial con manejo de errores
+if ! bash first-run.sh 2>/dev/null; then
+    echo -e "${YELLOW}⚠️ Se detectaron algunos problemas durante la instalación inicial${NC}"
+    echo -e "${CYAN}🔧 Ejecutando script de corrección...${NC}"
+    bash fix-common-issues.sh
+
+    echo -e "${GREEN}✅ Script de corrección ejecutado${NC}"
+    echo -e "${CYAN}💡 Si sigues teniendo problemas, ejecuta:${NC}"
+    echo -e "   cd ~/.config/nvim && ./fix-common-issues.sh"
+fi
+
+echo -e "\n${GREEN}🎉 Configuración de Neovim completada!${NC}"
+echo -e "${CYAN}📋 Comandos útiles:${NC}"
+echo -e "${CYAN}   • Abrir Neovim: nvim${NC}"
+echo -e "${CYAN}   • Solucionar problemas: cd ~/.config/nvim && ./fix-common-issues.sh${NC}"
+echo -e "${CYAN}   • Verificar salud: nvim +checkhealth${NC}"
 
 exit 0
