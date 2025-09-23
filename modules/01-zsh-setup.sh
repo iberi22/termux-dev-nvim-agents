@@ -106,7 +106,7 @@ if ! command -v yazi >/dev/null 2>&1; then
         echo -e "${BLUE}📦 Instalando Rust para Yazi...${NC}"
         pkg install -y rust
     fi
-    
+
     if command -v cargo >/dev/null 2>&1; then
         echo -e "${BLUE}📥 Compilando Yazi desde fuente...${NC}"
         cargo install --locked yazi-fm yazi-cli
@@ -361,20 +361,20 @@ fi
 # Función para configurar API keys
 setup-ai-keys() {
     echo -e "${BLUE}Configurando agentes IA con OAuth2...${NC}"
-    
+
     # Los agentes IA ahora usan OAuth2 automático
     echo -e "${CYAN}Los agentes IA (Codex, Gemini, Qwen) se configurarán automáticamente${NC}"
     echo -e "${CYAN}con autenticación OAuth2 durante la instalación.${NC}"
-    
+
     # Información para el usuario
     cat > "$HOME/.ai-info" <<'AI_INFO'
 # Información de Agentes IA - Termux AI Setup
-# 
+#
 # Agentes disponibles después de la instalación:
 # - gemini auth login    # Autenticación Google OAuth2
-# - codex login         # Autenticación OpenAI OAuth2  
+# - codex login         # Autenticación OpenAI OAuth2
 # - qwen-code           # Agente Qwen para código
-# 
+#
 # Uso: Los agentes se activan automáticamente después de login OAuth2
 AI_INFO
 

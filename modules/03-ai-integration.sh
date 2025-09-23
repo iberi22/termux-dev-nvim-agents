@@ -76,7 +76,7 @@ npm_install_global() {
     fi
 }
 
-install_codex() { 
+install_codex() {
     note "Instalando OpenAI Codex CLI (@openai/codex)…"
     # Intenta varios paquetes posibles para Codex
     if ! npm_install_global "@openai/codex"; then
@@ -85,7 +85,7 @@ install_codex() {
     fi
 }
 
-install_gemini() { 
+install_gemini() {
     note "Instalando Google Gemini CLI (@google/gemini-cli)…"
     if ! npm_install_global "@google/gemini-cli"; then
         warn "Intentando con @google/generative-ai-cli (legacy)..."
@@ -93,7 +93,7 @@ install_gemini() {
     fi
 }
 
-install_qwen() { 
+install_qwen() {
     note "Instalando Qwen Code CLI…"
     # Intenta varios paquetes posibles para Qwen
     if ! npm_install_global "qwen-code"; then

@@ -57,10 +57,10 @@ command_exists() {
 # Job 1: Shell Lint & Syntax (replicates CI)
 job_shell_lint() {
     step "Job 1/4: Shell Lint & Syntax Check"
-    
+
     info "Running bash syntax check..."
     local syntax_errors=0
-    
+
     # Find all shell scripts
     while IFS= read -r -d '' file; do
         if ! bash -n "$file" 2>/dev/null; then
@@ -71,12 +71,12 @@ job_shell_lint() {
             success "Syntax OK: $file"
         fi
     done < <(find . \( -path './.git' -o -path './node_modules' \) -prune -o -name '*.sh' -type f -print0)
-    
+
     if [[ $syntax_errors -gt 0 ]]; then
         error "Found $syntax_errors file(s) with syntax errors"
         return 1
     fi
-    
+
     info "Running ShellCheck analysis..."
     if command_exists shellcheck || command_exists npx; then
         # Use our lint script which has the same logic as CI
@@ -87,7 +87,7 @@ job_shell_lint() {
     else
         warning "ShellCheck not available - install for better validation"
     fi
-    
+
     # Run shfmt diff on tracked .sh files only (avoid touching .md)
     if command_exists shfmt; then
         info "Running shfmt diff on tracked .sh files..."
@@ -108,10 +108,10 @@ job_shell_lint() {
     success "Shell Lint & Syntax: PASSED"
 }
 
-# Job 2: BATS Tests (replicates CI) 
+# Job 2: BATS Tests (replicates CI)
 job_bats_tests() {
     echo -e "\n${CYAN}=== Job 2/4: BATS Integration Tests ===${NC}"
-    
+
     if [ ! -d "tests/bats" ]; then
         echo -e "${YELLOW}⚠️  No BATS tests directory found, skipping...${NC}"
         return 0
@@ -146,32 +146,32 @@ NODE
                         sed -i 's/\r$//' "$f" 2>/dev/null || (awk '{ sub(/\r$/, ""); print }' "$f" > "$f.tmp" && mv "$f.tmp" "$f") 2>/dev/null || true
                 done < <(find tests/bats -type f \( -name "*.bats" -o -name "*.bash" \) -print0)
         fi
-    
+
     if ! command -v npm >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  npm not found, installing BATS manually...${NC}"
         # Could add manual BATS installation here
         return 0
     fi
-    
+
     echo "📦 Installing BATS test framework..."
     npm install --no-save bats >/dev/null 2>&1
-    
+
     if [ ! -f "node_modules/bats/bin/bats" ]; then
         echo -e "${RED}❌ BATS installation failed${NC}"
         exit 1
     fi
-    
+
     echo "🧪 Running BATS integration tests..."
-    
+
     # Find all BATS test files
     local test_files
     test_files=$(find tests/bats -name "*.bats" 2>/dev/null)
-    
+
     if [ -z "$test_files" ]; then
         echo -e "${YELLOW}⚠️  No BATS test files found${NC}"
         return 0
     fi
-    
+
     local failed=0
     while IFS= read -r test_file; do
         echo "  Running $(basename "$test_file")..."
@@ -180,19 +180,19 @@ NODE
             failed=1
         fi
     done <<< "$test_files"
-    
+
     if [ $failed -eq 1 ]; then
         echo -e "${RED}❌ BATS tests failed${NC}"
         exit 1
     fi
-    
+
     echo -e "${GREEN}✅ All BATS tests passed${NC}"
 }
 
 # Job 3: Metadata Sanity (replicates CI)
 job_metadata_sanity() {
     step "Job 3/4: Metadata Sanity Check"
-    
+
     info "Checking package.json..."
     if [ -f "package.json" ]; then
         # Simple JSON validation using jq if available, otherwise use node
@@ -213,7 +213,7 @@ job_metadata_sanity() {
     else
         info "package.json not found - skipping validation"
     fi
-    
+
     info "Checking .github/workflows/ci.yml..."
     if command_exists python3; then
         if ! python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))" 2>/dev/null; then
@@ -223,7 +223,7 @@ job_metadata_sanity() {
     else
         info "Python not available - skipping YAML validation"
     fi
-    
+
     info "Checking essential files exist..."
     local required_files=(
         "README.md"
@@ -231,28 +231,28 @@ job_metadata_sanity() {
         "setup.sh"
         ".shellcheckrc"
     )
-    
+
     for file in "${required_files[@]}"; do
         if [[ ! -f "$file" ]]; then
             error "Required file missing: $file"
             return 1
         fi
     done
-    
+
     success "Metadata Sanity: PASSED"
 }
 
 # Job 4: Pre-push validation
 job_pre_push_validation() {
     step "Job 4/4: Pre-push Validation"
-    
+
     info "Checking git status..."
     if [[ -n "$(git status --porcelain)" ]]; then
         warning "You have uncommitted changes:"
         git status --short
         echo
     fi
-    
+
     info "Checking for large files..."
     local large_files
     large_files=$(find . -type f -size +1M -not -path './.git/*' -not -path './node_modules/*' || true)
@@ -260,46 +260,46 @@ job_pre_push_validation() {
         warning "Large files detected:"
         echo "$large_files"
     fi
-    
+
     info "Checking commit message format..."
     local last_commit
     last_commit=$(git log -1 --pretty=format:"%s")
     if [[ ${#last_commit} -gt 72 ]]; then
         warning "Last commit message is longer than 72 characters"
     fi
-    
+
     success "Pre-push Validation: PASSED"
 }
 
 # Main execution
 main() {
     show_banner
-    
+
     cd "$PROJECT_ROOT"
-    
+
     local start_time
     start_time=$(date +%s)
-    
+
     info "Starting local CI validation..."
     info "Project root: $PROJECT_ROOT"
     echo
-    
+
     # Run all CI jobs
     job_shell_lint
-    job_bats_tests  
+    job_bats_tests
     job_metadata_sanity
     job_pre_push_validation
-    
+
         local end_time
         end_time=$(date +%s)
         local duration
     duration=$((end_time - start_time))
-    
+
     echo
     echo -e "${BOLD}${GREEN}"
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║                  ✅ ALL CHECKS PASSED! ✅                   ║"
-    echo "║                                                              ║"  
+    echo "║                                                              ║"
     echo "║          Your code is ready to push to GitHub! 🚀           ║"
     echo "║                                                              ║"
     echo "║                 Duration: ${duration}s                               ║"
@@ -307,7 +307,7 @@ main() {
     echo -e "${NC}"
 }
 
-# Handle interrupts gracefully  
+# Handle interrupts gracefully
 trap 'echo -e "\n${RED}❌ CI validation interrupted${NC}"; exit 1' INT TERM
 
 # Run main function

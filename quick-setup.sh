@@ -259,7 +259,7 @@ install_ai_agents() {
     if command -v gemini &>/dev/null; then
         echo -e "${YELLOW}🔐 Configurando autenticación OAuth2 para Gemini...${NC}"
         echo -e "${CYAN}Se abrirá el navegador para autenticarte con Google${NC}"
-        
+
         if gemini auth login; then
             echo -e "${GREEN}✅ Autenticación Gemini configurada${NC}"
         else

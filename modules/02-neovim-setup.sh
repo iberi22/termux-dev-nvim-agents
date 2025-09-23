@@ -72,7 +72,7 @@ setup_ai_environment() {
 CURRENT_AI_PROVIDER="gemini-cli"
 # NOTE: API Keys are optional. Use OAuth2 authentication instead:
 # - gemini auth login (for Gemini)
-# - codex login (for OpenAI Codex) 
+# - codex login (for OpenAI Codex)
 # - qwen-code setup (for Qwen)
 OPENAI_API_KEY=""
 ANTHROPIC_API_KEY=""

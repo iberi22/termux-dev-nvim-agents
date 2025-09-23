@@ -15,10 +15,10 @@
 
 # Config files
 *.yml text eol=lf
-*.yaml text eol=lf  
+*.yaml text eol=lf
 *.json text eol=lf
 
-# Markdown and documentation  
+# Markdown and documentation
 *.md text eol=lf
 *.txt text eol=lf
 
