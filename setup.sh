@@ -153,9 +153,10 @@ show_main_menu() {
     echo -e "${WHITE}│  9. 🌟 Complete Installation (Automatic)       │${NC}"
     echo -e "${WHITE}│ 10. 🧪 Run Installation Tests                  │${NC}"
     echo -e "${WHITE}│ 11. 🧹 Clean and Reinstall from Scratch        │${NC}"
+    echo -e "${GREEN}│ 12. 🎛️  Panel de Control Post-Instalación      │${NC}"
     echo -e "${WHITE}│ 99. 🚪 Exit                                    │${NC}"
     echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
-    echo -e "\n${YELLOW}Select an option [0-11, 99]:${NC} "
+    echo -e "\n${YELLOW}Select an option [0-12, 99]:${NC} "
 }
 
 # Function to run module with error handling
@@ -243,6 +244,121 @@ setup_gemini_cli() {
     echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
 }
 
+# Function for post-installation configuration
+post_installation_setup() {
+    echo -e "${CYAN}=============================================${NC}"
+    echo -e "${GREEN}🎉 ¡Instalación Completada con Éxito!${NC}"
+    echo -e "${CYAN}=============================================${NC}"
+    echo ""
+
+    # User password setup
+    echo -e "${YELLOW}🔐 Configuración de Seguridad del Usuario${NC}"
+    echo -e "${CYAN}Para mayor seguridad, es recomendable establecer una contraseña de usuario.${NC}"
+    read -p "¿Deseas establecer una contraseña para tu usuario? (y/N): " setup_passwd
+    if [[ "$setup_passwd" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}[INFO] Configurando contraseña de usuario...${NC}"
+        passwd
+    fi
+    echo ""
+
+    # SSH keys setup
+    echo -e "${YELLOW}🔑 Configuración de Llaves SSH para GitHub${NC}"
+    if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+        echo -e "${CYAN}No se encontraron llaves SSH. Generando nuevas llaves...${NC}"
+        read -p "Introduce tu email para GitHub: " git_email
+        if [[ -n "$git_email" ]]; then
+            ssh-keygen -t ed25519 -C "$git_email" -f "$HOME/.ssh/id_ed25519" -N ""
+            echo -e "${GREEN}✅ Llaves SSH generadas correctamente${NC}"
+        fi
+    fi
+
+    if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+        echo -e "${CYAN}=============================================${NC}"
+        echo -e "${YELLOW}📋 Tu Llave Pública SSH (cópiala en GitHub):${NC}"
+        echo -e "${CYAN}=============================================${NC}"
+        cat "$HOME/.ssh/id_ed25519.pub"
+        echo -e "${CYAN}=============================================${NC}"
+        echo -e "${BLUE}1. Ve a GitHub → Settings → SSH and GPG keys${NC}"
+        echo -e "${BLUE}2. Click 'New SSH key'${NC}"
+        echo -e "${BLUE}3. Copia y pega la llave de arriba${NC}"
+        echo -e "${CYAN}=============================================${NC}"
+        read -p "Presiona Enter cuando hayas agregado la llave a GitHub..."
+    fi
+    echo ""
+
+    # SSH server persistent setup
+    echo -e "${YELLOW}🌐 Servidor SSH Permanente${NC}"
+    echo -e "${CYAN}¿Deseas habilitar el servidor SSH para que se inicie automáticamente?${NC}"
+    echo -e "${BLUE}Esto te permitirá conectarte desde tu computadora usando SFTP/SSH.${NC}"
+    read -p "¿Habilitar servidor SSH permanente? (y/N): " enable_sshd
+    if [[ "$enable_sshd" =~ ^[Yy]$ ]]; then
+        if command -v sv-enable >/dev/null 2>&1; then
+            sv-enable sshd
+            echo -e "${GREEN}✅ Servidor SSH habilitado permanentemente${NC}"
+            echo -e "${CYAN}Conéctate usando: ssh -p 8022 $(whoami)@$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1)${NC}"
+        else
+            echo -e "${YELLOW}⚠️ termux-services no disponible. Instala con: pkg install termux-services${NC}"
+        fi
+    fi
+    echo ""
+
+    # Install termux-ai-panel command
+    echo -e "${YELLOW}🎛️ Instalando Panel de Control...${NC}"
+    install_ai_panel_command
+
+    echo -e "${GREEN}🎉 ¡Configuración completada!${NC}"
+    echo -e "${CYAN}Usa el comando '${YELLOW}termux-ai-panel${CYAN}' para acceder al panel de control.${NC}"
+
+    # Offer to launch the full web panel now
+    echo ""
+    echo -e "${YELLOW}🌐 ¿Quieres abrir ahora el Panel Web completo?${NC}"
+    echo -e "${BLUE}Esto iniciará el backend (FastAPI) en 8000 y el frontend (Vite) en 3000.${NC}"
+    read -p "Lanzar el Panel Web ahora? (y/N): " launch_web
+    if [[ "$launch_web" =~ ^[Yy]$ ]]; then
+        local panel_launcher="${SCRIPT_DIR}/start-panel.sh"
+        if [[ -f "$panel_launcher" ]]; then
+            echo -e "${BLUE}🔧 Preparando dependencias del panel web...${NC}"
+            if bash "$panel_launcher" install; then
+                echo -e "${GREEN}✅ Dependencias listas. Iniciando entorno de desarrollo...${NC}"
+                echo -e "${CYAN}Frontend: http://localhost:3000${NC}"
+                echo -e "${CYAN}Backend:  http://localhost:8000${NC}"
+                echo -e "${YELLOW}💡 Mantén esta terminal abierta. Pulsa Ctrl+C para detener.${NC}"
+                bash "$panel_launcher" dev
+            else
+                echo -e "${RED}❌ No se pudieron instalar dependencias del panel web.${NC}"
+                echo -e "${YELLOW}💡 Puedes intentar más tarde con: ${CYAN}bash start-panel.sh install && bash start-panel.sh dev${NC}"
+            fi
+        else
+            echo -e "${RED}❌ No se encontró el lanzador del panel web: ${panel_launcher}${NC}"
+            echo -e "${YELLOW}💡 Asegúrate de haber clonado el repo completo y ejecutado la instalación completa.${NC}"
+        fi
+    else
+        echo -e "${BLUE}Continuando en la terminal. Podrás iniciar el panel cuando quieras con:${NC} ${YELLOW}termux-ai-panel${NC}"
+    fi
+}
+
+# Function to install the AI panel command
+install_ai_panel_command() {
+    local panel_script="$PREFIX/bin/termux-ai-panel"
+
+    cat > "$panel_script" << 'EOF'
+#!/bin/bash
+# Termux AI Panel - Post-installation management tool
+
+if [[ -f "$HOME/termux-dev-nvim-agents/scripts/termux-ai-panel.sh" ]]; then
+    bash "$HOME/termux-dev-nvim-agents/scripts/termux-ai-panel.sh" "$@"
+elif [[ -f "$HOME/termux-dev-nvim-agents/modules/termux-ai-panel.sh" ]]; then
+    bash "$HOME/termux-dev-nvim-agents/modules/termux-ai-panel.sh" "$@"
+else
+    echo "❌ Panel script not found. Please reinstall the termux-ai setup."
+    exit 1
+fi
+EOF
+
+    chmod +x "$panel_script"
+    echo -e "${GREEN}✅ Comando 'termux-ai-panel' instalado${NC}"
+}
+
 # Function for complete installation
 full_installation() {
     echo -e "${BLUE}[AUTO] Starting complete installation...${NC}"
@@ -292,6 +408,10 @@ full_installation() {
     fi
 
     echo -e "${GREEN}[DONE] Complete installation finished!${NC}"
+
+    # Post-installation setup
+    post_installation_setup
+
     echo -e "${CYAN}[INFO] Restarting terminal...${NC}"
 
     # Reload configuration
@@ -377,13 +497,23 @@ main() {
             11)
                 run_module "99-clean-reset"
                 ;;
+            12)
+                # Launch post-installation control panel
+                if [[ -f "${SCRIPT_DIR}/scripts/termux-ai-panel.sh" ]]; then
+                    echo -e "${BLUE}🎛️ Lanzando Panel de Control...${NC}"
+                    bash "${SCRIPT_DIR}/scripts/termux-ai-panel.sh"
+                else
+                    echo -e "${RED}❌ Panel no encontrado${NC}"
+                    echo -e "${YELLOW}💡 El panel se instala automáticamente tras la instalación completa${NC}"
+                fi
+                ;;
             99)
                 echo -e "${GREEN}Thank you for using Termux AI Setup!${NC}"
                 log "Setup terminated by user"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[ERROR] Invalid option. Select a number from 0-11, R (Rastafari), or 99.${NC}"
+                echo -e "${RED}[ERROR] Invalid option. Select a number from 0-12, R (Rastafari), or 99.${NC}"
                 sleep 2
                 ;;
         esac

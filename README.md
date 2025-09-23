@@ -176,6 +176,11 @@ Use ':' to ask Gemini. Examples:
 - [Guía de Instalación](./INSTALLATION_TUTORIAL.md)
 - [Comandos Rápidos](./QUICK_COMMANDS.md)
 - [Configuración Avanzada](./SETUP_GUIDE.md)
+- [Agentes soportados](./AGENTS.md)
+- [Guía de Gemini CLI](./GEMINI.md)
+- Especificaciones y Roadmap: [SPEC](./specs/SPEC.md) · [ROADMAP](./specs/ROADMAP.md) · [TASKS](./specs/TASKS.md) · [PROGRESS](./specs/PROGRESS.md)
+
+Regla del proyecto: cada cambio relevante debe actualizar `specs/PROGRESS.md`.
 
 ## 🤝 Contribuir
 

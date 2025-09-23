@@ -3,6 +3,7 @@
 ## 📱 Windows PowerShell Commands
 
 ### Launch Complete Setup
+
 ```powershell
 # Download and run setup script
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/Setup-TermuxAI.ps1" -OutFile "Setup-TermuxAI.ps1"
@@ -11,6 +12,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### Manual Emulator Commands
+
 ```powershell
 # Set Android environment
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
@@ -28,6 +30,7 @@ adb shell
 ```
 
 ### Download Termux APK
+
 ```powershell
 # Get latest Termux APK
 $release = Invoke-RestMethod "https://api.github.com/repos/termux/termux-app/releases/latest"
@@ -38,15 +41,17 @@ Invoke-WebRequest $apk.browser_download_url -OutFile "termux.apk"
 adb install termux.apk
 ```
 
-## � CI/CD & Development Commands
+## 🛠️ CI/CD & Development Commands
 
 ### Repository Setup (One Command)
+
 ```bash
 # Complete CI/CD setup and configuration
 bash scripts/setup-repo.sh
 ```
 
 ### Development Quality Tools
+
 ```bash
 # Lint all shell scripts with comprehensive checking
 bash scripts/lint.sh
@@ -62,6 +67,7 @@ cp scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 ```
 
 ### CI/CD Workflow Commands
+
 ```bash
 # Check GitHub Actions status
 gh run list
@@ -80,6 +86,7 @@ gh pr create --title "CI: Fix build issues" --body "Automated CI fixes" --label 
 ```
 
 ### CodeRabbit Integration
+
 ```bash
 # Check CodeRabbit configuration
 cat .coderabbit.yml
@@ -91,15 +98,17 @@ gh issue list --label "coderabbit-created"
 gh issue list --label "build failed"
 ```
 
-## �📱 Termux Commands (Run in Android Emulator)
+## 📱 Termux Commands (Run in Android Emulator)
 
 ### Quick Installation
+
 ```bash
 # One-command complete setup
 wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
 ### Manual Installation
+
 ```bash
 # Update packages
 pkg update && pkg upgrade
@@ -116,6 +125,7 @@ chmod +x setup.sh
 ```
 
 ### Post-Installation Testing
+
 ```bash
 # Test installed components
 node --version
@@ -133,6 +143,7 @@ cd ~/termux-dev-nvim-agents
 ## 🤖 AI Commands
 
 ### OpenAI Codex
+
 ```bash
 codex "write a python web scraper"
 codex "create a react component"
@@ -140,6 +151,7 @@ codex "debug this javascript code"
 ```
 
 ### Google Gemini
+
 ```bash
 gemini "explain machine learning concepts"
 gemini "write documentation for this code"
@@ -147,12 +159,14 @@ gemini "optimize this algorithm"
 ```
 
 ### Qwen Code Assistant
+
 ```bash
 qwen "refactor this function"
 qwen-code "generate unit tests"
 ```
 
 ### Neovim AI Integration
+
 ```vim
 " In Neovim:
 :CopilotChat explain this code
@@ -163,6 +177,7 @@ qwen-code "generate unit tests"
 ## 🔧 Configuration Commands
 
 ### AI Authentication Setup
+
 ```bash
 # OAuth2 Authentication (Recommended)
 gemini auth login      # Gemini AI via Google OAuth2
@@ -175,6 +190,7 @@ source ~/.zshrc
 ```
 
 ### Git Configuration
+
 ```bash
 git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"
@@ -182,7 +198,8 @@ ssh-keygen -t ed25519 -C "your.email@example.com"
 ```
 
 ## 📁 File Structure
-```
+
+```text
 termux-dev-nvim-agents/
 ├── install.sh                # Quick installer
 ├── setup.sh                 # Main setup script
@@ -202,12 +219,12 @@ termux-dev-nvim-agents/
 
 ## 🌐 URLs Reference
 
-- **Repository**: https://github.com/iberi22/termux-dev-nvim-agents
+- **Repository**: [github.com/iberi22/termux-dev-nvim-agents](https://github.com/iberi22/termux-dev-nvim-agents)
 - **Quick Install**: `wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash`
 - **Manual Setup**: [raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh](https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/setup.sh)
-- **Gemini API**: https://aistudio.google.com/app/apikey
-- **OpenAI API**: https://platform.openai.com/api-keys
-- **Termux APK**: https://github.com/termux/termux-app/releases
+- **Gemini CLI (OAuth2)**: consulta la guía de autenticación [authentication.md](https://raw.githubusercontent.com/google-gemini/gemini-cli/HEAD/docs/cli/authentication.md)
+- **OpenAI API**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- **Termux APK**: [github.com/termux/termux-app/releases](https://github.com/termux/termux-app/releases)
 
 ## 🎯 Quick Start Checklist
 

@@ -68,21 +68,25 @@ update_packages() {
     : > "$LOG_FILE" || true
     echo -e "${CYAN}📦 Actualizando paquetes de Termux...${NC}"
 
+    # Forzar no interactivo y mantener configs existentes
+    export DEBIAN_FRONTEND=noninteractive
+    APT_OPTS=("-o" "Dpkg::Options::=--force-confdef" "-o" "Dpkg::Options::=--force-confold")
+
     if [[ "$VERBOSE" == true ]]; then
-        if ! pkg update -y 2>&1 | tee -a "$LOG_FILE"; then
+        if ! apt-get update 2>&1 | tee -a "$LOG_FILE"; then
             echo -e "${RED}❌ Error al actualizar paquetes${NC}"
             return 1
         fi
-        if ! pkg upgrade -y 2>&1 | tee -a "$LOG_FILE"; then
+        if ! apt-get -y "${APT_OPTS[@]}" upgrade 2>&1 | tee -a "$LOG_FILE"; then
             echo -e "${RED}❌ Error al actualizar paquetes${NC}"
             return 1
         fi
     else
-        if ! pkg update -y &>> "$LOG_FILE"; then
+        if ! apt-get update &>> "$LOG_FILE"; then
             echo -e "${RED}❌ Error al actualizar paquetes${NC}"
             return 1
         fi
-        if ! pkg upgrade -y &>> "$LOG_FILE"; then
+        if ! apt-get -y "${APT_OPTS[@]}" upgrade &>> "$LOG_FILE"; then
             echo -e "${RED}❌ Error al actualizar paquetes${NC}"
             return 1
         fi
@@ -104,11 +108,11 @@ install_base_packages() {
     for package in "${packages[@]}"; do
         echo -e "${YELLOW}Instalando: $package${NC}"
         if [[ "$VERBOSE" == true ]]; then
-            if ! pkg install -y "$package" 2>&1 | tee -a "$LOG_FILE"; then
+            if ! apt-get install -y "${APT_OPTS[@]}" "$package" 2>&1 | tee -a "$LOG_FILE"; then
                 echo -e "${YELLOW}⚠️ Error instalando $package, continuando...${NC}"
             fi
         else
-            if ! pkg install -y "$package" &>> "$LOG_FILE"; then
+            if ! apt-get install -y "${APT_OPTS[@]}" "$package" &>> "$LOG_FILE"; then
                 echo -e "${YELLOW}⚠️ Error instalando $package, continuando...${NC}"
             fi
         fi
@@ -399,6 +403,18 @@ EOF
 
     echo -e "${GREEN}✅ Agente IA instalado${NC}"
     echo -e "${CYAN}💡 Usa ': \"tu pregunta\"' para activar el asistente${NC}"
+
+    # Instalar panel post-instalación
+    if ! command -v termux-ai-panel &>/dev/null; then
+        mkdir -p ~/bin
+        cp "$PWD/scripts/termux-ai-panel.sh" ~/bin/termux-ai-panel 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/scripts/termux-ai-panel.sh -o ~/bin/termux-ai-panel
+        chmod +x ~/bin/termux-ai-panel
+        if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
+            echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
+            echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+            export PATH="$HOME/bin:$PATH"
+        fi
+    fi
 }
 
 # Función para configurar servicios SSH (opcional)
@@ -454,8 +470,50 @@ show_completion_summary() {
 
     if [[ "${install_nvim,,}" == "s" || "${install_nvim,,}" == "y" ]]; then
         echo -e "${CYAN}📦 Instalando Neovim...${NC}"
-        pkg install -y neovim
+        if [[ "$VERBOSE" == true ]]; then
+            apt-get install -y neovim 2>&1 | tee -a "$LOG_FILE"
+        else
+            apt-get install -y neovim &>> "$LOG_FILE"
+        fi
         echo -e "${GREEN}✅ Neovim instalado${NC}"
+    fi
+
+    # Asegurar claves SSH existen
+    if [[ ! -f ~/.ssh/id_ed25519 ]]; then
+        echo -e "${YELLOW}🔑 Generando clave SSH (ed25519)...${NC}"
+        mkdir -p ~/.ssh && chmod 700 ~/.ssh
+        if [[ "$VERBOSE" == true ]]; then
+            ssh-keygen -t ed25519 -C "$(whoami)@$(uname -n)" -f ~/.ssh/id_ed25519 -N "" 2>&1 | tee -a "$LOG_FILE"
+        else
+            ssh-keygen -t ed25519 -C "$(whoami)@$(uname -n)" -f ~/.ssh/id_ed25519 -N "" &>> "$LOG_FILE"
+        fi
+        echo -e "${CYAN}📋 Clave pública:${NC}\n"
+        cat ~/.ssh/id_ed25519.pub
+    fi
+
+    # Solicitar establecer contraseña de usuario
+    echo -e "\n${YELLOW}¿Deseas establecer/actualizar tu contraseña de usuario ahora? (s/N)${NC}"
+    read -r set_pass
+    if [[ "${set_pass,,}" == "s" || "${set_pass,,}" == "y" ]]; then
+        passwd || true
+    fi
+
+    # Preguntar por servicio SSH permanente
+    echo -e "\n${YELLOW}¿Habilitar servidor SSH al iniciar sesión (servicio permanente)? (s/N)${NC}"
+    read -r enable_daemon
+    if [[ "${enable_daemon,,}" == "s" || "${enable_daemon,,}" == "y" ]]; then
+        if command -v sv-enable &>/dev/null; then
+            sv-enable sshd || true
+        else
+            echo -e "${YELLOW}termux-services no disponible; instalando...${NC}"
+            if [[ "$VERBOSE" == true ]]; then
+                apt-get install -y termux-services 2>&1 | tee -a "$LOG_FILE"
+            else
+                apt-get install -y termux-services &>> "$LOG_FILE"
+            fi
+            sv-enable sshd || true
+        fi
+        echo -e "${GREEN}✅ SSH habilitado como servicio${NC}"
     fi
 }
 

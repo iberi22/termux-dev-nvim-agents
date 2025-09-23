@@ -26,9 +26,9 @@ OPENAI_API_KEY=""
 # Obtén en: https://console.anthropic.com/
 ANTHROPIC_API_KEY=""
 
-# Google Gemini - Use OAuth2 Authentication
+# Google Gemini - OAuth2 Authentication only
 # Run: gemini auth login (no API key needed)
-# GEMINI_API_KEY="" # Deprecated: Use OAuth2 instead
+# Nota: No uses claves para Gemini en este proyecto (OAuth2-only)
 
 # Chutes AI API Key
 # Obtén en: https://chutes.ai/app/keys
