@@ -259,6 +259,23 @@ post_installation_setup() {
     fi
     echo ""
 
+    # SSH user setup
+    echo -e "${YELLOW}👤 Configuración de Usuario SSH${NC}"
+    echo -e "${CYAN}Para configurar el acceso SSH remoto, necesitamos un usuario y contraseña.${NC}"
+    echo -e "${BLUE}Nota: En Termux, el usuario SSH será tu usuario actual del sistema.${NC}"
+    read -p "¿Deseas configurar un usuario SSH ahora? (y/N): " setup_ssh_user
+    if [[ "$setup_ssh_user" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}[INFO] El usuario SSH será: $(whoami)${NC}"
+        echo -e "${CYAN}Asegúrate de tener una contraseña configurada para este usuario.${NC}"
+        if ! passwd -S $(whoami) >/dev/null 2>&1 || passwd -S $(whoami) | grep -q "NP"; then
+            echo -e "${YELLOW}⚠️ No tienes contraseña configurada. Vamos a configurarla...${NC}"
+            passwd
+        else
+            echo -e "${GREEN}✅ Contraseña ya configurada${NC}"
+        fi
+    fi
+    echo ""
+
     # SSH keys setup
     echo -e "${YELLOW}🔑 Configuración de Llaves SSH para GitHub${NC}"
     if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
@@ -294,6 +311,19 @@ post_installation_setup() {
             sv-enable sshd
             echo -e "${GREEN}✅ Servidor SSH habilitado permanentemente${NC}"
             echo -e "${CYAN}Conéctate usando: ssh -p 8022 $(whoami)@$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1)${NC}"
+
+            # Preguntar si iniciar SSH ahora
+            echo ""
+            echo -e "${YELLOW}🚀 ¿Quieres iniciar el servidor SSH ahora?${NC}"
+            read -p "¿Iniciar SSH inmediatamente? (y/N): " start_ssh_now
+            if [[ "$start_ssh_now" =~ ^[Yy]$ ]]; then
+                if command -v sv >/dev/null 2>&1; then
+                    sv up sshd
+                    echo -e "${GREEN}✅ Servidor SSH iniciado${NC}"
+                else
+                    echo -e "${YELLOW}⚠️ No se pudo iniciar SSH automáticamente${NC}"
+                fi
+            fi
         else
             echo -e "${YELLOW}⚠️ termux-services no disponible. Instala con: pkg install termux-services${NC}"
         fi

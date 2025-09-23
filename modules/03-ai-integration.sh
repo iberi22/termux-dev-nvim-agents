@@ -28,13 +28,13 @@ is_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 ensure_prereqs() {
     note "Verificando requisitos (Node 22 LTS, npm, Python, certificados SSL)…"
-    
+
     # Instalar Python primero (necesario para node-gyp)
     if ! is_cmd python; then
         warn "Python no encontrado. Instalando…"
         pkg install -y python >/dev/null
     fi
-    
+
     if ! is_cmd node; then
         warn "Node.js no encontrado. Instalando LTS…"
         pkg install -y nodejs-lts >/dev/null
@@ -75,13 +75,13 @@ ensure_prereqs() {
 npm_install_global() {
     local pkg_name="$1"
     note "Instalando paquete global: $pkg_name"
-    
+
     # Verificar si ya está instalado
     if npm list -g --depth=0 "$pkg_name" >/dev/null 2>&1; then
         ok "$pkg_name ya estaba instalado"
         return 0
     fi
-    
+
     # Intentar instalación con manejo de conflictos
     if npm i -g "$pkg_name" --force >/dev/null 2>&1; then
         ok "$pkg_name instalado"
@@ -103,13 +103,13 @@ install_codex() {
 
 install_gemini() {
     note "Instalando Google Gemini CLI (@google/gemini-cli)…"
-    
+
     # Remover instalación existente si hay conflictos
     if npm list -g --depth=0 "@google/gemini-cli" >/dev/null 2>&1; then
         warn "Removiendo instalación existente de Gemini CLI..."
         npm uninstall -g "@google/gemini-cli" >/dev/null 2>&1 || true
     fi
-    
+
     if ! npm_install_global "@google/gemini-cli"; then
         warn "Intentando con @google/generative-ai-cli (legacy)..."
         npm_install_global "@google/generative-ai-cli" || warn "Gemini CLI no disponible"
@@ -158,7 +158,7 @@ main() {
     echo
     echo -e "${YELLOW}Comandos disponibles después de autenticación:${NC}"
     echo "  - codex        # OpenAI Codex CLI"
-    echo "  - gemini       # Google Gemini CLI" 
+    echo "  - gemini       # Google Gemini CLI"
     echo "  - qwen         # Qwen Code CLI"
     echo "  - :            # Comando rápido (wrapper de gemini)"
 }
