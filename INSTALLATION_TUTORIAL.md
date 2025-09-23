@@ -132,17 +132,16 @@ chmod +x setup.sh
 
 ## ⚙️ Part 4: Configuration and Testing
 
-### 1. Configure API Keys (Optional but Recommended)
+### 1. Configure AI Authentication (Recommended)
 ```bash
-# Get your API keys:
-# - Gemini: https://aistudio.google.com/app/apikey
-# - OpenAI: https://platform.openai.com/api-keys
+# OAuth2 Authentication (Primary Method)
+gemini auth login     # Gemini AI via Google OAuth2
+codex login          # OpenAI Codex (if available)
+qwen setup          # Qwen configuration
 
-# Set environment variables
-echo 'export GEMINI_API_KEY="your-gemini-key-here"' >> ~/.zshrc
+# Alternative: API Keys (OpenAI only)
+# Get API key: https://platform.openai.com/api-keys
 echo 'export OPENAI_API_KEY="your-openai-key-here"' >> ~/.zshrc
-
-# Reload configuration
 source ~/.zshrc
 ```
 

@@ -162,10 +162,14 @@ qwen-code "generate unit tests"
 
 ## 🔧 Configuration Commands
 
-### API Keys Setup
+### AI Authentication Setup
 ```bash
-# Add to ~/.zshrc
-echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.zshrc
+# OAuth2 Authentication (Recommended)
+gemini auth login      # Gemini AI via Google OAuth2
+codex login           # OpenAI Codex (if available)
+qwen setup           # Qwen configuration
+
+# Legacy API Key (Optional)
 echo 'export OPENAI_API_KEY="your-key-here"' >> ~/.zshrc
 source ~/.zshrc
 ```

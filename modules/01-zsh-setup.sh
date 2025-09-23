@@ -98,6 +98,33 @@ if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-completions" ]]; 
     echo -e "${GREEN}✅ zsh-completions instalado${NC}"
 fi
 
+# Instalar Yazi (explorador de archivos terminal)
+echo -e "${YELLOW}📂 Instalando Yazi (explorador de archivos)...${NC}"
+if ! command -v yazi >/dev/null 2>&1; then
+    # Instalar desde cargo (Rust package manager) ya que pkg no incluye yazi aún
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo -e "${BLUE}📦 Instalando Rust para Yazi...${NC}"
+        pkg install -y rust
+    fi
+    
+    if command -v cargo >/dev/null 2>&1; then
+        echo -e "${BLUE}📥 Compilando Yazi desde fuente...${NC}"
+        cargo install --locked yazi-fm yazi-cli
+        echo -e "${GREEN}✅ Yazi instalado${NC}"
+    else
+        echo -e "${YELLOW}⚠️ No se pudo instalar Yazi, continuando...${NC}"
+    fi
+else
+    echo -e "${GREEN}✅ Yazi ya está instalado${NC}"
+fi
+
+# Instalar plugin de Yazi para Oh My Zsh
+if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/yazi" ]]; then
+    echo -e "${BLUE}📥 Instalando plugin de Yazi para Zsh...${NC}"
+    git clone https://github.com/DreamMaoMao/yazi.zsh ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/yazi
+    echo -e "${GREEN}✅ Plugin de Yazi instalado${NC}"
+fi
+
 # Instalar tema Powerlevel10k
 if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]]; then
     echo -e "${BLUE}🎨 Instalando tema Powerlevel10k...${NC}"
@@ -137,6 +164,7 @@ plugins=(
     colored-man-pages
     extract
     z
+    yazi
     node
     npm
     python
@@ -210,6 +238,11 @@ alias du='dust'
 alias df='duf'
 alias ps='procs'
 alias top='htop'
+
+# Yazi (explorador de archivos)
+alias y='yazi'
+alias yy='yazi .'
+alias yz='yazi --cwd-file=/tmp/yazi-cwd'
 
 # Termux específicos
 alias apt='pkg'
@@ -327,24 +360,25 @@ fi
 
 # Función para configurar API keys
 setup-ai-keys() {
-    echo -e "${BLUE}Setting up AI API keys...${NC}"
+    echo -e "${BLUE}Configurando agentes IA con OAuth2...${NC}"
+    
+    # Los agentes IA ahora usan OAuth2 automático
+    echo -e "${CYAN}Los agentes IA (Codex, Gemini, Qwen) se configurarán automáticamente${NC}"
+    echo -e "${CYAN}con autenticación OAuth2 durante la instalación.${NC}"
+    
+    # Información para el usuario
+    cat > "$HOME/.ai-info" <<'AI_INFO'
+# Información de Agentes IA - Termux AI Setup
+# 
+# Agentes disponibles después de la instalación:
+# - gemini auth login    # Autenticación Google OAuth2
+# - codex login         # Autenticación OpenAI OAuth2  
+# - qwen-code           # Agente Qwen para código
+# 
+# Uso: Los agentes se activan automáticamente después de login OAuth2
+AI_INFO
 
-    read -r -p "Enter your OpenAI API key (optional): " openai_key
-    read -r -p "Enter your Gemini API key (optional): " gemini_key
-    read -r -p "Enter your Claude API key (optional): " claude_key
-
-    # Guardar en un archivo seguro
-    cat > "$HOME/.ai-env" <<'AI_ENV'
-# AI API Keys - DO NOT COMMIT TO GIT
-export OPENAI_API_KEY="${openai_key}"
-export GEMINI_API_KEY="${gemini_key}"
-export ANTHROPIC_API_KEY="${claude_key}"
-AI_ENV
-
-    # Cargar de inmediato
-    # shellcheck disable=SC1090
-    [ -f "$HOME/.ai-env" ] && source "$HOME/.ai-env"
-    echo -e "${GREEN}AI API keys configured!${NC}"
+    echo -e "${GREEN}Información de agentes IA configurada!${NC}"
 }
 
 # ====================================

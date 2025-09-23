@@ -88,6 +88,23 @@ job_shell_lint() {
         warning "ShellCheck not available - install for better validation"
     fi
     
+    # Run shfmt diff on tracked .sh files only (avoid touching .md)
+    if command_exists shfmt; then
+        info "Running shfmt diff on tracked .sh files..."
+        FILES=$(git ls-files '**/*.sh' || true)
+        if [[ -n "$FILES" ]]; then
+            if ! shfmt -d -i 4 -ci -sr $FILES; then
+                warning "shfmt suggested formatting changes (diff above)."
+            else
+                success "shfmt: no changes suggested"
+            fi
+        else
+            info "No .sh files tracked by git for shfmt"
+        fi
+    else
+        info "shfmt not available - skipping formatting diff"
+    fi
+
     success "Shell Lint & Syntax: PASSED"
 }
 
@@ -99,6 +116,36 @@ job_bats_tests() {
         echo -e "${YELLOW}⚠️  No BATS tests directory found, skipping...${NC}"
         return 0
     fi
+
+        # Normalize line endings in test files to avoid CRLF issues on Windows
+        echo "⚙️  Normalizing test file line endings (CRLF -> LF)..."
+        if command -v perl >/dev/null 2>&1; then
+                find tests/bats -type f \( -name "*.bats" -o -name "*.bash" \) -print0 | xargs -0 -I{} perl -pi -e 's/\r\n/\n/g; s/\r/\n/g' "{}" 2>/dev/null || true
+        elif command -v node >/dev/null 2>&1; then
+                node - <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const dir = 'tests/bats';
+if (fs.existsSync(dir)) {
+    for (const f of fs.readdirSync(dir)) {
+        if (f.endsWith('.bats') || f.endsWith('.bash')) {
+            const p = path.join(dir, f);
+            try {
+                const data = fs.readFileSync(p, 'utf8');
+                const norm = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                if (norm !== data) fs.writeFileSync(p, norm, 'utf8');
+            } catch {}
+        }
+    }
+}
+NODE
+        elif command -v dos2unix >/dev/null 2>&1; then
+                find tests/bats -type f \( -name "*.bats" -o -name "*.bash" \) -print0 | xargs -0 dos2unix -q 2>/dev/null || true
+        else
+                while IFS= read -r -d '' f; do
+                        sed -i 's/\r$//' "$f" 2>/dev/null || (awk '{ sub(/\r$/, ""); print }' "$f" > "$f.tmp" && mv "$f.tmp" "$f") 2>/dev/null || true
+                done < <(find tests/bats -type f \( -name "*.bats" -o -name "*.bash" \) -print0)
+        fi
     
     if ! command -v npm >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  npm not found, installing BATS manually...${NC}"
@@ -243,9 +290,9 @@ main() {
     job_metadata_sanity
     job_pre_push_validation
     
-    local end_time
-    end_time=$(date +%s)
-    local duration
+        local end_time
+        end_time=$(date +%s)
+        local duration
     duration=$((end_time - start_time))
     
     echo

@@ -26,9 +26,9 @@ OPENAI_API_KEY=""
 # Obtén en: https://console.anthropic.com/
 ANTHROPIC_API_KEY=""
 
-# Google Gemini API Key
-# Obtén en: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY=""
+# Google Gemini - Use OAuth2 Authentication
+# Run: gemini auth login (no API key needed)
+# GEMINI_API_KEY="" # Deprecated: Use OAuth2 instead
 
 # Chutes AI API Key
 # Obtén en: https://chutes.ai/app/keys
@@ -105,8 +105,12 @@ AI_MAX_TOKENS="2048"
 # EJEMPLO DE CONFIGURACIÓN MÍNIMA
 # ====================================
 
-# Para empezar rápidamente, solo necesitas UNA de estas:
-# GEMINI_API_KEY="tu_clave_aqui"         # Gratis con límites generosos
+# CONFIGURACIÓN RECOMENDADA CON OAuth2:
+# gemini auth login                      # Gemini con OAuth2 (recomendado)
+# codex login                           # OpenAI Codex con OAuth2
+# qwen-code setup                       # Qwen Code Assistant
+
+# API Keys alternativas (si prefieres no usar OAuth2):
 # ANTHROPIC_API_KEY="tu_clave_aqui"      # Claude, muy bueno para código
 # OPENAI_API_KEY="tu_clave_aqui"         # GPT-4, estándar de la industria
 

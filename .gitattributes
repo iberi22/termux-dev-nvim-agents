@@ -1,3 +1,14 @@
+* text=auto
+
+# Enforce LF endings for shell and test files
+*.sh text eol=lf
+*.bash text eol=lf
+*.bats text eol=lf
+
+# Markdown and YAML should also use LF
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
 # Git attributes for consistent line endings
 # Shell scripts always use LF (prevents CRLF issues on Windows)
 *.sh text eol=lf

@@ -38,7 +38,12 @@ jobs:
       - name: shfmt (diff only)
         run: |
           set -e
-          shfmt -d -i 4 -ci -sr . || true
+          FILES=$(git ls-files '**/*.sh' || true)
+          if [ -n "$FILES" ]; then
+            shfmt -d -i 4 -ci -sr $FILES || true
+          else
+            echo "No .sh files to format"
+          fi
 
       - name: Install Bats
         run: |

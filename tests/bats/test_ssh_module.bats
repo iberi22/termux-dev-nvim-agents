@@ -30,7 +30,7 @@ setup() {
         "persist_path_update"
         "main"
     )
-    
+
     for func in "${required_functions[@]}"; do
         run grep -q "^${func}()" "$BATS_SSH_MODULE"
         [ "$status" -eq 0 ]
@@ -41,10 +41,10 @@ setup() {
     # Check that helper script templates are present in the module
     run grep -q "ssh-local-start" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     run grep -q "ssh-local-stop" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     run grep -q "ssh-local-info" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
@@ -57,7 +57,7 @@ setup() {
 @test "SSH module includes symlink creation" {
     run grep -q "link_helper_scripts" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     run grep -q "ln -sf" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
@@ -65,10 +65,10 @@ setup() {
 @test "SSH module includes PATH persistence" {
     run grep -q "persist_path_update" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     run grep -q ".bashrc" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     run grep -q ".zshrc" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
@@ -77,7 +77,7 @@ setup() {
     # Check for logging functions
     run grep -q -E "(info|success|warn|error)" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     # Check for color definitions
     run grep -q -E "(RED|GREEN|YELLOW|BLUE)" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]

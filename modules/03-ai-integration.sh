@@ -76,9 +76,32 @@ npm_install_global() {
     fi
 }
 
-install_codex() { note "Instalando OpenAI Codex CLI (@openai/codex)…"; npm_install_global "@openai/codex"; }
-install_gemini() { note "Instalando Google Gemini CLI (@google/gemini-cli)…"; npm_install_global "@google/gemini-cli"; }
-install_qwen() { note "Instalando Qwen Code CLI (@qwen-code/qwen-code)…"; npm_install_global "@qwen-code/qwen-code"; }
+install_codex() { 
+    note "Instalando OpenAI Codex CLI (@openai/codex)…"
+    # Intenta varios paquetes posibles para Codex
+    if ! npm_install_global "@openai/codex"; then
+        warn "Intentando con openai-codex..."
+        npm_install_global "openai-codex" || warn "Codex CLI no disponible"
+    fi
+}
+
+install_gemini() { 
+    note "Instalando Google Gemini CLI (@google/gemini-cli)…"
+    if ! npm_install_global "@google/gemini-cli"; then
+        warn "Intentando con @google/generative-ai-cli (legacy)..."
+        npm_install_global "@google/generative-ai-cli" || warn "Gemini CLI no disponible"
+    fi
+}
+
+install_qwen() { 
+    note "Instalando Qwen Code CLI…"
+    # Intenta varios paquetes posibles para Qwen
+    if ! npm_install_global "qwen-code"; then
+        if ! npm_install_global "@qwen/qwen-code"; then
+            npm_install_global "qwen-cli" || warn "Qwen CLI no disponible"
+        fi
+    fi
+}
 
 verify_binaries() {
     note "Verificando binarios instalados…"

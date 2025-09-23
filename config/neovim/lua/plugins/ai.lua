@@ -7,14 +7,14 @@ local function load_ai_env()
   local ai_env_file = vim.fn.expand("~/.ai-env")
   local env = {}
 
-  -- Default values
-  env.CURRENT_AI_PROVIDER = "copilot"
+  -- Default values - OAuth2 based authentication
+  env.CURRENT_AI_PROVIDER = "gemini-cli"
   env.OPENAI_API_KEY = ""
   env.ANTHROPIC_API_KEY = ""
-  env.GEMINI_API_KEY = ""
   env.CHUTES_API_KEY = ""
   env.MOONSHOT_API_KEY = ""
   env.GLM_API_KEY = ""
+  -- Note: GEMINI_API_KEY removed - use 'gemini auth login' for OAuth2
 
   if vim.fn.filereadable(ai_env_file) == 1 then
     for line in io.lines(ai_env_file) do
@@ -498,9 +498,11 @@ return {
       { "<leader>gq", "<cmd>GeminiChat<cr>", desc = "Gemini Quick" },
     },
     config = function()
+      -- NOTE: Using system gemini CLI with OAuth2 instead of API key
+      -- Run 'gemini auth login' to authenticate
       require("gemini").setup({
-        api_key = ai_env.GEMINI_API_KEY,
-        model = "gemini-pro",
+        model = "gemini-2.5-flash",
+        -- OAuth2 authentication is handled by system gemini CLI
       })
     end,
   },

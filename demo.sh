@@ -298,13 +298,13 @@ EOF
     # Probar ai-code-review si está disponible
     if [[ -x ~/bin/ai-code-review ]]; then
         echo -e "\n${CYAN}🔍 Ejecutando ai-code-review:${NC}"
-        ~/bin/ai-code-review "$temp_file" || echo -e "${YELLOW}⚠️ Requiere configurar GEMINI_API_KEY${NC}"
+        ~/bin/ai-code-review "$temp_file" || echo -e "${YELLOW}⚠️ Requiere autenticación con Gemini CLI${NC}"
     fi
 
     # Probar ai-generate-docs si está disponible
     if [[ -x ~/bin/ai-generate-docs ]]; then
         echo -e "\n${CYAN}📚 Ejecutando ai-generate-docs:${NC}"
-        ~/bin/ai-generate-docs "$temp_file" || echo -e "${YELLOW}⚠️ Requiere configurar GEMINI_API_KEY${NC}"
+        ~/bin/ai-generate-docs "$temp_file" || echo -e "${YELLOW}⚠️ Requiere autenticación con Gemini CLI${NC}"
     fi
 
     # Limpiar archivo temporal
@@ -399,10 +399,16 @@ demo_detailed_config() {
     echo -e "${WHITE}HOME:${NC} $HOME"
     echo -e "${WHITE}SHELL:${NC} $SHELL"
 
-    if [[ -n "${GEMINI_API_KEY:-}" ]]; then
-        echo -e "${WHITE}GEMINI_API_KEY:${NC} ${GREEN}Configurada${NC}"
+    # Verificar autenticación de Gemini CLI
+    if command -v gemini &>/dev/null; then
+        echo -e "${WHITE}Gemini CLI:${NC} ${GREEN}Instalado${NC}"
+        if gemini auth test &>/dev/null; then
+            echo -e "${WHITE}Autenticación:${NC} ${GREEN}Configurada${NC}"
+        else
+            echo -e "${WHITE}Autenticación:${NC} ${YELLOW}Pendiente${NC}"
+        fi
     else
-        echo -e "${WHITE}GEMINI_API_KEY:${NC} ${RED}No configurada${NC}"
+        echo -e "${WHITE}Gemini CLI:${NC} ${RED}No instalado${NC}"
     fi
 
     # Mostrar archivos de configuración

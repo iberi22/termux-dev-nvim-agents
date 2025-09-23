@@ -6,15 +6,15 @@ setup() {
     # Set test environment variables
     export TERMUX_AI_AUTO=1
     export BATS_PROJECT_ROOT="$BATS_TEST_DIRNAME/../.."
-    
+
     # Create temporary directory for tests
     export BATS_TMPDIR="$(mktemp -d)"
-    
+
     # Mock Termux environment check for testing
     export MOCK_TERMUX=1
 }
 
-# Teardown function run after each test  
+# Teardown function run after each test
 teardown() {
     # Clean up temporary directory safely
     if [[ -n "${BATS_TMPDIR:-}" && -d "$BATS_TMPDIR" ]]; then
@@ -53,11 +53,11 @@ extract_functions() {
 # Helper function to check if script follows shellcheck rules
 lint_check() {
     local file="$1"
-    
+
     # Ensure we're in the project root
     local original_dir="$PWD"
     cd "$BATS_PROJECT_ROOT" || return 1
-    
+
     # Use our project's lint script which handles all the fallback logic
     if [[ -f "scripts/lint.sh" ]]; then
         # Run our lint script on the specific file (with full path)

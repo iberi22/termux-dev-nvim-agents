@@ -147,7 +147,7 @@ show_main_menu() {
     echo -e "${WHITE}│  4. 🔐 Configure SSH for GitHub                │${NC}"
     echo -e "${WHITE}│  5. 🌐 Enable Local SSH/SFTP Access            │${NC}"
     echo -e "${WHITE}│  6. 🤖 Configure AI Integration                │${NC}"
-    echo -e "${WHITE}│  7. 🔄 Configure AI Workflows                  │${NC}"
+    echo -e "${WHITE}│  7. 🤖 Configure Gemini CLI Agent             │${NC}"
     echo -e "${WHITE}│  8. 🖋️  Install Nerd Fonts + Set Font         │${NC}"
     echo -e "${RED}│  🇯🇲 ${YELLOW}R. ${GREEN}🌈 Rastafari Theme Demo & Config    ${RED}🇯🇲  │${NC}"
     echo -e "${WHITE}│  9. 🌟 Complete Installation (Automatic)       │${NC}"
@@ -215,27 +215,32 @@ run_module() {
 }
 
 
-# Function to request Gemini API key
-setup_gemini_api() {
-    if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-    echo -e "${YELLOW}🔑 Gemini API Key Configuration${NC}"
-        echo -e "${CYAN}To get personalized AI recommendations during installation${NC}"
-        echo -e "${CYAN}you need a Google Gemini API key.${NC}\n"
-        echo -e "${CYAN}Get your API key at: https://aistudio.google.com/app/apikey${NC}\n"
+# Function to setup Gemini CLI
+setup_gemini_cli() {
+    echo -e "${YELLOW}🤖 Configurando Gemini CLI...${NC}"
 
-        read -p "Enter your Gemini API key (or press Enter to continue without AI): " api_key
-
-        if [[ -n "$api_key" ]]; then
-            echo "export GEMINI_API_KEY='$api_key'" >> ~/.bashrc
-            echo "export GEMINI_API_KEY='$api_key'" >> ~/.zshrc 2>/dev/null || true
-            export GEMINI_API_KEY="$api_key"
-            echo -e "${GREEN}✅ API key configured correctly${NC}"
-        else
-            echo -e "${YELLOW}⚠️  Continuing without AI integration${NC}"
+    # Verificar si Node.js está instalado
+    if ! command -v node &>/dev/null; then
+        echo -e "${YELLOW}📦 Node.js requerido para Gemini CLI, instalando...${NC}"
+        if ! run_module "00-base-packages"; then
+            echo -e "${RED}❌ Error instalando dependencias${NC}"
+            return 1
         fi
-    else
-        echo -e "${GREEN}✅ Gemini API key already configured${NC}"
     fi
+
+    # Instalar Gemini CLI
+    if ! command -v gemini &>/dev/null; then
+        echo -e "${YELLOW}📦 Instalando Gemini CLI...${NC}"
+        npm install -g @google/gemini-cli
+    fi
+
+    # Configurar autenticación
+    if ! gemini auth test &>/dev/null; then
+        echo -e "${CYAN}🔐 Configura la autenticación OAuth2 con Google${NC}"
+        gemini auth login
+    fi
+
+    echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
 }
 
 # Function for complete installation
@@ -255,11 +260,10 @@ full_installation() {
         "05-ssh-setup"
         "07-local-ssh-server"
         "03-ai-integration"
-        "04-workflows-setup"
         "06-fonts-setup"  # Set FiraCode Nerd Font Mono by default
     )
 
-    setup_gemini_api
+    setup_gemini_cli
 
     local previous_auto="${TERMUX_AI_AUTO:-}"
     export TERMUX_AI_AUTO=1
@@ -334,11 +338,11 @@ main() {
                 run_module "07-local-ssh-server"
                 ;;
             6)
-                setup_gemini_api
+                setup_gemini_cli
                 run_module "03-ai-integration"
                 ;;
             7)
-                run_module "04-workflows-setup"
+                setup_gemini_cli
                 ;;
             8)
                 # Fonts menu: allow user to select font interactively
