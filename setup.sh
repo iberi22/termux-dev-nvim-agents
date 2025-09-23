@@ -140,23 +140,21 @@ show_main_menu() {
     echo -e "${CYAN}┌─────────────────────────────────────────────────┐${NC}"
     echo -e "${CYAN}│                  MAIN MENU                      │${NC}"
     echo -e "${CYAN}├─────────────────────────────────────────────────┤${NC}"
-    echo -e "${WHITE}│  0. 👤 Configure User Setup (Recommended First)│${NC}"
-    echo -e "${WHITE}│  1. 📦 Install Base Packages                   │${NC}"
-    echo -e "${WHITE}│  2. 🐚 Configure Zsh + Oh My Zsh               │${NC}"
-    echo -e "${WHITE}│  3. ⚡ Install and Configure Neovim            │${NC}"
-    echo -e "${WHITE}│  4. 🔐 Configure SSH for GitHub                │${NC}"
-    echo -e "${WHITE}│  5. 🌐 Enable Local SSH/SFTP Access            │${NC}"
-    echo -e "${WHITE}│  6. 🤖 Configure AI Integration                │${NC}"
-    echo -e "${WHITE}│  7. 🤖 Configure Gemini CLI Agent             │${NC}"
-    echo -e "${WHITE}│  8. 🖋️  Install Nerd Fonts + Set Font         │${NC}"
-    echo -e "${RED}│  🇯🇲 ${YELLOW}R. ${GREEN}🌈 Rastafari Theme Demo & Config    ${RED}🇯🇲  │${NC}"
-    echo -e "${WHITE}│  9. 🌟 Complete Installation (Automatic)       │${NC}"
-    echo -e "${WHITE}│ 10. 🧪 Run Installation Tests                  │${NC}"
-    echo -e "${WHITE}│ 11. 🧹 Clean and Reinstall from Scratch        │${NC}"
-    echo -e "${GREEN}│ 12. 🎛️  Panel de Control Post-Instalación      │${NC}"
-    echo -e "${WHITE}│ 99. 🚪 Exit                                    │${NC}"
+    echo -e "${WHITE}│  1. � Instalación Completa Automática         │${NC}"
+    echo -e "${CYAN}├─────────────────────────────────────────────────┤${NC}"
+    echo -e "${WHITE}│  2. 📦 Instalar Paquetes Base                  │${NC}"
+    echo -e "${WHITE}│  3. � Configurar Zsh Rastafari + Oh My Zsh    │${NC}"
+    echo -e "${WHITE}│  4. ⚡ Instalar y Configurar Neovim            │${NC}"
+    echo -e "${WHITE}│  5. 🤖 Configurar Integración IA               │${NC}"
+    echo -e "${WHITE}│  6. 🔐 Configurar SSH para GitHub              │${NC}"
+    echo -e "${CYAN}├─────────────────────────────────────────────────┤${NC}"
+    echo -e "${WHITE}│  7. 🧪 Ejecutar Pruebas de Instalación         │${NC}"
+    echo -e "${WHITE}│  8. 🧹 Limpiar y Reinstalar desde Cero         │${NC}"
+    echo -e "${GREEN}│  9. 🎛️  Panel de Control Post-Instalación      │${NC}"
+    echo -e "${CYAN}├─────────────────────────────────────────────────┤${NC}"
+    echo -e "${WHITE}│ 99. 🚪 Salir                                   │${NC}"
     echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
-    echo -e "\n${YELLOW}Select an option [0-12, 99]:${NC} "
+    echo -e "\n${YELLOW}Selecciona una opción [1-9, 99]:${NC} "
 }
 
 # Function to run module with error handling
@@ -439,65 +437,31 @@ main() {
         read -r choice
 
         case $choice in
-            0)
-                run_module "00-user-setup"
-                ;;
             1)
-                run_module "00-base-packages"
-                ;;
-            2)
-                run_module "01-zsh-setup"
-                ;;
-            3)
-                run_module "02-neovim-setup"
-                ;;
-            4)
-                run_module "05-ssh-setup"
-                ;;
-            5)
-                run_module "07-local-ssh-server"
-                ;;
-            6)
-                setup_gemini_cli
-                run_module "03-ai-integration"
-                ;;
-            7)
-                setup_gemini_cli
-                ;;
-            8)
-                # Fonts menu: allow user to select font interactively
-                if [[ -f "${MODULES_DIR}/06-fonts-setup.sh" ]]; then
-                    if bash "${MODULES_DIR}/06-fonts-setup.sh" menu; then
-                        echo -e "${GREEN}[OK] Font configured successfully${NC}"
-                    else
-                        echo -e "${YELLOW}[WARN] Font configuration skipped or failed${NC}"
-                    fi
-                else
-                    echo -e "${RED}[ERR] Fonts module not found${NC}"
-                    echo -e "${YELLOW}[HINT] Re-run the installer to download missing modules:${NC}"
-                    echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
-                fi
-                ;;
-            [Rr])
-                # Rastafari Theme Demo and Configuration
-                echo -e "${RED}🇯🇲 ${YELLOW}Iniciando Demo del Tema Rastafari ${GREEN}🇯🇲${NC}"
-                if [[ -f "${MODULES_DIR}/rastafari-theme-demo.sh" ]]; then
-                    bash "${MODULES_DIR}/rastafari-theme-demo.sh"
-                else
-                    echo -e "${YELLOW}⚠️ Demo no encontrado. Ejecutando configuración Zsh...${NC}"
-                    run_module "01-zsh-setup"
-                fi
-                ;;
-            9)
                 full_installation
                 ;;
-            10)
+            2)
+                run_module "00-base-packages"
+                ;;
+            3)
+                run_module "01-zsh-setup"
+                ;;
+            4)
+                run_module "02-neovim-setup"
+                ;;
+            5)
+                run_module "03-ai-integration"
+                ;;
+            6)
+                run_module "05-ssh-setup"
+                ;;
+            7)
                 run_module "test-installation"
                 ;;
-            11)
+            8)
                 run_module "99-clean-reset"
                 ;;
-            12)
+            9)
                 # Launch post-installation control panel
                 if [[ -f "${SCRIPT_DIR}/scripts/termux-ai-panel.sh" ]]; then
                     echo -e "${BLUE}🎛️ Lanzando Panel de Control...${NC}"

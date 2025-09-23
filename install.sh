@@ -96,35 +96,35 @@ install_basic_tools() {
     echo -e "${GREEN}✅ Herramientas básicas instaladas${NC}"
 }
 
-# Descargar y ejecutar quick-setup
-run_quick_setup() {
+# Descargar y ejecutar setup principal
+run_main_setup() {
     echo -e "${BLUE}📥 Descargando instalador principal...${NC}"
 
-    # URL del quick-setup
-    local setup_url="https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/quick-setup.sh"
+    # Clonar el repositorio completo para tener todos los módulos
+    if [[ -d "$INSTALL_DIR" ]]; then
+        echo -e "${YELLOW}Removiendo instalación anterior...${NC}"
+        rm -rf "$INSTALL_DIR"
+    fi
 
-    # Crear directorio temporal en el espacio del usuario
-    local temp_dir="$HOME/.cache/termux-ai-install-$$"
-    mkdir -p "$temp_dir"
-
-    # Descargar quick-setup.sh
-    if ! wget -q "$setup_url" -O "$temp_dir/quick-setup.sh"; then
-        echo -e "${RED}❌ Error al descargar el instalador${NC}"
+    echo -e "${CYAN}Clonando repositorio...${NC}"
+    if ! git clone "https://github.com/${REPO_OWNER}/${REPO_NAME}.git" "$INSTALL_DIR"; then
+        echo -e "${RED}❌ Error al clonar el repositorio${NC}"
         echo -e "${YELLOW}💡 Verifica tu conexión a internet${NC}"
         exit 1
     fi
 
-    chmod +x "$temp_dir/quick-setup.sh"
+    cd "$INSTALL_DIR"
+    chmod +x setup.sh
 
-    echo -e "${GREEN}✅ Instalador descargado${NC}"
+    echo -e "${GREEN}✅ Repositorio clonado${NC}"
     echo -e "${CYAN}🚀 Iniciando instalación automática...${NC}"
 
     # Ejecutar instalación automática (propaga verbose)
-    local args=(--auto)
+    local args=()
     if [[ "$VERBOSE" == true ]]; then
         args+=(--verbose)
     fi
-    exec "$temp_dir/quick-setup.sh" "${args[@]}"
+    exec ./setup.sh "${args[@]}"
 }
 
 # Función principal
@@ -145,7 +145,7 @@ main() {
 
     check_termux
     install_basic_tools
-    run_quick_setup
+    run_main_setup
 }
 
 # Ejecutar instalación

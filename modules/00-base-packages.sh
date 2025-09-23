@@ -38,6 +38,9 @@ ESSENTIAL_PACKAGES=(
     # Core development tools
     "nodejs-lts"
     "python"
+    "python-pip"
+    "make"
+    "clang"
 
     # Essential editors and tools
     "nano"

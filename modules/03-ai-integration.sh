@@ -7,6 +7,11 @@ set -euo pipefail
 # Autenticación: cada CLI maneja su propio flujo (OAuth/API key)
 # ====================================
 
+# Source UI functions if available
+if [[ -f "scripts/install-ui.sh" ]]; then
+    source scripts/install-ui.sh
+fi
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -22,7 +27,14 @@ err() { echo -e "${RED}✗${NC} $*"; }
 is_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 ensure_prereqs() {
-    note "Verificando requisitos (Node 22 LTS, npm, certificados SSL)…"
+    note "Verificando requisitos (Node 22 LTS, npm, Python, certificados SSL)…"
+    
+    # Instalar Python primero (necesario para node-gyp)
+    if ! is_cmd python; then
+        warn "Python no encontrado. Instalando…"
+        pkg install -y python >/dev/null
+    fi
+    
     if ! is_cmd node; then
         warn "Node.js no encontrado. Instalando LTS…"
         pkg install -y nodejs-lts >/dev/null
@@ -63,11 +75,15 @@ ensure_prereqs() {
 npm_install_global() {
     local pkg_name="$1"
     note "Instalando paquete global: $pkg_name"
+    
+    # Verificar si ya está instalado
     if npm list -g --depth=0 "$pkg_name" >/dev/null 2>&1; then
         ok "$pkg_name ya estaba instalado"
         return 0
     fi
-    if npm i -g "$pkg_name" >/dev/null 2>&1; then
+    
+    # Intentar instalación con manejo de conflictos
+    if npm i -g "$pkg_name" --force >/dev/null 2>&1; then
         ok "$pkg_name instalado"
         return 0
     else
@@ -87,6 +103,13 @@ install_codex() {
 
 install_gemini() {
     note "Instalando Google Gemini CLI (@google/gemini-cli)…"
+    
+    # Remover instalación existente si hay conflictos
+    if npm list -g --depth=0 "@google/gemini-cli" >/dev/null 2>&1; then
+        warn "Removiendo instalación existente de Gemini CLI..."
+        npm uninstall -g "@google/gemini-cli" >/dev/null 2>&1 || true
+    fi
+    
     if ! npm_install_global "@google/gemini-cli"; then
         warn "Intentando con @google/generative-ai-cli (legacy)..."
         npm_install_global "@google/generative-ai-cli" || warn "Gemini CLI no disponible"
@@ -95,11 +118,10 @@ install_gemini() {
 
 install_qwen() {
     note "Instalando Qwen Code CLI…"
-    # Intenta varios paquetes posibles para Qwen
-    if ! npm_install_global "qwen-code"; then
-        if ! npm_install_global "@qwen/qwen-code"; then
-            npm_install_global "qwen-cli" || warn "Qwen CLI no disponible"
-        fi
+    # Usar el paquete correcto de Qwen
+    if ! npm_install_global "@qwen-code/qwen-code@latest"; then
+        warn "Intentando con qwen-code legacy..."
+        npm_install_global "qwen-code" || warn "Qwen CLI no disponible"
     fi
 }
 
@@ -130,14 +152,15 @@ main() {
 
     echo
     ok "Instalación de CLIs finalizada"
-    echo -e "${CYAN}Siguientes pasos:${NC}"
-    echo "  - codex        # Ejecuta 'codex login' (elige Sign in with ChatGPT - OAuth)"
-    echo "  - gemini       # Ejecuta 'gemini' y completa el login de Google (OAuth)"
-    echo "  - qwen         # o 'qwen-code', según el binario expuesto"
+    echo -e "${CYAN}Autenticación pendiente:${NC}"
+    echo "  Los CLIs de IA requieren autenticación OAuth2"
+    echo "  Esto se realizará al final de la instalación completa"
     echo
-    echo -e "${YELLOW}Notas para Termux:${NC}"
-    echo "  - Si se abre una URL para login, usa: termux-open-url <URL>"
-    echo "  - Asegúrate de tener un navegador Android configurado"
+    echo -e "${YELLOW}Comandos disponibles después de autenticación:${NC}"
+    echo "  - codex        # OpenAI Codex CLI"
+    echo "  - gemini       # Google Gemini CLI" 
+    echo "  - qwen         # Qwen Code CLI"
+    echo "  - :            # Comando rápido (wrapper de gemini)"
 }
 
 main "$@"
