@@ -20,7 +20,7 @@ echo -e "${BLUE}🌐 Fixing network and timeout issues...${NC}"
 # Function to configure network timeouts
 configure_network_timeouts() {
     echo -e "${CYAN}⏱️ Configuring network timeouts...${NC}"
-    
+
     # Configure apt timeouts
     mkdir -p "$PREFIX/etc/apt/apt.conf.d"
     cat > "$PREFIX/etc/apt/apt.conf.d/99termux-ai-timeouts" << 'EOF'
@@ -59,7 +59,7 @@ EOF
 # Function to fix DNS resolution
 fix_dns_resolution() {
     echo -e "${CYAN}🔍 Fixing DNS resolution...${NC}"
-    
+
     # Configure reliable DNS servers
     cat > "$PREFIX/etc/resolv.conf" << 'EOF'
 # Termux AI - DNS configuration
@@ -77,10 +77,10 @@ EOF
 # Function to test network connectivity
 test_network_connectivity() {
     echo -e "${CYAN}🔗 Testing network connectivity...${NC}"
-    
+
     local test_sites=("google.com" "github.com" "packages.termux.org")
     local successful_tests=0
-    
+
     for site in "${test_sites[@]}"; do
         if ping -c 1 -W 5 "$site" >/dev/null 2>&1; then
             echo -e "${GREEN}✅ $site: OK${NC}"
@@ -89,7 +89,7 @@ test_network_connectivity() {
             echo -e "${YELLOW}⚠️ $site: Failed${NC}"
         fi
     done
-    
+
     if [[ $successful_tests -gt 0 ]]; then
         echo -e "${GREEN}✅ Network connectivity: OK ($successful_tests/3 sites reachable)${NC}"
         return 0
@@ -102,7 +102,7 @@ test_network_connectivity() {
 # Function to configure package manager retries
 configure_package_manager_retries() {
     echo -e "${CYAN}🔄 Configuring package manager retry logic...${NC}"
-    
+
     # Create retry wrapper for apt
     cat > "$PREFIX/bin/apt-retry" << 'EOF'
 #!/bin/bash
@@ -117,7 +117,7 @@ for ((i=1; i<=max_retries; i++)); do
     if timeout 300 $command; then
         exit 0
     fi
-    
+
     if [[ $i -lt $max_retries ]]; then
         echo "Command failed, retrying in ${retry_delay}s..."
         sleep $retry_delay
@@ -128,7 +128,7 @@ done
 echo "Command failed after $max_retries attempts"
 exit 1
 EOF
-    
+
     chmod +x "$PREFIX/bin/apt-retry"
     echo -e "${GREEN}✅ Package manager retries configured${NC}"
 }
@@ -136,22 +136,26 @@ EOF
 # Function to fix certificate issues
 fix_certificate_issues() {
     echo -e "${CYAN}🔐 Fixing certificate issues...${NC}"
-    
+
     # Set certificate environment variables
     export SSL_CERT_FILE="$PREFIX/etc/tls/cert.pem"
     export SSL_CERT_DIR="$PREFIX/etc/tls/certs"
     export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
     export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-    
+
     # Add to bashrc for persistence
-    cat >> "$HOME/.bashrc" << 'EOF'
+    local cert_marker="# Termux AI - Certificate configuration"
+    touch "$HOME/.bashrc"
+    if ! grep -q "$cert_marker" "$HOME/.bashrc" 2>/dev/null; then
+        cat >> "$HOME/.bashrc" << 'EOF'
 
 # Termux AI - Certificate configuration
 export SSL_CERT_FILE="$PREFIX/etc/tls/cert.pem"
-export SSL_CERT_DIR="$PREFIX/etc/tls/certs" 
+export SSL_CERT_DIR="$PREFIX/etc/tls/certs"
 export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
 export CURL_CA_BUNDLE="$SSL_CERT_FILE"
 EOF
+    fi
 
     echo -e "${GREEN}✅ Certificate issues fixed${NC}"
 }
@@ -159,12 +163,12 @@ EOF
 # Main function
 main() {
     echo -e "${BLUE}🔧 Applying network and timeout fixes...${NC}"
-    
+
     configure_network_timeouts
     fix_dns_resolution
     configure_package_manager_retries
     fix_certificate_issues
-    
+
     if test_network_connectivity; then
         echo -e "\n${GREEN}🎉 Network fixes applied successfully${NC}"
         echo -e "${CYAN}💡 Network connectivity verified${NC}"

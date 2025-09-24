@@ -21,7 +21,7 @@ echo -e "${PURPLE}🚀 Optimizando sistema Termux...${NC}"
 # Función para solicitar permisos de almacenamiento
 request_storage_permissions() {
     echo -e "${BLUE}📱 Solicitando permisos de almacenamiento...${NC}"
-    
+
     # Solicitar permisos de almacenamiento si no están concedidos
     if [[ ! -d "$HOME/storage" ]]; then
         echo -e "${YELLOW}⚠️ Permisos de almacenamiento requeridos${NC}"
@@ -44,7 +44,9 @@ request_storage_permissions() {
     else
         echo -e "${GREEN}✅ Permisos de almacenamiento ya concedidos${NC}"
     fi
-}# Función para configurar Termux como servicio real
+}
+
+# Función para configurar Termux como servicio real
 setup_termux_service() {
     echo -e "${BLUE}🔧 Configurando Termux como servicio real...${NC}"
 
@@ -90,7 +92,10 @@ optimize_performance() {
     echo -e "${BLUE}⚡ Optimizando rendimiento del sistema...${NC}"
 
     # Configurar variables de entorno para optimización
-    cat >> "$HOME/.bashrc" << 'EOF'
+    local perf_marker="# === OPTIMIZACIONES DE TERMUX AI ==="
+    touch "$HOME/.bashrc"
+    if ! grep -q "$perf_marker" "$HOME/.bashrc" 2>/dev/null; then
+        cat >> "$HOME/.bashrc" << 'EOF'
 
 # === OPTIMIZACIONES DE TERMUX AI ===
 export TMPDIR="$HOME/.cache/tmp"
@@ -112,6 +117,7 @@ if command -v renice >/dev/null 2>&1; then
     renice -n -5 -p $$ 2>/dev/null || true
 fi
 EOF
+    fi
 
     # Crear directorio de cache optimizado
     mkdir -p "$HOME/.cache/tmp"
@@ -193,13 +199,17 @@ nameserver 1.0.0.1
 EOF
 
     # Configurar timeout más rápido para conexiones
-    cat >> "$HOME/.bashrc" << 'EOF'
+    local net_marker="# Optimizaciones de red"
+    touch "$HOME/.bashrc"
+    if ! grep -q "$net_marker" "$HOME/.bashrc" 2>/dev/null; then
+        cat >> "$HOME/.bashrc" << 'EOF'
 
 # Optimizaciones de red
 export CONNECT_TIMEOUT=10
 export READ_TIMEOUT=30
 export CURL_CA_BUNDLE="$PREFIX/etc/tls/cert.pem"
 EOF
+    fi
 
     echo -e "${GREEN}✅ Red optimizada${NC}"
 }
@@ -221,7 +231,11 @@ EOF
     chmod +x "$HOME/.logs/cleanup.sh"
 
     # Agregar limpieza automática al cron o startup
-    echo "$HOME/.logs/cleanup.sh" >> "$HOME/.termux/boot/startup.sh"
+    mkdir -p "$HOME/.termux/boot"
+    touch "$HOME/.termux/boot/startup.sh"
+    if ! grep -q "$HOME/.logs/cleanup.sh" "$HOME/.termux/boot/startup.sh" 2>/dev/null; then
+        echo "$HOME/.logs/cleanup.sh" >> "$HOME/.termux/boot/startup.sh"
+    fi
 
     echo -e "${GREEN}✅ Logging configurado${NC}"
 }

@@ -2,6 +2,16 @@
 
 Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes, docs) indicando fecha y resumen.
 
+## 2025-09-24
+
+### Instalador Idempotente y Reanudable
+
+- `setup.sh`: nuevo gestor de estado para módulos (`scripts/module-state.sh`), banderas `--force` y `--reset-state`, y saltos automáticos cuando un módulo ya se completó con la misma versión.
+- `install.sh`: reutiliza instalaciones existentes con `git fetch/pull`, añade flags `--force`, `--reset-state` y `--clean`, y propaga las banderas al `setup` sin borrar el repositorio por defecto.
+- `modules/00-base-packages.sh`: corrección del color `CYAN`, detección previa de paquetes instalados y bucles idempotentes para esenciales/opcionales.
+- `modules/00-system-optimization.sh` y `modules/00-network-fixes.sh`: bloques `.bashrc` y scripts de arranque sólo se añaden una vez; limpieza automática sin duplicados.
+- Registro centralizado del estado en `~/.termux-ai-setup/state` para permitir reintentos controlados y evitar instalaciones colgando en pasos ya exitosos.
+
 ## 2025-09-23
 
 - v2025-09-22.4: Modo verbose, logs y no interactivo para apt/dpkg.
