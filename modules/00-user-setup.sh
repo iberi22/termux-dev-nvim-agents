@@ -29,7 +29,7 @@ show_user_setup_banner() {
 
 prompt_user_info() {
     echo -e "${BLUE}📝 Configuración de Usuario${NC}"
-    
+
     # Verificar modo automático
     if [[ "${TERMUX_AI_AUTO:-}" == "true" ]]; then
         echo -e "${CYAN}🤖 Modo automático activado - usando configuración por defecto${NC}\n"
@@ -37,14 +37,14 @@ prompt_user_info() {
         PASSWORD="defaultpass123"
         GIT_EMAIL="${TERMUX_AI_GIT_EMAIL:-dev@termux.local}"
         GIT_NAME="${TERMUX_AI_GIT_NAME:-Termux Developer}"
-        
+
         echo -e "${GREEN}✅ Configuración automática aplicada:${NC}"
         echo -e "Usuario: ${GREEN}$USERNAME${NC}"
         echo -e "Email Git: ${GREEN}$GIT_EMAIL${NC}"
         echo -e "Nombre Git: ${GREEN}$GIT_NAME${NC}"
         return 0
     fi
-    
+
     echo -e "${CYAN}Necesitamos algunos datos para configurar tu entorno:${NC}\n"
 
     # Nombre de usuario del sistema

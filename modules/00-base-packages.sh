@@ -16,12 +16,17 @@ NC='\033[0m'
 
 echo -e "${BLUE}📦 Installing Termux base packages...${NC}"
 
+# Configurar repositorios automáticamente sin prompts
+echo -e "${YELLOW}🔧 Configuring repositories automatically...${NC}"
+echo "deb https://packages.termux.org/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list"
+echo "deb https://packages.termux.org/apt/termux-root root stable main" >> "$PREFIX/etc/apt/sources.list"
+
 # Update repositories
 echo -e "${YELLOW}🔄 Updating repositories...${NC}"
-pkg update -y
+apt update -y -qq 2>/dev/null || pkg update -y -qq 2>/dev/null || true
 
 echo -e "${YELLOW}⬆️  Upgrading existing packages...${NC}"
-pkg upgrade -y
+apt upgrade -y -qq 2>/dev/null || pkg upgrade -y -qq 2>/dev/null || true
 
 # Mirror warning/help at start
 echo -e "${YELLOW}💡 Please ensure your mirrors are up to date!${NC}"
@@ -62,9 +67,9 @@ OPTIONAL_PACKAGES=(
     "fzf"
 
     # Build tools (only if needed)
-    "gcc"
-    "clang"
-    "make"
+    # "gcc"
+    # "clang"
+    # "make"
 
     # Modern replacements
     "bat"
@@ -72,28 +77,33 @@ OPTIONAL_PACKAGES=(
     "zoxide"
 )
 
-# Function to install packages with retries
+# Function to install packages with retries (silent mode)
 install_package_with_retry() {
     local package=$1
     local max_retries=3
     local retry_count=0
 
     while [[ $retry_count -lt $max_retries ]]; do
-        echo -e "${BLUE}📦 Installing: ${package} (attempt $((retry_count + 1))/${max_retries})${NC}"
-
-        if pkg install -y "$package" 2>/dev/null; then
-            echo -e "${GREEN}✅ ${package} installed successfully${NC}"
-            return 0
-        else
-            retry_count=$((retry_count + 1))
-            if [[ $retry_count -lt $max_retries ]]; then
-                echo -e "${YELLOW}⚠️ Retrying ${package} in 2 seconds...${NC}"
-                sleep 2
+        if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
+            # Silent mode in auto installation
+            if DEBIAN_FRONTEND=noninteractive apt install -y -qq "$package" 2>/dev/null || pkg install -y -qq "$package" 2>/dev/null; then
+                return 0
             fi
+        else
+            echo -e "${BLUE}📦 Installing: ${package} (attempt $((retry_count + 1))/${max_retries})${NC}"
+            if pkg install -y "$package" 2>/dev/null; then
+                echo -e "${GREEN}✅ ${package} installed successfully${NC}"
+                return 0
+            fi
+        fi
+
+        retry_count=$((retry_count + 1))
+        if [[ $retry_count -lt $max_retries ]]; then
+            sleep 2
         fi
     done
 
-    echo -e "${RED}❌ Failed to install ${package} after ${max_retries} attempts${NC}"
+    [[ "${TERMUX_AI_AUTO:-}" != "1" ]] && echo -e "${RED}❌ Failed to install ${package} after ${max_retries} attempts${NC}"
     return 1
 }
 

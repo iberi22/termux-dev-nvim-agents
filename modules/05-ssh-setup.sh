@@ -90,14 +90,36 @@ get_user_info() {
 }
 
 get_new_user_info() {
-    # En modo automático, usar valores por defecto
+    # En modo automático, usar valores por defecto que serán configurados al final
     if [[ -n "${TERMUX_AI_AUTO:-}" ]]; then
-        USER_NAME="${USER_NAME:-Termux User}"
-        USER_EMAIL="${USER_EMAIL:-user@example.com}"
-        echo -e "${YELLOW}⚠️ Modo automático: usando valores por defecto${NC}"
-        echo -e "${WHITE}   Nombre: $USER_NAME${NC}"
-        echo -e "${WHITE}   Email: $USER_EMAIL${NC}"
+        USER_NAME="${TERMUX_AI_GIT_NAME:-Termux Developer}"
+        USER_EMAIL="${TERMUX_AI_GIT_EMAIL:-developer@termux.local}"
+
+        if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+            echo -e "${CYAN}🤖 Modo automático: configuración de usuario será solicitada al FINAL del proceso${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Modo automático: usando valores temporales${NC}"
+            echo -e "${WHITE}   Nombre: $USER_NAME${NC}"
+            echo -e "${WHITE}   Email: $USER_EMAIL${NC}"
+            echo -e "${CYAN}💡 La configuración final será solicitada al completar la instalación${NC}"
+        fi
         return 0
+    fi
+
+    # Modo interactivo original (solo si no está en auto)
+    echo -e "${CYAN}📝 Ingresa tu información de GitHub:${NC}"
+    read -p "Ingresa tu nombre completo: " USER_NAME
+    while [[ -z "$USER_NAME" ]]; do
+        echo -e "${RED}❌ El nombre es obligatorio${NC}"
+        read -p "Ingresa tu nombre completo: " USER_NAME
+    done
+
+    read -p "Ingresa tu email de GitHub: " USER_EMAIL
+    while [[ -z "$USER_EMAIL" || ! "$USER_EMAIL" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; do
+        echo -e "${RED}❌ Email inválido${NC}"
+        read -p "Ingresa tu email de GitHub: " USER_EMAIL
+    done
+}
     fi
 
     while [[ -z "${USER_NAME:-}" ]]; do

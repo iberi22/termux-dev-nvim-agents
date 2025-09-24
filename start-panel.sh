@@ -30,55 +30,112 @@ show_banner() {
 }
 
 install_dependencies() {
-    echo -e "${BLUE}📦 Installing dependencies...${NC}"
+    local auto_mode="${TERMUX_AI_AUTO:-}"
+    local silent_mode="${TERMUX_AI_SILENT:-}"
+
+    if [[ "$silent_mode" == "1" ]]; then
+        echo -e "${BLUE}📦 Installing web panel dependencies silently...${NC}"
+    else
+        echo -e "${BLUE}📦 Installing dependencies...${NC}"
+    fi
 
     # Backend dependencies
     if [[ -f "$BACKEND_DIR/requirements.txt" ]]; then
-        echo -e "${CYAN}Installing Python dependencies...${NC}"
+        if [[ "$silent_mode" != "1" ]]; then
+            echo -e "${CYAN}Installing Python dependencies...${NC}"
+        fi
         cd "$BACKEND_DIR"
-        pip3 install -r requirements.txt
-        echo -e "${GREEN}✅ Backend dependencies installed${NC}"
+
+        if [[ "$silent_mode" == "1" ]]; then
+            pip3 install -r requirements.txt >/dev/null 2>&1
+        else
+            pip3 install -r requirements.txt
+        fi
+
+        if [[ "$silent_mode" != "1" ]]; then
+            echo -e "${GREEN}✅ Backend dependencies installed${NC}"
+        fi
     fi
 
     # Web UI dependencies
     if [[ -f "$WEB_UI_DIR/package.json" ]]; then
-        echo -e "${CYAN}Installing Node.js dependencies...${NC}"
+        if [[ "$silent_mode" != "1" ]]; then
+            echo -e "${CYAN}Installing Node.js dependencies...${NC}"
+        fi
         cd "$WEB_UI_DIR"
-        npm install
-        echo -e "${GREEN}✅ Frontend dependencies installed${NC}"
+
+        if [[ "$silent_mode" == "1" ]]; then
+            npm install >/dev/null 2>&1
+        else
+            npm install
+        fi
+
+        if [[ "$silent_mode" != "1" ]]; then
+            echo -e "${GREEN}✅ Frontend dependencies installed${NC}"
+        fi
     fi
 
     cd "$SCRIPT_DIR"
+
+    if [[ "$silent_mode" == "1" ]]; then
+        echo -e "${GREEN}✅ Web panel dependencies installed${NC}"
+    fi
 }
 
 start_dev_servers() {
-    echo -e "${BLUE}🚀 Starting development servers...${NC}"
+    local silent_mode="${TERMUX_AI_SILENT:-}"
+
+    if [[ "$silent_mode" == "1" ]]; then
+        echo -e "${BLUE}🚀 Starting web panel in background...${NC}"
+    else
+        echo -e "${BLUE}🚀 Starting development servers...${NC}"
+    fi
 
     # Build frontend for production (served by backend)
-    echo -e "${CYAN}Building frontend...${NC}"
+    if [[ "$silent_mode" != "1" ]]; then
+        echo -e "${CYAN}Building frontend...${NC}"
+    fi
     cd "$WEB_UI_DIR"
-    npm run build
+
+    if [[ "$silent_mode" == "1" ]]; then
+        npm run build >/dev/null 2>&1
+    else
+        npm run build
+    fi
 
     # Start backend (serves frontend static files)
-    echo -e "${CYAN}Starting backend server...${NC}"
+    if [[ "$silent_mode" != "1" ]]; then
+        echo -e "${CYAN}Starting backend server...${NC}"
+    fi
     cd "$BACKEND_DIR"
-    python3 main.py &
-    BACKEND_PID=$!
 
-    echo -e "${GREEN}✅ Backend started (PID: $BACKEND_PID)${NC}"
-    echo -e "${CYAN}🌐 Backend: http://localhost:8000${NC}"
-    echo -e "${CYAN}🌐 Frontend: http://localhost:8000 (served by backend)${NC}"
+    if [[ "$silent_mode" == "1" ]]; then
+        # Start in background for silent mode
+        nohup python3 main.py >/dev/null 2>&1 &
+        BACKEND_PID=$!
+        echo -e "${GREEN}✅ Web panel started in background (PID: $BACKEND_PID)${NC}"
+        echo -e "${CYAN}🌐 Access at: http://localhost:8000${NC}"
+        return 0
+    else
+        # Interactive mode
+        python3 main.py &
+        BACKEND_PID=$!
 
-    # Wait for backend to start
-    sleep 3
+        echo -e "${GREEN}✅ Backend started (PID: $BACKEND_PID)${NC}"
+        echo -e "${CYAN}🌐 Backend: http://localhost:8000${NC}"
+        echo -e "${CYAN}🌐 Frontend: http://localhost:8000 (served by backend)${NC}"
 
-    echo -e "${YELLOW}💡 Press Ctrl+C to stop servers${NC}"
+        # Wait for backend to start
+        sleep 3
 
-    # Wait for user interrupt
-    trap 'echo -e "\n${YELLOW}🛑 Stopping servers...${NC}"; kill $BACKEND_PID 2>/dev/null; exit 0' INT TERM
+        echo -e "${YELLOW}💡 Press Ctrl+C to stop servers${NC}"
 
-    # Keep running
-    wait $BACKEND_PID
+        # Wait for user interrupt
+        trap 'echo -e "\n${YELLOW}🛑 Stopping servers...${NC}"; kill $BACKEND_PID 2>/dev/null; exit 0' INT TERM
+
+        # Keep running
+        wait $BACKEND_PID
+    fi
 }
 
 main() {

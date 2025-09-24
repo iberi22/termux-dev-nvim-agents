@@ -117,14 +117,28 @@ run_main_setup() {
     chmod +x setup.sh
 
     echo -e "${GREEN}✅ Repositorio clonado${NC}"
-    echo -e "${CYAN}🚀 Iniciando instalación automática...${NC}"
+    echo -e "${CYAN}🚀 Iniciando instalación COMPLETAMENTE AUTOMÁTICA...${NC}"
 
-    # Ejecutar instalación automática (propaga verbose)
+    # Ejecutar instalación automática SIN INTERVENCIÓN
+    export TERMUX_AI_AUTO=1
+    export TERMUX_AI_SILENT=1
+
+    # Configurar valores por defecto para evitar prompts
+    export TERMUX_AI_GIT_NAME="Termux Developer"
+    export TERMUX_AI_GIT_EMAIL="developer@termux.local"
+    export TERMUX_AI_SSH_USER="termux"
+    export TERMUX_AI_SSH_PASS="termux123"
+    export TERMUX_AI_SETUP_SSH="1"
+    export TERMUX_AI_START_SERVICES="1"
+    export TERMUX_AI_LAUNCH_WEB="1"
+
     local args=()
     if [[ "$VERBOSE" == true ]]; then
         args+=(--verbose)
     fi
-    exec ./setup.sh "${args[@]}"
+
+    # Ejecutar instalación automática completa
+    exec ./setup.sh auto "${args[@]}"
 }
 
 # Función principal

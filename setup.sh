@@ -214,7 +214,7 @@ run_module() {
 }
 
 
-# Function to setup Gemini CLI
+# Function to setup Gemini CLI (original interactive)
 setup_gemini_cli() {
     echo -e "${YELLOW}🤖 Configurando Gemini CLI...${NC}"
 
@@ -243,7 +243,322 @@ setup_gemini_cli() {
     echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
 }
 
-# Function for post-installation configuration
+# Function to setup Gemini CLI (automatic mode)
+setup_gemini_cli_auto() {
+    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        echo -e "${BLUE}🤖 Configurando Gemini CLI automáticamente...${NC}"
+    else
+        echo -e "${YELLOW}🤖 Configurando Gemini CLI...${NC}"
+    fi
+
+    # Verificar si Node.js está instalado
+    if ! command -v node &>/dev/null; then
+        if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+            echo -e "${CYAN}📦 Instalando Node.js automáticamente...${NC}"
+        else
+            echo -e "${YELLOW}📦 Node.js requerido para Gemini CLI, instalando...${NC}"
+        fi
+
+        if ! run_module "00-base-packages"; then
+            echo -e "${RED}❌ Error instalando dependencias${NC}"
+            return 1
+        fi
+    fi
+
+    # Instalar última versión de Gemini CLI
+    if ! command -v gemini &>/dev/null; then
+        if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+            echo -e "${CYAN}📦 Instalando @google/gemini-cli...${NC}"
+            npm install -g @google/gemini-cli >/dev/null 2>&1
+        else
+            echo -e "${YELLOW}📦 Instalando Gemini CLI...${NC}"
+            npm install -g @google/gemini-cli
+        fi
+    fi
+
+    # Verificar versión instalada
+    if command -v gemini &>/dev/null; then
+        local version=$(gemini --version 2>/dev/null || echo "desconocida")
+        echo -e "${GREEN}✅ Gemini CLI v${version} instalado${NC}"
+
+        # Configurar modelo por defecto si está en modo automático
+        if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
+            mkdir -p "$HOME/.gemini" 2>/dev/null || true
+            cat > "$HOME/.gemini/settings.json" << 'EOF'
+{
+  "model": {
+    "name": "gemini-2.0-flash-exp"
+  },
+  "safety": {
+    "threshold": "BLOCK_ONLY_HIGH"
+  }
+}
+EOF
+            echo -e "${GREEN}🤖 Modelo predeterminado configurado: gemini-2.0-flash-exp${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Error instalando Gemini CLI${NC}"
+        return 1
+    fi
+
+    # En modo automático no configuramos OAuth2, se hace al final
+    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        echo -e "${CYAN}ℹ️ Autenticación OAuth2 será configurada al final del proceso${NC}"
+    else
+        echo -e "${YELLOW}ℹ️ Autenticación OAuth2 omitida. Usar 'gemini auth login' manualmente si es necesario.${NC}"
+    fi
+
+    echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
+}
+
+# Function for post-installation configuration (automatic mode)
+post_installation_setup_auto() {
+    echo -e "${CYAN}=============================================${NC}"
+    echo -e "${GREEN}🎉 ¡Instalación Automática Completada!${NC}"
+    echo -e "${CYAN}=============================================${NC}"
+    echo ""
+
+    # Configuración automática de usuario SSH
+    echo -e "${BLUE}🔐 Configurando usuario SSH automáticamente...${NC}"
+    local ssh_user="${TERMUX_AI_SSH_USER:-termux}"
+    local ssh_pass="${TERMUX_AI_SSH_PASS:-termux123}"
+
+    echo -e "${CYAN}Usuario SSH: ${ssh_user}${NC}"
+
+    # Configurar contraseña automáticamente usando expect si está disponible
+    if command -v expect >/dev/null 2>&1; then
+        expect << EOF >/dev/null 2>&1
+spawn passwd
+expect "New password:"
+send "${ssh_pass}\\r"
+expect "Retype new password:"
+send "${ssh_pass}\\r"
+expect eof
+EOF
+        echo -e "${GREEN}✅ Contraseña SSH configurada automáticamente${NC}"
+    else
+        echo -e "${YELLOW}⚠️ expect no disponible, configurando contraseña manualmente más tarde${NC}"
+    fi
+
+    # SSH keys automatizadas
+    if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+        echo -e "${CYAN}🔑 Generando claves SSH automáticamente...${NC}"
+        local git_email="${TERMUX_AI_GIT_EMAIL:-developer@termux.local}"
+        ssh-keygen -t ed25519 -C "$git_email" -f "$HOME/.ssh/id_ed25519" -N "" >/dev/null 2>&1
+        echo -e "${GREEN}✅ Claves SSH generadas${NC}"
+    fi
+
+    # Servidor SSH permanente automático
+    if [[ "${TERMUX_AI_SETUP_SSH:-}" == "1" ]]; then
+        echo -e "${CYAN}🌐 Habilitando servidor SSH permanente...${NC}"
+        if command -v sv-enable >/dev/null 2>&1; then
+            sv-enable sshd >/dev/null 2>&1
+            sv up sshd >/dev/null 2>&1
+            local ip=$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1 || echo "IP_NO_DETECTADA")
+            echo -e "${GREEN}✅ SSH habilitado en: ssh -p 8022 ${ssh_user}@${ip}${NC}"
+        fi
+    fi
+
+    # Instalar comando del panel automáticamente
+    install_ai_panel_command
+
+    # Lanzar panel web automáticamente si está configurado
+    if [[ "${TERMUX_AI_LAUNCH_WEB:-}" == "1" && "${TERMUX_AI_START_SERVICES:-}" == "1" ]]; then
+        echo -e "${CYAN}🌐 Iniciando Panel Web automáticamente...${NC}"
+        local panel_launcher="${SCRIPT_DIR}/start-panel.sh"
+        if [[ -f "$panel_launcher" ]]; then
+            echo -e "${BLUE}🔧 Instalando dependencias del panel web...${NC}"
+            if bash "$panel_launcher" install >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ Panel web configurado${NC}"
+                echo -e "${CYAN}Frontend: http://localhost:3000${NC}"
+                echo -e "${CYAN}Backend:  http://localhost:8000${NC}"
+
+                # Iniciar en background
+                nohup bash "$panel_launcher" dev >/dev/null 2>&1 &
+                echo -e "${GREEN}✅ Panel web iniciado en background${NC}"
+            fi
+        fi
+    fi
+
+    # Configuración final automática de Git y SSH
+    configure_git_and_ssh_final
+
+    echo -e "\n${GREEN}🎉 ¡Configuración Automática Completa!${NC}"
+    echo -e "${CYAN}=============================================${NC}"
+    echo -e "${WHITE}📋 RESUMEN DE CONFIGURACIÓN:${NC}"
+    echo -e "${CYAN}  • Usuario SSH: ${TERMUX_AI_SSH_USER:-termux}${NC}"
+    echo -e "${CYAN}  • Puerto SSH: 8022${NC}"
+    echo -e "${CYAN}  • Panel Web: http://localhost:3000${NC}"
+    echo -e "${CYAN}  • Comando IA: : \"tu pregunta\"${NC}"
+    echo -e "${CYAN}  • Panel Control: termux-ai-panel${NC}"
+    echo -e "${CYAN}=============================================${NC}"
+
+    if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+        echo -e "${YELLOW}📋 Tu Clave Pública SSH (para GitHub):${NC}"
+        echo -e "${CYAN}=============================================${NC}"
+        cat "$HOME/.ssh/id_ed25519.pub"
+        echo -e "${CYAN}=============================================${NC}"
+        echo -e "${BLUE}🔗 Agrégala a: https://github.com/settings/ssh${NC}"
+        echo -e "${CYAN}=============================================${NC}"
+    fi
+}
+
+# Configuración final de Git y SSH
+configure_git_and_ssh_final() {
+    echo -e "${BLUE}⚙️ Configuración final de Git y SSH...${NC}"
+
+    # En modo automático, usar valores predeterminados
+    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        configure_git_and_ssh_auto
+        return 0
+    fi
+
+    # Solicitar información del usuario AHORA (al final)
+    echo -e "${CYAN}┌─────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│           CONFIGURACIÓN FINAL DE USUARIO        │${NC}"
+    echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
+
+    echo -e "${YELLOW}🔧 Para completar la configuración, necesitamos algunos datos:${NC}"
+    echo ""
+
+    # Configurar Git si no está configurado
+    local git_name="${TERMUX_AI_GIT_NAME:-}"
+    local git_email="${TERMUX_AI_GIT_EMAIL:-}"
+
+    if [[ -z "$git_name" ]] && ! git config --global user.name >/dev/null 2>&1; then
+        echo -e "${CYAN}📝 Configuración de Git:${NC}"
+        read -p "Ingresa tu nombre completo: " git_name
+        while [[ -z "$git_name" ]]; do
+            echo -e "${RED}❌ El nombre es obligatorio${NC}"
+            read -p "Ingresa tu nombre completo: " git_name
+        done
+        git config --global user.name "$git_name"
+    elif [[ -n "$git_name" ]]; then
+        git config --global user.name "$git_name"
+    fi
+
+    if [[ -z "$git_email" ]] && ! git config --global user.email >/dev/null 2>&1; then
+        read -p "Ingresa tu email de GitHub: " git_email
+        while [[ -z "$git_email" || ! "$git_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; do
+            echo -e "${RED}❌ Email inválido${NC}"
+            read -p "Ingresa tu email de GitHub: " git_email
+        done
+        git config --global user.email "$git_email"
+    elif [[ -n "$git_email" ]]; then
+        git config --global user.email "$git_email"
+    fi
+
+    # Configurar SSH para GitHub si hay claves
+    if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        echo ""
+        echo -e "${CYAN}🔑 Configuración SSH para GitHub:${NC}"
+
+        cat > "$HOME/.ssh/config" << 'EOF'
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+EOF
+        chmod 600 "$HOME/.ssh/config"
+
+        # Agregar clave al ssh-agent
+        eval "$(ssh-agent -s)" >/dev/null 2>&1
+        ssh-add "$HOME/.ssh/id_ed25519" >/dev/null 2>&1
+
+        echo -e "${GREEN}✅ Git y SSH configurados correctamente${NC}"
+
+        # Mostrar la clave pública para que el usuario la agregue a GitHub
+        echo -e "\n${YELLOW}📋 Copia esta clave pública SSH y agrégala a GitHub:${NC}"
+        echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+        cat "$HOME/.ssh/id_ed25519.pub"
+        echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+        echo -e "${BLUE}🔗 Agrégala en: https://github.com/settings/ssh${NC}"
+        echo -e "${YELLOW}💡 Presiona Enter cuando hayas agregado la clave...${NC}"
+        read -r
+
+        # Probar la conexión SSH
+        echo -e "${CYAN}🔍 Probando conexión SSH con GitHub...${NC}"
+        if ssh -T git@github.com -o StrictHostKeyChecking=no 2>&1 | grep -q "successfully authenticated"; then
+            echo -e "${GREEN}✅ Conexión SSH con GitHub establecida correctamente${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Conexión SSH no confirmada. Verifica que agregaste la clave a GitHub.${NC}"
+        fi
+    fi
+
+    # Configuración final de autenticación Gemini CLI
+    configure_gemini_auth_final
+}
+
+# Configuración automática de Git y SSH
+configure_git_and_ssh_auto() {
+    # Configurar Git si no está configurado
+    if ! git config --global user.name >/dev/null 2>&1; then
+        git config --global user.name "${TERMUX_AI_GIT_NAME:-Termux Developer}"
+    fi
+    if ! git config --global user.email >/dev/null 2>&1; then
+        git config --global user.email "${TERMUX_AI_GIT_EMAIL:-developer@termux.local}"
+    fi
+
+    # Configurar SSH para GitHub automáticamente
+    if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        cat > "$HOME/.ssh/config" << 'EOF'
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+EOF
+        chmod 600 "$HOME/.ssh/config"
+
+        # Agregar clave al ssh-agent
+        eval "$(ssh-agent -s)" >/dev/null 2>&1
+        ssh-add "$HOME/.ssh/id_ed25519" >/dev/null 2>&1
+
+        echo -e "${GREEN}✅ Git y SSH configurados automáticamente${NC}"
+    fi
+}
+
+# Configuración final de autenticación Gemini CLI
+configure_gemini_auth_final() {
+    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        echo -e "${CYAN}ℹ️ Gemini CLI instalado. Usa 'gemini auth login' para configurar OAuth2 cuando sea necesario${NC}"
+        return 0
+    fi
+
+    echo -e "\n${CYAN}🤖 Configuración final de Gemini CLI:${NC}"
+
+    if command -v gemini >/dev/null 2>&1; then
+        echo -e "${BLUE}¿Deseas configurar la autenticación OAuth2 con Google ahora?${NC}"
+        echo -e "${YELLOW}Esto te permitirá usar el comando ':' para consultas IA${NC}"
+        read -p "Configurar autenticación Gemini ahora? (y/N): " setup_gemini_auth
+
+        if [[ "$setup_gemini_auth" =~ ^[Yy]$ ]]; then
+            echo -e "${CYAN}🔐 Iniciando proceso de autenticación OAuth2...${NC}"
+            gemini auth login || echo -e "${YELLOW}⚠️ Autenticación no completada. Puedes configurarla más tarde con 'gemini auth login'${NC}"
+
+            # Verificar autenticación
+            if gemini auth test >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ Autenticación Gemini configurada correctamente${NC}"
+                echo -e "${CYAN}💡 Ahora puedes usar: : \"tu pregunta aquí\"${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Autenticación no verificada${NC}"
+            fi
+        else
+            echo -e "${CYAN}ℹ️ Podrás configurar la autenticación más tarde con: gemini auth login${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Gemini CLI no encontrado${NC}"
+    fi
+}
 post_installation_setup() {
     echo -e "${CYAN}=============================================${NC}"
     echo -e "${GREEN}🎉 ¡Instalación Completada con Éxito!${NC}"
@@ -391,38 +706,50 @@ EOF
 
 # Function for complete installation
 full_installation() {
-    echo -e "${BLUE}[AUTO] Starting complete installation...${NC}"
+    echo -e "${BLUE}[AUTO] Starting COMPLETE SILENT installation...${NC}"
 
-    # Ejecutar configuración de usuario al inicio
-    echo -e "${PURPLE}🔧 Configuración inicial de usuario${NC}"
-    if ! run_module "00-user-setup"; then
-        echo -e "${YELLOW}⚠️ Error en configuración de usuario, continuando...${NC}"
+    # Verificar modo completamente automático
+    if [[ "${TERMUX_AI_AUTO:-}" == "1" && "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        echo -e "${GREEN}🤖 Modo completamente automático activado${NC}"
+        echo -e "${CYAN}⏰ Instalación sin intervención del usuario iniciada...${NC}"
     fi
 
     local modules=(
-        "00-base-packages"
-        "01-zsh-setup"
-        "02-neovim-setup"
-        "05-ssh-setup"
-        "07-local-ssh-server"
-        "03-ai-integration"
-        "06-fonts-setup"  # Set FiraCode Nerd Font Mono by default
+        "00-system-optimization"    # NUEVO: Permisos, servicios, optimizaciones
+        "00-user-setup"            # Configuración inicial de usuario
+        "00-base-packages"         # Paquetes base con configuración automática
+        "01-zsh-setup"             # Zsh + Oh My Zsh
+        "02-neovim-setup"          # Neovim con configuración completa
+        "06-fonts-setup"           # FiraCode Nerd Font como predeterminado
+        "03-ai-integration"        # Agentes IA con últimas versiones
+        "07-local-ssh-server"      # Servidor SSH persistente
+        "05-ssh-setup"             # Claves SSH para GitHub (al final)
     )
 
-    setup_gemini_cli
+    # Configurar Gemini CLI automáticamente
+    setup_gemini_cli_auto
 
     local previous_auto="${TERMUX_AI_AUTO:-}"
     export TERMUX_AI_AUTO=1
+    export TERMUX_AI_SILENT=1
     local install_status=0
 
     for module in "${modules[@]}"; do
+        echo -e "${PURPLE}🔧 Ejecutando módulo: ${module}${NC}"
         if ! run_module "$module"; then
-            echo -e "${RED}[ERROR] Installation interrupted at: ${module}${NC}"
-            read -p "Do you want to continue with the next module? (y/N): " continue_install
-            if [[ ! "$continue_install" =~ ^[Yy]$ ]]; then
-                install_status=1
-                break
+            echo -e "${RED}[ERROR] Error en módulo: ${module}${NC}"
+            if [[ "${TERMUX_AI_SILENT:-}" != "1" ]]; then
+                read -p "¿Continuar con el siguiente módulo? (y/N): " continue_install
+                if [[ ! "$continue_install" =~ ^[Yy]$ ]]; then
+                    install_status=1
+                    break
+                fi
+            else
+                echo -e "${YELLOW}[AUTO] Continuando automáticamente...${NC}"
+                sleep 2
             fi
+        else
+            echo -e "${GREEN}✅ Módulo ${module} completado${NC}"
         fi
         echo -e "${CYAN}---------------------------------------------${NC}"
     done
@@ -437,12 +764,12 @@ full_installation() {
         return "$install_status"
     fi
 
-    echo -e "${GREEN}[DONE] Complete installation finished!${NC}"
+    echo -e "${GREEN}[DONE] Instalación completa finalizada!${NC}"
 
-    # Post-installation setup
-    post_installation_setup
+    # Post-instalación automática
+    post_installation_setup_auto
 
-    echo -e "${CYAN}[INFO] Restarting terminal...${NC}"
+    echo -e "${CYAN}[INFO] Reiniciando terminal...${NC}"
 
     # Reload configuration
     source ~/.bashrc 2>/dev/null || true

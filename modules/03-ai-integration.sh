@@ -63,7 +63,7 @@ ensure_prereqs() {
     export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
     export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
     export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-    
+
     # Configuración especial para node-gyp en Termux (evita error android_ndk_path)
     export GYP_DEFINES="android_ndk_path=/dev/null"
     export npm_config_build_from_source=true
@@ -107,72 +107,135 @@ npm_install_global() {
 }
 
 install_codex() {
-    note "Instalando OpenAI Codex CLI (@openai/codex)…"
-    # Intenta varios paquetes posibles para Codex
-    if ! npm_install_global "@openai/codex"; then
-        warn "Intentando con openai-codex..."
-        npm_install_global "openai-codex" || warn "Codex CLI no disponible"
-    fi
-}
+    note "Instalando OpenAI Codex CLI - última versión disponible…"
 
-install_gemini() {
-    note "Instalando Google Gemini CLI (@google/gemini-cli)…"
-
-    # Verificar si gemini ya está disponible como comando
-    if command -v gemini >/dev/null 2>&1; then
-        ok "Gemini CLI ya está disponible como comando"
+    # Verificar si codex ya está disponible
+    if command -v codex >/dev/null 2>&1; then
+        note "OpenAI Codex CLI ya disponible"
+        # Intentar actualizar
+        npm update -g @openai/codex >/dev/null 2>&1 || true
+        ok "OpenAI Codex CLI verificado/actualizado"
         return 0
     fi
 
-    # Verificar instalación existente de paquetes npm
-    local already_installed=false
-    if npm list -g --depth=0 "@google/gemini-cli" >/dev/null 2>&1; then
-        already_installed=true
-    elif npm list -g --depth=0 "@google/generative-ai-cli" >/dev/null 2>&1; then
-        already_installed=true
+    # Intenta varios paquetes posibles para Codex con versiones específicas
+    local codex_packages=(
+        "@openai/codex@latest"
+        "openai-codex@latest"
+        "@openai/cli@latest"
+        "openai@latest"
+    )
+
+    for pkg in "${codex_packages[@]}"; do
+        note "Intentando instalar: $pkg"
+        if npm_install_global "$pkg"; then
+            # Verificar si el comando está disponible después de la instalación
+            if command -v codex >/dev/null 2>&1 || command -v openai >/dev/null 2>&1; then
+                ok "CLI de OpenAI instalado: $pkg"
+                return 0
+            fi
+        fi
+    done
+
+    warn "OpenAI Codex CLI no disponible - puede requerir acceso especial"
+    return 1
+}
+
+install_gemini() {
+    note "Instalando Google Gemini CLI (@google/gemini-cli) - última versión…"
+
+    # Verificar si gemini ya está disponible como comando
+    if command -v gemini >/dev/null 2>&1; then
+        local current_version=$(gemini --version 2>/dev/null || echo "desconocida")
+        note "Gemini CLI ya disponible (versión: $current_version)"
+
+        # Actualizar a la última versión
+        note "Actualizando a la última versión..."
+        npm update -g @google/gemini-cli >/dev/null 2>&1 || true
+
+        local new_version=$(gemini --version 2>/dev/null || echo "desconocida")
+        ok "Gemini CLI actualizado (versión: $new_version)"
+        return 0
     fi
 
-    if [[ "$already_installed" == true ]]; then
-        warn "Paquete ya instalado pero comando no disponible. Reinstalando..."
-        npm uninstall -g "@google/gemini-cli" >/dev/null 2>&1 || true
-        npm uninstall -g "@google/generative-ai-cli" >/dev/null 2>&1 || true
+    # Limpiar instalaciones previas
+    npm uninstall -g "@google/gemini-cli" >/dev/null 2>&1 || true
+    npm uninstall -g "@google/generative-ai-cli" >/dev/null 2>&1 || true
+
+    # Instalar la última versión del paquete oficial
+    note "Instalando la última versión de @google/gemini-cli..."
+    if ! npm_install_global "@google/gemini-cli@latest"; then
+        warn "Intentando con versión específica..."
+        if ! npm_install_global "@google/gemini-cli"; then
+            err "No se pudo instalar Gemini CLI"
+            return 1
+        fi
     fi
 
-    if ! npm_install_global "@google/gemini-cli"; then
-        warn "Intentando con @google/generative-ai-cli (legacy)..."
-        npm_install_global "@google/generative-ai-cli" || warn "Gemini CLI no disponible"
+    # Verificar instalación
+    if command -v gemini >/dev/null 2>&1; then
+        local version=$(gemini --version 2>/dev/null || echo "desconocida")
+        ok "Gemini CLI v$version instalado correctamente"
+    else
+        err "Gemini CLI instalado pero comando no disponible"
+        return 1
     fi
 }
 
 install_qwen() {
-    note "Instalando Qwen Code CLI…"
-    # Usar el paquete correcto de Qwen
-    if ! npm_install_global "@qwen-code/qwen-code@latest"; then
-        warn "Intentando con qwen-code legacy..."
-        npm_install_global "qwen-code" || warn "Qwen CLI no disponible"
+    note "Instalando Qwen Code CLI - última versión disponible…"
+
+    # Verificar si qwen ya está disponible
+    if command -v qwen >/dev/null 2>&1 || command -v qwen-code >/dev/null 2>&1; then
+        note "Qwen CLI ya disponible"
+        ok "Qwen CLI verificado"
+        return 0
     fi
+
+    # Lista de paquetes Qwen que pueden estar disponibles
+    local qwen_packages=(
+        "qwen-code@latest"
+        "@qwen/qwen-code@latest"
+        "qwen@latest"
+        "@qwen/cli@latest"
+        "qwencode@latest"
+    )
+
+    for pkg in "${qwen_packages[@]}"; do
+        note "Intentando instalar: $pkg"
+        if npm_install_global "$pkg"; then
+            # Verificar si el comando está disponible después de la instalación
+            if command -v qwen >/dev/null 2>&1 || command -v qwen-code >/dev/null 2>&1; then
+                ok "Qwen CLI instalado: $pkg"
+                return 0
+            fi
+        fi
+    done
+
+    warn "Qwen Code CLI no disponible - puede requerir configuración especial"
+    return 1
 }
 
 verify_binaries() {
     note "Verificando binarios instalados…"
     local missing_count=0
-    
+
     echo -e "${CYAN}Verificando CLIs instalados:${NC}"
-    
+
     if command -v codex >/dev/null 2>&1; then
         ok "✓ codex disponible"
     else
         warn "✗ codex no disponible"
         ((missing_count++))
     fi
-    
+
     if command -v gemini >/dev/null 2>&1; then
         ok "✓ gemini disponible"
     else
         warn "✗ gemini no disponible"
         ((missing_count++))
     fi
-    
+
     if command -v qwen >/dev/null 2>&1; then
         ok "✓ qwen disponible"
     elif command -v qwen-code >/dev/null 2>&1; then
@@ -181,7 +244,7 @@ verify_binaries() {
         warn "✗ qwen/qwen-code no disponible"
         ((missing_count++))
     fi
-    
+
     if [[ $missing_count -eq 0 ]]; then
         ok "Todos los CLIs están disponibles"
         return 0
@@ -199,17 +262,17 @@ main() {
     ensure_prereqs
 
     local install_failures=0
-    
+
     if ! install_codex; then
         warn "@openai/codex no pudo instalarse"
         ((install_failures++))
     fi
-    
+
     if ! install_gemini; then
         warn "@google/gemini-cli no pudo instalarse"
         ((install_failures++))
     fi
-    
+
     if ! install_qwen; then
         warn "@qwen-code/qwen-code no pudo instalarse"
         ((install_failures++))
@@ -223,7 +286,7 @@ main() {
     else
         warn "⚠️ Instalación completada con $install_failures fallo(s)"
     fi
-    
+
     echo -e "${CYAN}ℹ️ Autenticación manual requerida:${NC}"
     echo "  • gemini auth login    # Para Google Gemini"
     echo "  • codex login          # Para OpenAI Codex (si disponible)"

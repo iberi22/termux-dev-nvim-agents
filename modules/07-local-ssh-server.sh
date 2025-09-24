@@ -84,12 +84,30 @@ update_config_line() {
 
 configure_sshd() {
     info "Updating sshd configuration..."
+
+    # En modo automático, configurar silenciosamente
+    if [[ "${TERMUX_AI_AUTO:-}" == "1" && "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        info "Configurando SSH automáticamente..."
+    fi
+
     update_config_line 'Port' "Port ${PORT}"
     update_config_line 'PasswordAuthentication' 'PasswordAuthentication yes'
     update_config_line 'PubkeyAuthentication' 'PubkeyAuthentication yes'
     update_config_line 'PermitRootLogin' 'PermitRootLogin no'
     update_config_line 'AuthorizedKeysFile' 'AuthorizedKeysFile .ssh/authorized_keys'
     update_config_line 'Subsystem[[:space:]]+sftp' "Subsystem sftp ${PREFIX}/libexec/sftp-server"
+    update_config_line 'PrintMotd' 'PrintMotd yes'
+    update_config_line 'Banner' "Banner ${PREFIX}/etc/motd"
+
+    # Configurar usuario SSH automáticamente en modo auto
+    if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
+        local ssh_user="${TERMUX_AI_SSH_USER:-termux}"
+        local ssh_pass="${TERMUX_AI_SSH_PASS:-termux123}"
+
+        # Configurar contraseña usando passwd automático
+        setup_ssh_user_auto "$ssh_user" "$ssh_pass"
+    fi
+
     success "sshd_config updated"
 }
 
@@ -101,6 +119,40 @@ prepare_directories() {
     mkdir -p "$SERVICE_DIR"
     mkdir -p "$BIN_DIR"
     mkdir -p "$HOME/.termux/boot"
+}
+
+# Función para configurar usuario SSH automáticamente
+setup_ssh_user_auto() {
+    local ssh_user="$1"
+    local ssh_pass="$2"
+
+    info "Configurando usuario SSH: $ssh_user"
+
+    # Instalar expect si no está disponible para automatizar passwd
+    if ! command -v expect >/dev/null 2>&1; then
+        info "Instalando expect para automatización..."
+        pkg install -y expect >/dev/null 2>&1 || true
+    fi
+
+    # Configurar contraseña usando expect
+    if command -v expect >/dev/null 2>&1; then
+        expect << EOF >/dev/null 2>&1 || true
+spawn passwd
+expect "New password:"
+send "${ssh_pass}\\r"
+expect "Retype new password:"
+send "${ssh_pass}\\r"
+expect eof
+EOF
+        success "Contraseña SSH configurada para usuario: $ssh_user"
+
+        # Guardar configuración en memoria
+        echo "SSH_USER_CONFIGURED=true" >> "$SSH_MEMORY_FILE"
+        echo "SSH_USER_NAME=$ssh_user" >> "$SSH_MEMORY_FILE"
+    else
+        warn "expect no disponible, configuración de contraseña manual requerida"
+        echo "SSH_USER_CONFIGURED=false" >> "$SSH_MEMORY_FILE"
+    fi
 }
 
 create_memory_file() {
