@@ -715,18 +715,18 @@ full_installation() {
     fi
 
     local modules=(
-        "00-system-optimization"    # NUEVO: Permisos, servicios, optimizaciones
-        "00-user-setup"            # Configuración inicial de usuario
-        "00-base-packages"         # Paquetes base con configuración automática
-        "01-zsh-setup"             # Zsh + Oh My Zsh
-        "02-neovim-setup"          # Neovim con configuración completa
-        "06-fonts-setup"           # FiraCode Nerd Font como predeterminado
-        "03-ai-integration"        # Agentes IA con últimas versiones
-        "07-local-ssh-server"      # Servidor SSH persistente
-        "05-ssh-setup"             # Claves SSH para GitHub (al final)
-    )
-
-    # Configurar Gemini CLI automáticamente
+        "00-network-fixes"         # NUEVO: Arreglar problemas de red y timeouts
+        "00-fix-conflicts"         # NUEVO: Arreglar conflictos de configuración
+        "00-system-optimization"   # NUEVO: Permisos, servicios, optimizaciones
+        "00-user-setup"           # Configuración inicial de usuario  
+        "00-base-packages"        # Paquetes base con configuración automática
+        "01-zsh-setup"            # Zsh + Oh My Zsh
+        "02-neovim-setup"         # Neovim con configuración completa
+        "06-fonts-setup"          # FiraCode Nerd Font como predeterminado
+        "03-ai-integration"       # Agentes IA con últimas versiones
+        "07-local-ssh-server"     # Servidor SSH persistente
+        "05-ssh-setup"            # Claves SSH para GitHub (al final)
+    )    # Configurar Gemini CLI automáticamente
     setup_gemini_cli_auto
 
     local previous_auto="${TERMUX_AI_AUTO:-}"

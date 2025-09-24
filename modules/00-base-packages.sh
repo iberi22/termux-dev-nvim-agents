@@ -2,7 +2,7 @@
 
 # ====================================
 # MODULE: Base Packages Installation
-# Installs essential development tools
+# Installs essential development tools with error handling
 # ====================================
 
 set -euo pipefail
@@ -16,17 +16,88 @@ NC='\033[0m'
 
 echo -e "${BLUE}📦 Installing Termux base packages...${NC}"
 
-# Configurar repositorios automáticamente sin prompts
-echo -e "${YELLOW}🔧 Configuring repositories automatically...${NC}"
-echo "deb https://packages.termux.org/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list"
-echo "deb https://packages.termux.org/apt/termux-root root stable main" >> "$PREFIX/etc/apt/sources.list"
+# Fix mirrors and sources first
+fix_termux_mirrors() {
+    echo -e "${YELLOW}🔧 Fixing Termux mirrors and sources...${NC}"
+    
+    # Update mirrors automatically
+    if command -v termux-change-repo >/dev/null 2>&1; then
+        echo -e "${CYAN}� Updating mirrors automatically...${NC}"
+        # Use automatic mirror selection
+        echo "Y" | termux-change-repo || true
+    fi
+    
+    # Ensure correct sources.list
+    cat > "$PREFIX/etc/apt/sources.list" << 'EOF'
+# Termux main repository
+deb https://packages.termux.org/apt/termux-main stable main
+EOF
+    
+    # Additional configuration for dpkg to handle conflicts automatically
+    mkdir -p "$PREFIX/etc/dpkg/dpkg.cfg.d"
+    cat > "$PREFIX/etc/dpkg/dpkg.cfg.d/01_termux_ai" << 'EOF'
+# Termux AI automatic configuration handling
+force-confnew
+force-overwrite
+EOF
+}
 
-# Update repositories
-echo -e "${YELLOW}🔄 Updating repositories...${NC}"
-apt update -y -qq 2>/dev/null || pkg update -y -qq 2>/dev/null || true
+# Pre-configure problematic packages
+preconfigure_packages() {
+    echo -e "${YELLOW}⚙️ Pre-configuring system packages...${NC}"
+    
+    # Set environment variables to handle configuration conflicts
+    export DEBIAN_FRONTEND=noninteractive
+    export APT_LISTCHANGES_FRONTEND=none
+    export NEEDRESTART_MODE=a
+    
+    # Pre-configure ca-certificates to avoid prompts
+    if [[ ! -f "$PREFIX/etc/ssl/openssl.cnf.termux-ai-backup" ]]; then
+        if [[ -f "$PREFIX/etc/ssl/openssl.cnf" ]]; then
+            cp "$PREFIX/etc/ssl/openssl.cnf" "$PREFIX/etc/ssl/openssl.cnf.termux-ai-backup" 2>/dev/null || true
+        fi
+    fi
+}
 
-echo -e "${YELLOW}⬆️  Upgrading existing packages...${NC}"
-apt upgrade -y -qq 2>/dev/null || pkg upgrade -y -qq 2>/dev/null || true
+# Update repositories with retry logic
+update_repositories() {
+    echo -e "${YELLOW}🔄 Updating repositories with retry logic...${NC}"
+    local max_retries=3
+    local retry_count=0
+    
+    while [[ $retry_count -lt $max_retries ]]; do
+        if DEBIAN_FRONTEND=noninteractive apt update -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite" 2>/dev/null; then
+            echo -e "${GREEN}✅ Repositories updated successfully${NC}"
+            return 0
+        else
+            retry_count=$((retry_count + 1))
+            if [[ $retry_count -lt $max_retries ]]; then
+                echo -e "${YELLOW}⚠️ Update failed, retrying in 3 seconds... (attempt $retry_count/$max_retries)${NC}"
+                sleep 3
+            fi
+        fi
+    done
+    
+    echo -e "${YELLOW}⚠️ Repository update had issues, continuing with cached packages${NC}"
+    return 0  # Don't fail the entire installation
+}
+
+# Upgrade packages with automatic conflict resolution
+upgrade_packages() {
+    echo -e "${YELLOW}⬆️ Upgrading existing packages with conflict resolution...${NC}"
+    
+    # Upgrade with automatic conflict resolution
+    DEBIAN_FRONTEND=noninteractive apt upgrade -y \
+        -o Dpkg::Options::="--force-confnew" \
+        -o Dpkg::Options::="--force-overwrite" \
+        -o Dpkg::Options::="--force-confdef" \
+        -o APT::Get::Assume-Yes=true 2>/dev/null || {
+        echo -e "${YELLOW}⚠️ Some package upgrades had conflicts, continuing...${NC}"
+        return 0
+    }
+    
+    echo -e "${GREEN}✅ Packages upgraded successfully${NC}"
+}
 
 # Mirror warning/help at start
 echo -e "${YELLOW}💡 Please ensure your mirrors are up to date!${NC}"
@@ -77,43 +148,58 @@ OPTIONAL_PACKAGES=(
     "zoxide"
 )
 
-# Function to install packages with retries (silent mode)
+# Function to install packages with retries and conflict resolution
 install_package_with_retry() {
     local package=$1
     local max_retries=3
     local retry_count=0
 
     while [[ $retry_count -lt $max_retries ]]; do
-        if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
-            # Silent mode in auto installation
-            if DEBIAN_FRONTEND=noninteractive apt install -y -qq "$package" 2>/dev/null || pkg install -y -qq "$package" 2>/dev/null; then
+        if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+            # Silent mode with automatic conflict resolution
+            if DEBIAN_FRONTEND=noninteractive apt install -y \
+                -o Dpkg::Options::="--force-confnew" \
+                -o Dpkg::Options::="--force-overwrite" \
+                -o Dpkg::Options::="--force-confdef" \
+                -o APT::Get::Assume-Yes=true \
+                "$package" 2>/dev/null; then
                 return 0
             fi
         else
             echo -e "${BLUE}📦 Installing: ${package} (attempt $((retry_count + 1))/${max_retries})${NC}"
-            if pkg install -y "$package" 2>/dev/null; then
+            if DEBIAN_FRONTEND=noninteractive apt install -y \
+                -o Dpkg::Options::="--force-confnew" \
+                -o Dpkg::Options::="--force-overwrite" \
+                "$package" 2>/dev/null; then
                 echo -e "${GREEN}✅ ${package} installed successfully${NC}"
                 return 0
             fi
         fi
-
+        
         retry_count=$((retry_count + 1))
         if [[ $retry_count -lt $max_retries ]]; then
             sleep 2
         fi
     done
 
-    [[ "${TERMUX_AI_AUTO:-}" != "1" ]] && echo -e "${RED}❌ Failed to install ${package} after ${max_retries} attempts${NC}"
+    [[ "${TERMUX_AI_AUTO:-}" != "1" && "${TERMUX_AI_SILENT:-}" != "1" ]] && echo -e "${RED}❌ Failed to install ${package} after ${max_retries} attempts${NC}"
     return 1
 }
 
-echo -e "${YELLOW}📋 Installing ${#ESSENTIAL_PACKAGES[@]} essential packages...${NC}"
+# Execute the setup steps
+main() {
+    fix_termux_mirrors
+    preconfigure_packages
+    update_repositories
+    upgrade_packages
+    
+    echo -e "${YELLOW}📋 Installing ${#ESSENTIAL_PACKAGES[@]} essential packages...${NC}"
+    
+    # Install essential packages with error handling and retries
+    failed_packages=()
+    successful_packages=()
 
-# Install essential packages with error handling and retries
-failed_packages=()
-successful_packages=()
-
-for package in "${ESSENTIAL_PACKAGES[@]}"; do
+    for package in "${ESSENTIAL_PACKAGES[@]}"; do
     if install_package_with_retry "$package"; then
         successful_packages+=("$package")
     else
@@ -292,3 +378,7 @@ else
     echo -e "${YELLOW}🔄 Or run this script again to retry${NC}"
     exit 1
 fi
+}
+
+# Execute main function
+main

@@ -40,7 +40,9 @@ check "setup.sh tiene función post_installation_setup_auto" '[[ -f setup.sh && 
 check "Módulo 00-system-optimization.sh existe" '[[ -f modules/00-system-optimization.sh ]]'
 
 # 2. Verificar módulos optimizados
-check "00-base-packages.sh tiene instalación silenciosa" '[[ -f modules/00-base-packages.sh && $(grep -c "apt install -y -qq\|pkg install -y -qq" modules/00-base-packages.sh) -gt 0 ]]'
+check "Módulo 00-network-fixes.sh existe" '[[ -f modules/00-network-fixes.sh ]]'
+check "Módulo 00-fix-conflicts.sh existe" '[[ -f modules/00-fix-conflicts.sh ]]'
+check "00-base-packages.sh tiene instalación silenciosa" '[[ -f modules/00-base-packages.sh && $(grep -c "DEBIAN_FRONTEND=noninteractive" modules/00-base-packages.sh) -gt 0 ]]'
 check "05-ssh-setup.sh tiene configuración automática" '[[ -f modules/05-ssh-setup.sh && $(grep -c "TERMUX_AI_AUTO" modules/05-ssh-setup.sh) -gt 0 ]]'
 check "07-local-ssh-server.sh tiene función setup_ssh_user_auto" '[[ -f modules/07-local-ssh-server.sh && $(grep -c "setup_ssh_user_auto" modules/07-local-ssh-server.sh) -gt 0 ]]'
 check "03-ai-integration.sh tiene actualizaciones de versiones" '[[ -f modules/03-ai-integration.sh && $(grep -c "@latest" modules/03-ai-integration.sh) -gt 0 ]]'

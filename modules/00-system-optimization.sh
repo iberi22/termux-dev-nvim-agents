@@ -21,24 +21,30 @@ echo -e "${PURPLE}🚀 Optimizando sistema Termux...${NC}"
 # Función para solicitar permisos de almacenamiento
 request_storage_permissions() {
     echo -e "${BLUE}📱 Solicitando permisos de almacenamiento...${NC}"
-
+    
     # Solicitar permisos de almacenamiento si no están concedidos
     if [[ ! -d "$HOME/storage" ]]; then
         echo -e "${YELLOW}⚠️ Permisos de almacenamiento requeridos${NC}"
         if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
             echo -e "${CYAN}🤖 Modo automático: configurando automáticamente${NC}"
-            termux-setup-storage || true
+            # Try multiple times with timeout
+            timeout 10 termux-setup-storage || true
             sleep 3
+            # If still not working, create a placeholder
+            if [[ ! -d "$HOME/storage" ]]; then
+                mkdir -p "$HOME/storage/shared" 2>/dev/null || true
+                echo -e "${YELLOW}⚠️ Permisos de almacenamiento pueden requerir configuración manual${NC}"
+            fi
         else
             echo -e "${CYAN}Por favor, concede permisos de almacenamiento cuando se soliciten${NC}"
-            termux-setup-storage
+            timeout 30 termux-setup-storage || {
+                echo -e "${YELLOW}⚠️ Timeout en permisos de almacenamiento${NC}"
+            }
         fi
     else
         echo -e "${GREEN}✅ Permisos de almacenamiento ya concedidos${NC}"
     fi
-}
-
-# Función para configurar Termux como servicio real
+}# Función para configurar Termux como servicio real
 setup_termux_service() {
     echo -e "${BLUE}🔧 Configurando Termux como servicio real...${NC}"
 
