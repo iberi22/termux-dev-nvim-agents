@@ -11,12 +11,24 @@ set -euo pipefail
 
 # Flag de verbose (por defecto desactivado)
 VERBOSE=false
+FORCE_MODULES=false
+RESET_STATE=false
+CLEAN_INSTALL=false
 
 # Parseo simple de flags (-v|--verbose antes de cualquier acción)
 for arg in "$@"; do
     case "$arg" in
         -v|--verbose)
             VERBOSE=true
+            ;;
+        -f|--force)
+            FORCE_MODULES=true
+            ;;
+        --reset-state)
+            RESET_STATE=true
+            ;;
+        --clean|--fresh)
+            CLEAN_INSTALL=true
             ;;
     esac
 done
@@ -100,24 +112,60 @@ install_basic_tools() {
 run_main_setup() {
     echo -e "${BLUE}📥 Descargando instalador principal...${NC}"
 
-    # Clonar el repositorio completo para tener todos los módulos
-    if [[ -d "$INSTALL_DIR" ]]; then
-        echo -e "${YELLOW}Removiendo instalación anterior...${NC}"
-        rm -rf "$INSTALL_DIR"
+    if [[ -d "$INSTALL_DIR/.git" ]]; then
+        if [[ "$CLEAN_INSTALL" == true ]]; then
+            echo -e "${YELLOW}🧹 Eliminando instalación previa (modo clean)...${NC}"
+            rm -rf "$INSTALL_DIR"
+        else
+            echo -e "${CYAN}🔄 Repositorio existente detectado. Intentando actualizar...${NC}"
+            if git -C "$INSTALL_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+                git -C "$INSTALL_DIR" fetch --all --tags >/dev/null 2>&1 || true
+                if ! git -C "$INSTALL_DIR" pull --ff-only origin "$BRANCH" >/dev/null 2>&1; then
+                    echo -e "${YELLOW}⚠️ No se pudo aplicar pull fast-forward (posibles cambios locales).${NC}"
+                    echo -e "${YELLOW}   Conservando la versión actual. Usa --clean para reinstalar desde cero.${NC}"
+                else
+                    echo -e "${GREEN}✅ Repositorio actualizado${NC}"
+                fi
+            else
+                echo -e "${YELLOW}⚠️ Directorio existente inválido. Eliminando para reinstalar...${NC}"
+                rm -rf "$INSTALL_DIR"
+            fi
+        fi
+    elif [[ -d "$INSTALL_DIR" ]]; then
+        if [[ "$CLEAN_INSTALL" == true ]]; then
+            echo -e "${YELLOW}🧹 Eliminando directorio previo para reinstalar...${NC}"
+            rm -rf "$INSTALL_DIR"
+        else
+            local backup_dir
+            backup_dir="${INSTALL_DIR}_backup_$(date '+%Y%m%d%H%M%S')"
+            echo -e "${YELLOW}⚠️ Directorio existente sin repo. Moviendo a ${backup_dir}.${NC}"
+            mv "$INSTALL_DIR" "$backup_dir"
+        fi
     fi
 
-    echo -e "${CYAN}Clonando repositorio...${NC}"
-    if ! git clone "https://github.com/${REPO_OWNER}/${REPO_NAME}.git" "$INSTALL_DIR"; then
-        echo -e "${RED}❌ Error al clonar el repositorio${NC}"
-        echo -e "${YELLOW}💡 Verifica tu conexión a internet${NC}"
-        exit 1
+    if [[ ! -d "$INSTALL_DIR/.git" ]]; then
+        echo -e "${CYAN}📥 Clonando repositorio...${NC}"
+        if ! git clone "https://github.com/${REPO_OWNER}/${REPO_NAME}.git" "$INSTALL_DIR"; then
+            echo -e "${RED}❌ Error al clonar el repositorio${NC}"
+            echo -e "${YELLOW}💡 Verifica tu conexión a internet${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ Repositorio clonado${NC}"
     fi
 
     cd "$INSTALL_DIR"
-    chmod +x setup.sh
+    chmod +x setup.sh 2>/dev/null || true
 
-    echo -e "${GREEN}✅ Repositorio clonado${NC}"
     echo -e "${CYAN}🚀 Iniciando instalación COMPLETAMENTE AUTOMÁTICA...${NC}"
+
+    # Fast path: instalación ya completada previamente
+    if [[ -f "$HOME/.termux-ai-setup/INSTALL_DONE" && "$FORCE_MODULES" == false && "$CLEAN_INSTALL" == false && "$RESET_STATE" == false ]]; then
+        echo -e "${GREEN}✅ Instalación ya completada previamente (detectado INSTALL_DONE).${NC}"
+        echo -e "${YELLOW}Use --force o --clean para reinstalar, o --reset-state para reintentar módulos fallidos.${NC}"
+        echo -e "${BLUE}📄 Resumen rápido:${NC}"
+        grep -E 'completed_at|version|script_commit' "$HOME/.termux-ai-setup/INSTALL_DONE" 2>/dev/null || true
+        return 0
+    fi
 
     # Ejecutar instalación automática SIN INTERVENCIÓN
     export TERMUX_AI_AUTO=1
@@ -132,13 +180,18 @@ run_main_setup() {
     export TERMUX_AI_START_SERVICES="1"
     export TERMUX_AI_LAUNCH_WEB="1"
 
-    local args=()
+    local setup_args=("auto")
+    if [[ "$FORCE_MODULES" == true ]]; then
+        setup_args+=("--force")
+    fi
+    if [[ "$RESET_STATE" == true ]]; then
+        setup_args+=("--reset-state")
+    fi
     if [[ "$VERBOSE" == true ]]; then
-        args+=(--verbose)
+        setup_args+=("--verbose")
     fi
 
-    # Ejecutar instalación automática completa
-    exec ./setup.sh auto "${args[@]}"
+    exec ./setup.sh "${setup_args[@]}"
 }
 
 # Función principal

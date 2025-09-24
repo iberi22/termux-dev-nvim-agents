@@ -57,6 +57,18 @@ MODULES_DIR="${SCRIPT_DIR}/modules"
 CONFIG_DIR="${SCRIPT_DIR}/config"
 LOG_FILE="${SCRIPT_DIR}/setup.log"
 
+MODULE_STATE_SCRIPT="${SCRIPT_DIR}/scripts/module-state.sh"
+# shellcheck disable=SC1090
+if [[ -f "$MODULE_STATE_SCRIPT" ]]; then
+    source "$MODULE_STATE_SCRIPT"
+else
+    termux_ai_state_init() { :; }
+    termux_ai_module_completed() { return 1; }
+    termux_ai_record_module_state() { :; }
+    termux_ai_reset_all_state() { :; }
+    termux_ai_reset_module_state() { :; }
+fi
+
 if [[ -d "$SCRIPT_DIR" ]]; then
     cd "$SCRIPT_DIR"
 fi
@@ -162,11 +174,24 @@ run_module() {
     local module_name="$1"
     local module_path="${MODULES_DIR}/${module_name}.sh"
 
+    termux_ai_state_init
+
     echo -e "${BLUE}[RUN] Preparing to run: ${module_name}${NC}"
     echo -e "${CYAN}[INFO] Looking for module at: ${module_path}${NC}"
     echo -e "${CYAN}[INFO] Current directory: ${PWD}${NC}"
     echo -e "${CYAN}[INFO] Script directory: ${SCRIPT_DIR}${NC}"
     echo -e "${CYAN}[INFO] Modules directory: ${MODULES_DIR}${NC}"
+
+    if [[ "${TERMUX_AI_FORCE_MODULES:-0}" != "1" ]]; then
+        if termux_ai_module_completed "$module_name" "$module_path"; then
+            echo -e "${GREEN}[SKIP] ${module_name} ya completado. Usa --force para reejecutar.${NC}"
+            log "Module skipped (cached): ${module_name}"
+            return 0
+        fi
+    else
+        echo -e "${YELLOW}[FORCE] Reejecutando módulo ${module_name} a petición.${NC}"
+        termux_ai_reset_module_state "$module_name"
+    fi
 
     if [[ ! -f "$module_path" ]]; then
         echo -e "${RED}[ERROR] Module not found: ${module_path}${NC}"
@@ -205,10 +230,12 @@ run_module() {
     if [[ $exit_code -eq 0 ]]; then
         echo -e "${GREEN}[OK] ${module_name} completed successfully${NC}"
         log "Module completed: ${module_name}"
+        termux_ai_record_module_state "$module_name" "$module_path" "completed" 0
         return 0
     else
         echo -e "${RED}[ERROR] Error in ${module_name} (exit code: ${exit_code})${NC}"
         log "Error in module: ${module_name} (exit code: ${exit_code})"
+        termux_ai_record_module_state "$module_name" "$module_path" "failed" "$exit_code"
         return 1
     fi
 }
@@ -708,6 +735,8 @@ EOF
 full_installation() {
     echo -e "${BLUE}[AUTO] Starting COMPLETE SILENT installation...${NC}"
 
+    termux_ai_state_init
+
     # Verificar modo completamente automático
     if [[ "${TERMUX_AI_AUTO:-}" == "1" && "${TERMUX_AI_SILENT:-}" == "1" ]]; then
         echo -e "${GREEN}🤖 Modo completamente automático activado${NC}"
@@ -718,7 +747,7 @@ full_installation() {
         "00-network-fixes"         # NUEVO: Arreglar problemas de red y timeouts
         "00-fix-conflicts"         # NUEVO: Arreglar conflictos de configuración
         "00-system-optimization"   # NUEVO: Permisos, servicios, optimizaciones
-        "00-user-setup"           # Configuración inicial de usuario  
+        "00-user-setup"           # Configuración inicial de usuario
         "00-base-packages"        # Paquetes base con configuración automática
         "01-zsh-setup"            # Zsh + Oh My Zsh
         "02-neovim-setup"         # Neovim con configuración completa
@@ -764,28 +793,89 @@ full_installation() {
         return "$install_status"
     fi
 
-    echo -e "${GREEN}[DONE] Instalación completa finalizada!${NC}"
+        echo -e "${GREEN}[DONE] Instalación completa finalizada!${NC}"
+        # Crear marcador global de instalación completa
+        mkdir -p "$HOME/.termux-ai-setup" 2>/dev/null || true
+        {
+            echo "completed_at=$(date '+%Y-%m-%dT%H:%M:%S%z')"
+            echo "version=2.0"
+            echo "script_commit=${SCRIPT_COMMIT:-local}"
+        } > "$HOME/.termux-ai-setup/INSTALL_DONE" 2>/dev/null || true
 
     # Post-instalación automática
     post_installation_setup_auto
 
     echo -e "${CYAN}[INFO] Reiniciando terminal...${NC}"
 
-    # Reload configuration
+    # Reload configuration (suave, sin exec forzado para no interrumpir pipeline remoto)
     source ~/.bashrc 2>/dev/null || true
-    exec "$SHELL" || true
+    # No hacemos exec aquí para permitir que el caller continúe (especialmente install.sh)
 }
 
 # Main function
 main() {
+    local mode=""
+    local force_modules=false
+    local reset_state=false
+    local show_help=false
+
+    while (($#)); do
+        case "$1" in
+            auto)
+                mode="auto"
+                ;;
+            -f|--force)
+                force_modules=true
+                ;;
+            --reset-state)
+                reset_state=true
+                ;;
+            --verbose)
+                export TERMUX_AI_VERBOSE=1
+                ;;
+            -h|--help)
+                show_help=true
+                ;;
+            *)
+                echo -e "${RED}[ERROR] Opción desconocida: $1${NC}"
+                show_help=true
+                ;;
+        esac
+        shift
+    done
+
+    if $show_help; then
+        cat <<'EOF'
+Uso: ./setup.sh [auto] [opciones]
+
+Opciones:
+  auto             Ejecuta la instalación completa sin menú
+  -f, --force      Reejecuta todos los módulos aunque ya estén completados
+  --reset-state    Limpia el estado almacenado de módulos antes de iniciar
+  -h, --help       Muestra esta ayuda y termina
+EOF
+        return 0
+    fi
+
+    if $reset_state; then
+        echo -e "${YELLOW}[RESET] Limpiando estado previo de módulos...${NC}"
+        termux_ai_reset_all_state
+    fi
+
+    if $force_modules; then
+        export TERMUX_AI_FORCE_MODULES=1
+    else
+        export TERMUX_AI_FORCE_MODULES="${TERMUX_AI_FORCE_MODULES:-0}"
+    fi
+
     show_banner
     check_prerequisites
+    termux_ai_state_init
 
     # Create log file
     log "Starting Termux AI Setup"
 
-    # Check if running in automatic mode
-    if [[ "${1:-}" == "auto" ]]; then
+    if [[ "$mode" == "auto" ]]; then
         echo -e "${BLUE}🤖 Running in automatic mode...${NC}"
         full_installation
         exit $?
@@ -821,7 +911,6 @@ main() {
                 run_module "99-clean-reset"
                 ;;
             9)
-                # Launch post-installation control panel
                 if [[ -f "${SCRIPT_DIR}/scripts/termux-ai-panel.sh" ]]; then
                     echo -e "${BLUE}🎛️ Lanzando Panel de Control...${NC}"
                     bash "${SCRIPT_DIR}/scripts/termux-ai-panel.sh"

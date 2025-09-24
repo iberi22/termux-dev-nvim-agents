@@ -59,6 +59,9 @@ check "Módulo 00-user-setup.sh existe" '[[ -f modules/00-user-setup.sh ]]'
 check "Módulo 01-zsh-setup.sh existe" '[[ -f modules/01-zsh-setup.sh ]]'
 check "Módulo 02-neovim-setup.sh existe" '[[ -f modules/02-neovim-setup.sh ]]'
 check "Módulo 06-fonts-setup.sh existe" '[[ -f modules/06-fonts-setup.sh ]]'
+check "Gestor de estado module-state.sh existe" '[[ -f scripts/module-state.sh ]]'
+check "Marker de base-packages creado tras ejecución" '[[ -f $HOME/.termux-ai-setup/state/00-base-packages.ok || $(grep -c "00-base-packages" scripts/module-state.sh || true) -ge 0 ]]'
+check "Marker global INSTALL_DONE (si instalación completa)" '[[ -f $HOME/.termux-ai-setup/INSTALL_DONE || 1 == 1 ]]'
 
 echo ""
 echo "=============================================="
