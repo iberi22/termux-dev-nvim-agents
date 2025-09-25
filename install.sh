@@ -3,8 +3,8 @@
 # ====================================
 # TERMUX AI SETUP - INSTALADOR RÁPIDO
 # Script de instalación con un comando
-SCRIPT_VERSION="2025-09-22.4"
-SCRIPT_COMMIT="auto"
+SCRIPT_VERSION="2025-09-25.c68a0a0"
+SCRIPT_COMMIT="c68a0a0"
 # ====================================
 
 set -Eeuo pipefail
