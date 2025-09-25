@@ -37,7 +37,6 @@ declare -ar ESSENTIAL_PACKAGES=(
     jq
     ca-certificates
     termux-tools
-    pkg
     zsh
     nodejs-lts
 )
@@ -47,7 +46,7 @@ declare -ar OPTIONAL_PACKAGES=(
     fd
     fzf
     bat
-    exa
+    eza
     zoxide
 )
 
@@ -497,7 +496,8 @@ alias gp='git push'
 alias gl='git log --oneline'
 alias gd='git diff'
 if command -v bat >/dev/null 2>&1; then alias cat='bat'; fi
-if command -v exa >/dev/null 2>&1; then alias ls='exa --icons'; fi
+if command -v eza >/dev/null 2>&1; then alias ls='eza --icons'; elif command -v exa >/dev/null 2>&1; then alias ls='exa --icons'; fi
+if command -v eza >/dev/null 2>&1; then alias exa='eza'; fi
 if command -v fd >/dev/null 2>&1; then alias find='fd'; fi
 if command -v zoxide >/dev/null 2>&1; then alias cd='z'; fi
 alias apt='pkg'

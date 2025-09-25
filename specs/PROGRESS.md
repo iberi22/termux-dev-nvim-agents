@@ -37,6 +37,12 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - Validación con lints: código verificado sin errores de sintaxis
 - Despliegue: cambios commited y pushed a rama main exitosamente
 
+### Instalacion base saneada y Gemini CLI resiliente
+
+- `modules/00-base-packages.sh`: elimina pkg de la lista esencial, reemplaza exa por eza en los opcionales y ajusta aliases para usar eza como reemplazo transparente.
+- `setup.sh`: agrega prepare_npm_env_for_gemini e install_gemini_cli_with_retries, asegura Node/npm antes de instalar, aplica reintentos con registro y fija gemini-2.5-flash como modelo por defecto.
+- Resultado: la corrida base deja de fallar por paquetes inexistentes y la instalacion de Gemini CLI es ahora tolerante a errores transitorios.
+
 ## 2025-09-24
 
 ### Orquestador endurecido y reporting consistente

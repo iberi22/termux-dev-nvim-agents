@@ -336,71 +336,131 @@ setup_gemini_cli() {
 }
 
 # Function to setup Gemini CLI (automatic mode)
-setup_gemini_cli_auto() {
-    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        echo -e "${BLUE}🤖 Configurando Gemini CLI automáticamente...${NC}"
-    else
-        echo -e "${YELLOW}🤖 Configurando Gemini CLI...${NC}"
+prepare_npm_env_for_gemini() {
+    if ! command -v npm &>/dev/null; then
+        return 0
     fi
 
-    # Verificar si Node.js está instalado
+    local npm_prefix="${HOME}/.npm-global"
+    local current_prefix
+    current_prefix=$(npm config get prefix 2>/dev/null || echo "")
+
+    if [[ -z "$current_prefix" || "$current_prefix" == "null" ]]; then
+        current_prefix=""
+    fi
+
+    if [[ "$current_prefix" != "$npm_prefix" ]]; then
+        npm config set prefix "$npm_prefix" >/dev/null 2>&1 || true
+    fi
+
+    if [[ ":$PATH:" != *":${npm_prefix}/bin:"* ]]; then
+        export PATH="${npm_prefix}/bin:${PATH}"
+    fi
+
+    export NPM_CONFIG_PREFIX="$npm_prefix"
+    export npm_config_prefix="$npm_prefix"
+}
+
+install_gemini_cli_with_retries() {
+    local packages=("@google/gemini-cli@latest" "@google/gemini-cli")
+    local max_attempts=3
+    local attempt
+    local pkg
+
+    for pkg in "${packages[@]}"; do
+        attempt=1
+        while (( attempt <= max_attempts )); do
+            log "[INFO] Installing ${pkg} (attempt ${attempt}/${max_attempts})"
+            if npm install -g "$pkg" --unsafe-perm --no-progress >>"$LOG_FILE" 2>&1; then
+                return 0
+            fi
+
+            log "[WARN] npm install for ${pkg} failed (attempt ${attempt})"
+            echo -e "${YELLOW}[WARN] npm install ${pkg} failed (attempt ${attempt}). Retrying...${NC}"
+            sleep $(( attempt * 5 ))
+            attempt=$(( attempt + 1 ))
+        done
+    done
+
+    log "[ERROR] Unable to install @google/gemini-cli after retries"
+    return 1
+}
+
+setup_gemini_cli_auto() {
+    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        echo -e "${BLUE}[AUTO] Configurando Gemini CLI automaticamente...${NC}"
+    else
+        echo -e "${YELLOW}[INFO] Configurando Gemini CLI...${NC}"
+    fi
+
     if ! command -v node &>/dev/null; then
         if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-            echo -e "${CYAN}📦 Instalando Node.js automáticamente...${NC}"
+            echo -e "${CYAN}[INFO] Instalando Node.js antes de Gemini CLI...${NC}"
         else
-            echo -e "${YELLOW}📦 Node.js requerido para Gemini CLI, instalando...${NC}"
+            echo -e "${YELLOW}[INFO] Node.js requerido para Gemini CLI, instalando dependencias base...${NC}"
         fi
 
         if ! run_module "00-base-packages"; then
-            echo -e "${RED}❌ Error instalando dependencias${NC}"
+            echo -e "${RED}[ERROR] Error instalando dependencias previas para Gemini CLI${NC}"
             return 1
         fi
     fi
 
-    # Instalar última versión de Gemini CLI
-    if ! command -v gemini &>/dev/null; then
-        if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-            echo -e "${CYAN}📦 Instalando @google/gemini-cli...${NC}"
-            npm install -g @google/gemini-cli >/dev/null 2>&1
-        else
-            echo -e "${YELLOW}📦 Instalando Gemini CLI...${NC}"
-            npm install -g @google/gemini-cli
+    if ! command -v npm &>/dev/null; then
+        echo -e "${YELLOW}[INFO] npm no disponible; reintentando dependencias base...${NC}"
+        if ! run_module "00-base-packages"; then
+            echo -e "${RED}[ERROR] No se pudo asegurar npm para Gemini CLI${NC}"
+            return 1
         fi
     fi
 
-    # Verificar versión instalada
-    if command -v gemini &>/dev/null; then
-        local version=$(gemini --version 2>/dev/null || echo "desconocida")
-        echo -e "${GREEN}✅ Gemini CLI v${version} instalado${NC}"
+    prepare_npm_env_for_gemini
 
-        # Configurar modelo por defecto si está en modo automático
+    if command -v gemini &>/dev/null; then
+        local current_version
+        current_version=$(gemini --version 2>/dev/null || echo "desconocida")
+        echo -e "${GREEN}[OK] Gemini CLI ya disponible (v${current_version})${NC}"
+    else
+        echo -e "${CYAN}[INFO] Instalando @google/gemini-cli...${NC}"
+        if ! install_gemini_cli_with_retries; then
+            echo -e "${RED}[ERROR] Error instalando Gemini CLI. Revisa ${LOG_FILE}${NC}"
+            add_summary "Gemini CLI no se pudo instalar automaticamente"
+            return 1
+        fi
+    fi
+
+    if command -v gemini &>/dev/null; then
+        local version
+        version=$(gemini --version 2>/dev/null || echo "desconocida")
+        echo -e "${GREEN}[OK] Gemini CLI v${version} instalado${NC}"
+
         if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
             mkdir -p "$HOME/.gemini" 2>/dev/null || true
-            cat > "$HOME/.gemini/settings.json" << 'EOF'
+            cat > "$HOME/.gemini/settings.json" <<'EOF'
 {
   "model": {
-    "name": "gemini-2.0-flash-exp"
+    "name": "gemini-2.5-flash"
   },
   "safety": {
     "threshold": "BLOCK_ONLY_HIGH"
   }
 }
 EOF
-            echo -e "${GREEN}🤖 Modelo predeterminado configurado: gemini-2.0-flash-exp${NC}"
+            echo -e "${GREEN}[OK] Modelo predeterminado configurado: gemini-2.5-flash${NC}"
         fi
     else
-        echo -e "${RED}❌ Error instalando Gemini CLI${NC}"
+        echo -e "${RED}[ERROR] Gemini CLI no se detecta en el PATH tras la instalacion${NC}"
+        add_summary "Gemini CLI no se detecta tras la instalacion"
         return 1
     fi
 
-    # En modo automático no configuramos OAuth2, se hace al final
     if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        echo -e "${CYAN}ℹ️ Autenticación OAuth2 será configurada al final del proceso${NC}"
+        echo -e "${CYAN}[INFO] Autenticacion OAuth2 se realizara mas tarde con 'gemini auth login'.${NC}"
     else
-        echo -e "${YELLOW}ℹ️ Autenticación OAuth2 omitida. Usar 'gemini auth login' manualmente si es necesario.${NC}"
+        echo -e "${YELLOW}[INFO] Autenticacion OAuth2 omitida. Ejecuta 'gemini auth login' cuando sea necesario.${NC}"
     fi
 
-    echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
+    echo -e "${GREEN}[OK] Gemini CLI configurado${NC}"
 }
 
 # Function for post-installation configuration (automatic mode)
