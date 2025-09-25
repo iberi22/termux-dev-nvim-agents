@@ -4,6 +4,25 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 
 ## 2025-01-09
 
+### Sistema de Versionado Automático Implementado
+
+- `scripts/update-version.sh`: Script nuevo para actualizar automáticamente la versión en install.sh usando fecha y hash del commit
+  - Formato de versión: YYYY-MM-DD.commit-hash (ej: 2025-09-25.7a37c76)
+  - Actualiza SCRIPT_VERSION y SCRIPT_COMMIT automáticamente
+  - Verificación integrada para asegurar que los cambios se aplicaron correctamente
+- `scripts/pre-commit.sh`: Modificado para ejecutar actualización de versión automáticamente antes de cada commit
+  - Actualiza versión y hace stage automático de install.sh si fue modificado
+  - Mantiene compatibilidad con validaciones de linting existentes
+- `.github/workflows/ci.yml`: Actualizado para incluir paso de actualización de versión en CI
+  - Se ejecuta antes de las validaciones de sintaxis
+  - Asegura versionado consistente en builds automatizados
+- `install.sh`: Actualizado para usar versionado dinámico
+  - SCRIPT_VERSION ahora usa formato fecha.commit-hash
+  - SCRIPT_COMMIT contiene el hash corto del commit actual
+  - Sistema probado y funcionando correctamente
+
+## 2025-09-25
+
 ### Refactorización Completa del Módulo Zsh con Selección de Tema
 
 - `modules/01-zsh-setup.sh`: refactorización completa con sistema de selección de tema interactivo
@@ -18,7 +37,7 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - Validación con lints: código verificado sin errores de sintaxis
 - Despliegue: cambios commited y pushed a rama main exitosamente
 
-## 2025-09-25
+## 2025-09-24
 
 ### Orquestador endurecido y reporting consistente
 
@@ -26,7 +45,7 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - `setup.sh`: mismas garantías de strict mode, captura de comandos fallidos y salida con resúmenes en `cleanup`; fallos de módulos actualizan `SCRIPT_EXIT_CODE` aunque la instalación continúe, y la instalación automática registra en `add_summary` el estado escrito en `~/.termux-ai-setup/INSTALL_DONE`.
 - Ambos scripts: logging tipo CLI-friendly con `info/warn/error`, instrucciones claras para revisar `setup.log` y sintaxis verificada con `bash -n`.
 
-## 2025-09-24
+## 2025-09-22
 
 ### Instalador Idempotente y Reanudable
 
