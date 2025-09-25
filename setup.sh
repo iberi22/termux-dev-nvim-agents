@@ -464,6 +464,118 @@ EOF
 }
 
 # Function for post-installation configuration (automatic mode)
+detect_termux_shell() {
+    local shell_path="${SHELL:-}"
+    if [[ -n "$shell_path" && -x "$shell_path" ]]; then
+        echo "$shell_path"
+        return 0
+    fi
+
+    local prefix="${PREFIX:-/data/data/com.termux/files/usr}"
+    local candidates=(
+        "$prefix/bin/zsh"
+        "$prefix/bin/bash"
+        "$prefix/bin/sh"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [[ -x "$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+
+    echo "/bin/sh"
+}
+
+ensure_termux_user_entry() {
+    local username=$1
+    local prefix="${PREFIX:-/data/data/com.termux/files/usr}"
+    local shell_path
+    shell_path="$(detect_termux_shell)"
+
+    if id "$username" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if command -v useradd >/dev/null 2>&1; then
+        if useradd -m -s "$shell_path" "$username" >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Usuario ${username} creado con useradd${NC}"
+            return 0
+        fi
+    fi
+
+    if command -v adduser >/dev/null 2>&1; then
+        if adduser --disabled-password --shell "$shell_path" --gecos "" "$username" >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Usuario ${username} creado con adduser${NC}"
+            return 0
+        fi
+    fi
+
+    local passwd_file="${prefix}/etc/passwd"
+    local shadow_file="${prefix}/etc/shadow"
+
+    if [[ -w "$passwd_file" ]]; then
+        if ! grep -q "^${username}:" "$passwd_file"; then
+            local uid
+            local gid
+            uid="$(id -u)"
+            gid="$(id -g)"
+            printf '%s:%s:%s:%s:%s:%s:%s\n' "$username" "x" "$uid" "$gid" "$username" "$HOME" "$shell_path" >> "$passwd_file"
+            if [[ -f "$shadow_file" && -w "$shadow_file" ]]; then
+                if ! grep -q "^${username}:" "$shadow_file"; then
+                    printf '%s:%s:%s:%s:%s:%s:%s:%s:%s\n' "$username" "*" "0" "0" "99999" "7" "" "" "" >> "$shadow_file"
+                fi
+            fi
+            echo -e "${GREEN}✅ Usuario ${username} registrado en ${passwd_file}${NC}"
+        fi
+        return 0
+    fi
+
+    echo -e "${YELLOW}⚠️ No se pudo crear el usuario ${username}. Se usará el usuario actual para SSH.${NC}"
+    return 1
+}
+
+set_termux_user_password() {
+    local username=$1
+    local password=$2
+
+    if [[ "$username" != "$(whoami)" && "$EUID" -ne 0 ]]; then
+        echo -e "${YELLOW}⚠️ Sin privilegios para establecer la contraseña de ${username}. Ejecuta 'passwd ${username}' manualmente.${NC}"
+        return 1
+    fi
+
+    if command -v chpasswd >/dev/null 2>&1 && [[ "$username" == "$(whoami)" || "$EUID" -eq 0 ]]; then
+        if echo "${username}:${password}" | chpasswd >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Contraseña establecida para ${username}${NC}"
+            return 0
+        fi
+    fi
+
+    if command -v expect >/dev/null 2>&1; then
+        local passwd_cmd="passwd"
+        if [[ "$username" != "$(whoami)" ]]; then
+            passwd_cmd="passwd ${username}"
+        fi
+
+        if expect <<EOF >/dev/null 2>&1
+spawn ${passwd_cmd}
+expect "New password:"
+send "${password}\r"
+expect "Retype new password:"
+send "${password}\r"
+expect eof
+EOF
+        then
+            echo -e "${GREEN}✅ Contraseña establecida para ${username}${NC}"
+            return 0
+        fi
+    fi
+
+    echo -e "${YELLOW}⚠️ No se pudo establecer la contraseña automáticamente para ${username}. Ejecuta 'passwd ${username}' manualmente.${NC}"
+    return 1
+}
+
 post_installation_setup_auto() {
     echo -e "${CYAN}=============================================${NC}"
     echo -e "${GREEN}🎉 ¡Instalación Automática Completada!${NC}"
@@ -472,30 +584,25 @@ post_installation_setup_auto() {
 
     # Configuración automática de usuario SSH
     echo -e "${BLUE}🔐 Configurando usuario SSH automáticamente...${NC}"
-    local ssh_user="${TERMUX_AI_SSH_USER:-termux}"
-    local ssh_pass="${TERMUX_AI_SSH_PASS:-termux123}"
+    local requested_ssh_user="${TERMUX_AI_SSH_USER:-termux}"
+    local ssh_pass="${TERMUX_AI_SSH_PASS:-termux}"
+    local effective_ssh_user="$requested_ssh_user"
 
-    echo -e "${CYAN}Usuario SSH: ${ssh_user}${NC}"
+    echo -e "${CYAN}Usuario SSH preferido: ${requested_ssh_user}${NC}"
 
-    # Configurar contraseña automáticamente usando expect si está disponible
-    if command -v expect >/dev/null 2>&1; then
-        expect << EOF >/dev/null 2>&1
-spawn passwd
-expect "New password:"
-send "${ssh_pass}\\r"
-expect "Retype new password:"
-send "${ssh_pass}\\r"
-expect eof
-EOF
-        echo -e "${GREEN}✅ Contraseña SSH configurada automáticamente${NC}"
-    else
-        echo -e "${YELLOW}⚠️ expect no disponible, configurando contraseña manualmente más tarde${NC}"
+    if ! ensure_termux_user_entry "$requested_ssh_user"; then
+        effective_ssh_user="$(whoami)"
+        echo -e "${YELLOW}⚠️ Usaremos el usuario actual (${effective_ssh_user}) para el inicio de sesión SSH.${NC}"
+    fi
+
+    if set_termux_user_password "$effective_ssh_user" "$ssh_pass"; then
+        echo -e "${GREEN}✅ Contraseña predeterminada establecida para ${effective_ssh_user}${NC}"
     fi
 
     # SSH keys automatizadas
     if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
         echo -e "${CYAN}🔑 Generando claves SSH automáticamente...${NC}"
-        local git_email="${TERMUX_AI_GIT_EMAIL:-developer@termux.local}"
+        local git_email="${TERMUX_AI_GIT_EMAIL:-termux@localhost}"
         ssh-keygen -t ed25519 -C "$git_email" -f "$HOME/.ssh/id_ed25519" -N "" >/dev/null 2>&1
         echo -e "${GREEN}✅ Claves SSH generadas${NC}"
     fi
@@ -504,10 +611,19 @@ EOF
     if [[ "${TERMUX_AI_SETUP_SSH:-}" == "1" ]]; then
         echo -e "${CYAN}🌐 Habilitando servidor SSH permanente...${NC}"
         if command -v sv-enable >/dev/null 2>&1; then
-            sv-enable sshd >/dev/null 2>&1
-            sv up sshd >/dev/null 2>&1
-            local ip=$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1 || echo "IP_NO_DETECTADA")
-            echo -e "${GREEN}✅ SSH habilitado en: ssh -p 8022 ${ssh_user}@${ip}${NC}"
+            if sv-enable sshd >/dev/null 2>&1; then
+                if command -v sv >/dev/null 2>&1; then
+                    if ! sv up sshd >/dev/null 2>&1; then
+                        echo -e "${YELLOW}⚠️ No se pudo iniciar el servicio SSH automáticamente (sv up).${NC}"
+                    fi
+                fi
+                local ip=$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1 || echo "IP_NO_DETECTADA")
+                echo -e "${GREEN}✅ SSH habilitado en: ssh -p 8022 ${effective_ssh_user}@${ip}${NC}"
+            else
+                echo -e "${YELLOW}⚠️ No se pudo habilitar el arranque automático con sv-enable.${NC}"
+            fi
+        else
+            echo -e "${YELLOW}⚠️ termux-services no está instalado; omitiendo habilitación automática de SSH.${NC}"
         fi
     fi
 
@@ -532,13 +648,12 @@ EOF
         fi
     fi
 
-    # Configuración final automática de Git y SSH
-    configure_git_and_ssh_final
+    echo -e "${CYAN}ℹ️ Para configurar Git y GitHub ejecuta luego:${NC} ${YELLOW}bash modules/05-ssh-setup.sh${NC}"
 
     echo -e "\n${GREEN}🎉 ¡Configuración Automática Completa!${NC}"
     echo -e "${CYAN}=============================================${NC}"
     echo -e "${WHITE}📋 RESUMEN DE CONFIGURACIÓN:${NC}"
-    echo -e "${CYAN}  • Usuario SSH: ${TERMUX_AI_SSH_USER:-termux}${NC}"
+    echo -e "${CYAN}  • Usuario SSH: ${effective_ssh_user}${NC}"
     echo -e "${CYAN}  • Puerto SSH: 8022${NC}"
     echo -e "${CYAN}  • Panel Web: http://localhost:3000${NC}"
     echo -e "${CYAN}  • Comando IA: : \"tu pregunta\"${NC}"
@@ -777,21 +892,28 @@ post_installation_setup() {
     read -p "¿Habilitar servidor SSH permanente? (y/N): " enable_sshd
     if [[ "$enable_sshd" =~ ^[Yy]$ ]]; then
         if command -v sv-enable >/dev/null 2>&1; then
-            sv-enable sshd
-            echo -e "${GREEN}✅ Servidor SSH habilitado permanentemente${NC}"
-            echo -e "${CYAN}Conéctate usando: ssh -p 8022 $(whoami)@$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1)${NC}"
+            if sv-enable sshd >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ Servidor SSH habilitado permanentemente${NC}"
+                local ssh_ip="$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1)"
+                echo -e "${CYAN}Conéctate usando: ssh -p 8022 $(whoami)@${ssh_ip}${NC}"
 
-            # Preguntar si iniciar SSH ahora
-            echo ""
-            echo -e "${YELLOW}🚀 ¿Quieres iniciar el servidor SSH ahora?${NC}"
-            read -p "¿Iniciar SSH inmediatamente? (y/N): " start_ssh_now
-            if [[ "$start_ssh_now" =~ ^[Yy]$ ]]; then
-                if command -v sv >/dev/null 2>&1; then
-                    sv up sshd
-                    echo -e "${GREEN}✅ Servidor SSH iniciado${NC}"
-                else
-                    echo -e "${YELLOW}⚠️ No se pudo iniciar SSH automáticamente${NC}"
+                # Preguntar si iniciar SSH ahora
+                echo ""
+                echo -e "${YELLOW}🚀 ¿Quieres iniciar el servidor SSH ahora?${NC}"
+                read -p "¿Iniciar SSH inmediatamente? (y/N): " start_ssh_now
+                if [[ "$start_ssh_now" =~ ^[Yy]$ ]]; then
+                    if command -v sv >/dev/null 2>&1; then
+                        if sv up sshd >/dev/null 2>&1; then
+                            echo -e "${GREEN}✅ Servidor SSH iniciado${NC}"
+                        else
+                            echo -e "${YELLOW}⚠️ No se pudo iniciar SSH automáticamente (sv up).${NC}"
+                        fi
+                    else
+                        echo -e "${YELLOW}⚠️ termux-services no provee el comando 'sv'; inicia sshd manualmente.${NC}"
+                    fi
                 fi
+            else
+                echo -e "${YELLOW}⚠️ No se pudo habilitar el arranque automático con sv-enable.${NC}"
             fi
         else
             echo -e "${YELLOW}⚠️ termux-services no disponible. Instala con: pkg install termux-services${NC}"

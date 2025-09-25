@@ -76,6 +76,8 @@ terminal-margin-left=0
 terminal-margin-right=0
 terminal-margin-top=0
 terminal-margin-bottom=0
+terminal-onclick-url-open=true
+clipboard-autocopy=true
 
 # Cursor
 terminal-cursor-blink-rate=0

@@ -102,7 +102,7 @@ configure_sshd() {
     # Configurar usuario SSH automáticamente en modo auto
     if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
         local ssh_user="${TERMUX_AI_SSH_USER:-termux}"
-        local ssh_pass="${TERMUX_AI_SSH_PASS:-termux123}"
+        local ssh_pass="${TERMUX_AI_SSH_PASS:-termux}"
 
         # Configurar contraseña usando passwd automático
         setup_ssh_user_auto "$ssh_user" "$ssh_pass"

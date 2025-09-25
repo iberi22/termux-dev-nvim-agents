@@ -119,20 +119,6 @@ get_new_user_info() {
         echo -e "${RED}❌ Email inválido${NC}"
         read -p "Ingresa tu email de GitHub: " USER_EMAIL
     done
-}
-    fi
-
-    while [[ -z "${USER_NAME:-}" ]]; do
-        read -p "Ingresa tu nombre completo: " USER_NAME
-    done
-
-    while [[ -z "${USER_EMAIL:-}" ]]; do
-        read -p "Ingresa tu email de GitHub: " USER_EMAIL
-        if [[ ! "$USER_EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-            echo -e "${RED}❌ Email inválido. Intenta de nuevo.${NC}"
-            USER_EMAIL=""
-        fi
-    done
 
     # Configurar Git con la información proporcionada
     echo -e "${BLUE}⚙️ Configurando Git globalmente...${NC}"

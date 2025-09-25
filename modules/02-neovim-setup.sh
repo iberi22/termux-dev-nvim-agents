@@ -1898,7 +1898,10 @@ echo -e "${YELLOW}🔧 Instalando herramientas de desarrollo...${NC}"
 
 # Node.js tools
 if command -v npm >/dev/null 2>&1; then
-    npm install -g typescript typescript-language-server @biome/cli
+  npm install -g typescript typescript-language-server
+  if ! npm install -g @biomejs/biome@latest; then
+    echo -e "${YELLOW}⚠️ No se pudo instalar Biome CLI vía npm. Consulta https://biomejs.dev/guides/manual-installation/ para alternativas.${NC}"
+  fi
 fi
 
 # Python tools

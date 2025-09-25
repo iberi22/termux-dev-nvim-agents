@@ -43,6 +43,16 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - `setup.sh`: agrega prepare_npm_env_for_gemini e install_gemini_cli_with_retries, asegura Node/npm antes de instalar, aplica reintentos con registro y fija gemini-2.5-flash como modelo por defecto.
 - Resultado: la corrida base deja de fallar por paquetes inexistentes y la instalacion de Gemini CLI es ahora tolerante a errores transitorios.
 
+### Termux UX y resiliencia del setup automático
+
+- `config/configure-zsh-final.sh`: habilita `terminal-onclick-url-open` y `clipboard-autocopy` para que los enlaces sean tocables y las selecciones se copien al portapapeles por defecto.
+- `modules/02-neovim-setup.sh`: separa la instalación de TypeScript/TSLS y Biome, usa `@biomejs/biome@latest` según la guía oficial y advierte con enlaces de fallback si npm falla.
+- `modules/05-ssh-setup.sh`: corrige bloques heredados que introducían un `fi` huérfano, restaurando el flujo de configuración de Git en modo no automático.
+- `setup.sh`: trata los fallos de `sv-enable`/`sv up` como advertencias tanto en modo automático como interactivo, evitando abortos del setup cuando termux-services no está disponible o el servicio ya estaba gestionado.
+- `setup.sh`: agrega utilidades `ensure_termux_user_entry`/`set_termux_user_password` para registrar el usuario `termux`, establecer contraseña `termux` cuando hay permisos y omitir la configuración automática de Git (se delega al módulo 05).
+- `install.sh` y `modules/07-local-ssh-server.sh`: sincronizan el password por defecto (`termux`) para las credenciales SSH documentadas.
+- Resultado: la experiencia en Termux vuelve a permitir abrir URLs con un tap, la instalación automática ya no se interrumpe por dependencias opcionales y deja listo el usuario `termux`/`termux` con llaves SSH sin tocar la configuración de Git (delegada).
+
 ## 2025-09-24
 
 ### Orquestador endurecido y reporting consistente
