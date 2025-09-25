@@ -7,7 +7,8 @@
 # Quick install: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 # ====================================
 
-set -euo pipefail
+set -Eeuo pipefail
+IFS=$'\n\t'
 
 # Colors for output
 RED='\033[0;31m'
@@ -57,6 +58,15 @@ MODULES_DIR="${SCRIPT_DIR}/modules"
 CONFIG_DIR="${SCRIPT_DIR}/config"
 LOG_FILE="${SCRIPT_DIR}/setup.log"
 
+readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+readonly SCRIPT_START_TS="$(date +%s)"
+
+SCRIPT_EXIT_CODE=-1
+SCRIPT_FAILURE_CMD=""
+SCRIPT_STATUS="running"
+
+declare -a SUMMARY_LINES=()
+
 MODULE_STATE_SCRIPT="${SCRIPT_DIR}/scripts/module-state.sh"
 # shellcheck disable=SC1090
 if [[ -f "$MODULE_STATE_SCRIPT" ]]; then
@@ -76,6 +86,59 @@ fi
 # Function for logging
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+add_summary() {
+    SUMMARY_LINES+=("$1")
+}
+
+on_error() {
+    local exit_code=$1
+    local failed_command=$2
+    SCRIPT_EXIT_CODE=$exit_code
+    SCRIPT_FAILURE_CMD="$failed_command"
+    SCRIPT_STATUS="error"
+    log "[ERROR] Command failed: ${failed_command} (exit ${exit_code})"
+}
+
+on_interrupt() {
+    SCRIPT_EXIT_CODE=130
+    SCRIPT_STATUS="interrupted"
+    log "[WARN] Installation interrupted by user"
+    echo -e "${RED}[ERROR] Installation interrupted by user${NC}"
+    exit 130
+}
+
+cleanup() {
+    trap - EXIT ERR INT TERM
+
+    local captured=$?
+    local exit_code=$captured
+
+    if (( SCRIPT_EXIT_CODE >= 0 )); then
+        exit_code=$SCRIPT_EXIT_CODE
+    fi
+
+    local elapsed=$(( $(date +%s) - SCRIPT_START_TS ))
+
+    if [[ $exit_code -ne 0 ]]; then
+        if [[ -n "$SCRIPT_FAILURE_CMD" ]]; then
+            echo -e "${RED}[ERROR] Último comando fallido: ${SCRIPT_FAILURE_CMD}${NC}"
+        fi
+        echo -e "${YELLOW}[INFO] Consulta ${LOG_FILE} para más detalles.${NC}"
+        echo -e "${RED}[ERROR] ${SCRIPT_NAME} abortado tras ${elapsed}s (código ${exit_code}).${NC}"
+        log "[ERROR] Script aborted after ${elapsed}s (code ${exit_code})"
+    else
+        log "[INFO] Script completed successfully in ${elapsed}s"
+        if ((${#SUMMARY_LINES[@]} > 0)); then
+            echo -e "${CYAN}[INFO] Resumen rápido:${NC}"
+            for line in "${SUMMARY_LINES[@]}"; do
+                echo -e "  • ${line}"
+            done
+        fi
+    fi
+
+    exit "$exit_code"
 }
 
 # Function to show banner
@@ -236,6 +299,8 @@ run_module() {
         echo -e "${RED}[ERROR] Error in ${module_name} (exit code: ${exit_code})${NC}"
         log "Error in module: ${module_name} (exit code: ${exit_code})"
         termux_ai_record_module_state "$module_name" "$module_path" "failed" "$exit_code"
+        SCRIPT_EXIT_CODE=$exit_code
+        SCRIPT_FAILURE_CMD="module:${module_name}"
         return 1
     fi
 }
@@ -755,7 +820,8 @@ full_installation() {
         "03-ai-integration"       # Agentes IA con últimas versiones
         "07-local-ssh-server"     # Servidor SSH persistente
         "05-ssh-setup"            # Claves SSH para GitHub (al final)
-    )    # Configurar Gemini CLI automáticamente
+    )
+    # Configurar Gemini CLI automáticamente
     setup_gemini_cli_auto
 
     local previous_auto="${TERMUX_AI_AUTO:-}"
@@ -766,6 +832,7 @@ full_installation() {
     for module in "${modules[@]}"; do
         echo -e "${PURPLE}🔧 Ejecutando módulo: ${module}${NC}"
         if ! run_module "$module"; then
+            install_status=1
             echo -e "${RED}[ERROR] Error en módulo: ${module}${NC}"
             if [[ "${TERMUX_AI_SILENT:-}" != "1" ]]; then
                 read -p "¿Continuar con el siguiente módulo? (y/N): " continue_install
@@ -793,14 +860,17 @@ full_installation() {
         return "$install_status"
     fi
 
-        echo -e "${GREEN}[DONE] Instalación completa finalizada!${NC}"
-        # Crear marcador global de instalación completa
-        mkdir -p "$HOME/.termux-ai-setup" 2>/dev/null || true
-        {
-            echo "completed_at=$(date '+%Y-%m-%dT%H:%M:%S%z')"
-            echo "version=2.0"
-            echo "script_commit=${SCRIPT_COMMIT:-local}"
-        } > "$HOME/.termux-ai-setup/INSTALL_DONE" 2>/dev/null || true
+    echo -e "${GREEN}[DONE] Instalación completa finalizada!${NC}"
+    # Crear marcador global de instalación completa
+    mkdir -p "$HOME/.termux-ai-setup" 2>/dev/null || true
+    {
+        echo "completed_at=$(date '+%Y-%m-%dT%H:%M:%S%z')"
+        echo "version=2.0"
+        echo "script_commit=${SCRIPT_COMMIT:-local}"
+    } > "$HOME/.termux-ai-setup/INSTALL_DONE" 2>/dev/null || true
+    add_summary "Instalación automática completada"
+    add_summary "Estado guardado en ~/.termux-ai-setup/INSTALL_DONE"
+    add_summary "Módulos ejecutados: ${#modules[@]}"
 
     # Post-instalación automática
     post_installation_setup_auto
@@ -935,8 +1005,9 @@ EOF
     done
 }
 
-# Signal handling
-trap 'echo -e "\n${RED}[ERROR] Installation interrupted${NC}"; exit 1' INT TERM
+trap 'on_error $? "$BASH_COMMAND"' ERR
+trap 'on_interrupt' INT TERM
+trap 'cleanup' EXIT
 
 # Execute main function
 main "$@"

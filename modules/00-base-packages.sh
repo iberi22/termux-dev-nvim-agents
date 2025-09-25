@@ -1,391 +1,489 @@
 #!/bin/bash
 
 # ====================================
-# MODULE: Base Packages Installation (Restored)
-# Robust, idempotent installation of essential tools
+# MODULE: Base Packages Installation
+# Instalación robusta e idempotente de herramientas esenciales para Termux AI
 # ====================================
 
-set -euo pipefail
+set -Eeuo pipefail
+IFS=$'\n\t'
 
-RED='\033[0;31m'
-GREmain() {
-    echo -e "${CYAN}🚀 Starting Termux package installation with enhanced robustness${NC}"
-    
-    # Step 1: Fix mirrors and sources
-    fix_termux_mirrors
-    
-    # Step 2: Pre-configure for non-interactive installation
-    preconfigure_packages
-    
-    # Step 3: Update repositories with enhanced retry logic
-    update_repositories
-    
-    # Step 4: Upgrade existing packages
-    upgrade_packages
-    
-    # Step 5: Install essential packages with detailed tracking
-    echo -e "${YELLOW}📋 Installing ${#ESSENTIAL_PACKAGES[@]} essential packages...${NC}"
-    local failed_packages=() successful_packages=()
-    local package_count=0
-    
-    for package in "${ESSENTIAL_PACKAGES[@]}"; do
-        package_count=$((package_count + 1))
-        echo -e "${CYAN}[${package_count}/${#ESSENTIAL_PACKAGES[@]}] Processing: ${package}${NC}"
-        
-        if install_package_with_retry "$package"; then
-            successful_packages+=("$package")
-        else
-            failed_packages+=("$package")
-            echo -e "${RED}⚠️ Critical package ${package} failed to install${NC}"
-        fi
-    done
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly NC='\033[0m'
 
-    # Step 6: Install optional packages (non-critical)
-    echo -e "\n${YELLOW}🎯 Installing ${#OPTIONAL_PACKAGES[@]} optional packages...${NC}"
-    local optional_failed=() optional_successful=()
-    
-    for package in "${OPTIONAL_PACKAGES[@]}"; do
-        echo -e "${CYAN}📦 Optional: ${package}${NC}"
-        if install_package_with_retry "$package"; then
-            optional_successful+=("$package")
-        else
-            optional_failed+=("$package")
-        fi
-    done
-
-    # Step 7: Configure Git if needed
-    echo -e "${YELLOW}⚙️ Configurando Git...${NC}"
-    if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        if ! git config --global user.name >/dev/null 2>&1; then
-            git config --global user.name "${TERMUX_AI_GIT_NAME:-Termux Developer}" 2>/dev/null || true
-        fi
-        if ! git config --global user.email >/dev/null 2>&1; then
-            git config --global user.email "${TERMUX_AI_GIT_EMAIL:-dev@termux.local}" 2>/dev/null || true
-        fi
-    fi
-
-    # Step 8: Setup useful aliases
-    echo -e "${YELLOW}🔧 Configurando aliases útiles...${NC}"
-    local ALIASES_FILE="$HOME/.bash_aliases"
-    cat > "$ALIASES_FILE" <<'EOF'
-# Aliases de Termux AI
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git log --oneline'
-alias gd='git diff'
-if command -v bat >/dev/null 2>&1; then alias cat='bat'; fi
-if command -v exa >/dev/null 2>&1; then alias ls='exa --icons'; fi
-if command -v fd  >/dev/null 2>&1; then alias find='fd'; fi
-if command -v zoxide >/dev/null 2>&1; then alias cd='z'; fi
-alias apt='pkg'
-alias python='python3'
-alias pip='pip3'
-EOF
-    grep -q "source ~/.bash_aliases" "$HOME/.bashrc" 2>/dev/null || echo "source ~/.bash_aliases" >> "$HOME/.bashrc"
-
-    # Step 9: Setup directory structure
-    mkdir -p "$HOME/bin" "$HOME/dev" "$HOME/.config"
-    local NPM_GBIN
-    NPM_GBIN=$(npm bin -g 2>/dev/null || echo "")
-    if [[ -n "$NPM_GBIN" ]] && ! grep -q "$NPM_GBIN" "$HOME/.bashrc" 2>/dev/null; then
-        echo "export PATH=\"$NPM_GBIN:\$PATH\"" >> "$HOME/.bashrc"
-    fi
-
-    # Step 10: Generate detailed installation report
-    echo -e "\n${GREEN}📊 ENHANCED INSTALLATION SUMMARY${NC}"
-    echo -e "${GREEN}Essential: ${#successful_packages[@]} ok / ${#ESSENTIAL_PACKAGES[@]} total${NC}"
-    [[ ${#failed_packages[@]} -gt 0 ]] && echo -e "${RED}Failed essential: ${failed_packages[*]}${NC}"
-    echo -e "${GREEN}Optional: ${#optional_successful[@]} ok / ${#OPTIONAL_PACKAGES[@]} total${NC}"
-    [[ ${#optional_failed[@]} -gt 0 ]] && echo -e "${YELLOW}Skipped optional: ${optional_failed[*]}${NC}"
-
-    # Step 11: Verify critical tool availability
-    local critical_tools=(git curl python node npm pkg)
-    local missing_critical=()
-    
-    for tool in "${critical_tools[@]}"; do
-        if ! command -v "$tool" >/dev/null 2>&1; then
-            missing_critical+=("$tool")
-        fi
-    done
-
-    # Step 12: Determine final status and exit appropriately
-    if [[ ${#missing_critical[@]} -eq 0 && ${#failed_packages[@]} -eq 0 ]]; then
-        echo -e "${GREEN}🎉 Base packages installation completed successfully!${NC}"
-        echo -e "${GREEN}✅ All critical tools are available and working${NC}"
-        touch "$MODULE_MARKER" 2>/dev/null || true
-        if command -v termux_ai_record_module_state >/dev/null 2>&1; then
-            termux_ai_record_module_state "$MODULE_NAME" "$0" "completed" 0 || true
-        fi
-        exit 0
-    elif [[ ${#missing_critical[@]} -eq 0 ]]; then
-        echo -e "${YELLOW}⚠️ Installation completed with some optional failures${NC}"
-        echo -e "${GREEN}✅ All critical tools are available${NC}"
-        touch "$MODULE_MARKER" 2>/dev/null || true
-        if command -v termux_ai_record_module_state >/dev/null 2>&1; then
-            termux_ai_record_module_state "$MODULE_NAME" "$0" "completed" 0 || true
-        fi
-        exit 0
-    else
-        echo -e "${RED}❌ Critical installation failures detected${NC}"
-        echo -e "${RED}Missing critical tools: ${missing_critical[*]}${NC}"
-        echo -e "${YELLOW}💡 You can rerun this module to retry failed installations${NC}"
-        if command -v termux_ai_record_module_state >/dev/null 2>&1; then
-            termux_ai_record_module_state "$MODULE_NAME" "$0" "partial" 1 || true
-        fi
-        exit 1
-    fi
-}N='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-echo -e "${BLUE}📦 Installing Termux base packages...${NC}"
-
-STATE_MARKER_DIR="$HOME/.termux-ai-setup/state"
-mkdir -p "$STATE_MARKER_DIR" 2>/dev/null || true
 MODULE_NAME="00-base-packages"
+STATE_MARKER_DIR="$HOME/.termux-ai-setup/state"
 MODULE_MARKER="$STATE_MARKER_DIR/${MODULE_NAME}.ok"
 
-if [[ -f "$MODULE_MARKER" && "${TERMUX_AI_FORCE_MODULES:-0}" != "1" ]]; then
-    echo -e "${GREEN}🔁 ${MODULE_NAME} ya completado anteriormente (marker). Usa --force para reejecutar.${NC}"
-    exit 0
-fi
+declare -ar ESSENTIAL_PACKAGES=(
+    curl
+    wget
+    git
+    unzip
+    zip
+    python
+    python-pip
+    make
+    clang
+    nano
+    vim
+    tree
+    htop
+    openssh
+    jq
+    ca-certificates
+    termux-tools
+    pkg
+    zsh
+    nodejs-lts
+)
+
+declare -ar OPTIONAL_PACKAGES=(
+    ripgrep
+    fd
+    fzf
+    bat
+    exa
+    zoxide
+)
+
+declare -a INSTALLED_ESSENTIAL=()
+declare -a FAILED_ESSENTIAL=()
+declare -a INSTALLED_OPTIONAL=()
+declare -a FAILED_OPTIONAL=()
+declare -a MISSING_CRITICAL=()
+
+record_module_state() {
+    local state=$1
+    local exit_code=${2:-0}
+
+    if command -v termux_ai_record_module_state >/dev/null 2>&1; then
+        termux_ai_record_module_state "$MODULE_NAME" "$0" "$state" "$exit_code" || true
+    fi
+}
+
+# shellcheck disable=SC2329
+handle_error() {
+    local exit_code=$?
+    local line=${BASH_LINENO[0]:-unknown}
+
+    printf "%b❌ Error en %s (línea %s). Código %s%b\n" "$RED" "$MODULE_NAME" "$line" "$exit_code" "$NC"
+    record_module_state "failed" "$exit_code"
+    exit "$exit_code"
+}
+
+trap 'handle_error' ERR
+
+log() {
+    local color=$1
+    shift
+    printf "%b%s%b\n" "$color" "$*" "$NC"
+}
+
+log_section() { log "$BLUE" "$*"; }
+log_info() { log "$CYAN" "$*"; }
+log_warn() { log "$YELLOW" "$*"; }
+log_success() { log "$GREEN" "$*"; }
+log_error() { log "$RED" "$*"; }
+
+ensure_state_dir() {
+    mkdir -p "$STATE_MARKER_DIR"
+}
+
+check_previous_run() {
+    if [[ -f "$MODULE_MARKER" && "${TERMUX_AI_FORCE_MODULES:-0}" != "1" ]]; then
+        log_success "🔁 ${MODULE_NAME} ya completado anteriormente (marker). Usa --force para reejecutar."
+        exit 0
+    fi
+}
+
+assert_termux_environment() {
+    if ! command -v pkg >/dev/null 2>&1; then
+        log_error "❌ No se detectó pkg. Este módulo requiere ejecutarse dentro de Termux."
+        exit 1
+    fi
+}
 
 fix_termux_mirrors() {
-    echo -e "${YELLOW}🔧 Fixing Termux mirrors and sources...${NC}"
-    
-    # Check if using deprecated PlayStore version
+    log_section "🔧 Ajustando mirrors y fuentes de Termux…"
+
+    # Limpiar caché problemático primero
+    rm -rf "$PREFIX/var/lib/apt/lists"/* 2>/dev/null || true
+    mkdir -p "$PREFIX/var/lib/apt/lists/partial" 2>/dev/null || true
+
+    # Detectar si usamos mirrors antiguos o problemáticos
     if [[ -f "$PREFIX/etc/apt/sources.list" ]]; then
-        if grep -q "bintray" "$PREFIX/etc/apt/sources.list" 2>/dev/null; then
-            echo -e "${RED}⚠️ Detected deprecated Bintray mirror. Fixing...${NC}"
+        if grep -q "bintray\|mirrors.tuna\|mirror.termux" "$PREFIX/etc/apt/sources.list" 2>/dev/null; then
+            log_warn "⚠️ Detectados mirrors problemáticos, aplicando configuración actualizada."
+            # Forzar configuración limpia
+            cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
+deb https://packages-cf.termux.dev/apt/termux-main stable main
+EOF
         fi
     fi
-    
-    # Ensure termux-tools is up to date first
-    if ! apt update -qq 2>/dev/null; then
-        echo -e "${YELLOW}⚠️ Initial apt update failed, attempting mirror fix...${NC}"
-    fi
-    
-    # Install or update termux-tools if available
-    apt install -y termux-tools 2>/dev/null || true
-    
-    # Use termux-change-repo if available
+
+    # Instalar termux-tools primero (crítico)
+    log_info "📦 Asegurando termux-tools actualizado..."
+    pkg install -y termux-tools 2>/dev/null || {
+        apt-get install -y termux-tools 2>/dev/null || true
+    }
+
+    # Intentar usar termux-change-repo si está disponible
     if command -v termux-change-repo >/dev/null 2>&1; then
-        echo -e "${CYAN}🔄 Updating mirrors automatically...${NC}"
-        # Select a reliable mirror automatically 
-        echo -e "1\n1\n" | termux-change-repo 2>/dev/null || {
-            echo -e "${YELLOW}⚠️ Automatic mirror change failed, using fallback...${NC}"
-            # Fallback to manual configuration with known good mirror
+        log_info "🔄 Configurando mirrors optimizados..."
+        # Seleccionar mirror automático (opción 1) y main repo (opción 1)
+        if ! printf '1\n1\n' | termux-change-repo >/dev/null 2>&1; then
+            log_warn "⚠️ Fallback a configuración manual de mirrors."
+            # Usar Cloudflare mirror como fallback (más confiable)
             cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
-# The main termux repository
-deb https://packages.termux.dev/apt/termux-main stable main
+deb https://packages-cf.termux.dev/apt/termux-main stable main
 EOF
-        }
+        fi
     else
-        # Manual fallback configuration
-        echo -e "${YELLOW}⚠️ termux-change-repo not available, using manual config...${NC}"
+        log_info "🔄 Configurando mirror Cloudflare (más confiable)..."
         cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
-# The main termux repository  
-deb https://packages.termux.dev/apt/termux-main stable main
+deb https://packages-cf.termux.dev/apt/termux-main stable main
 EOF
     fi
-    
-    # Configure dpkg for non-interactive mode
+
+    # Configuración dpkg para evitar prompts
     mkdir -p "$PREFIX/etc/dpkg/dpkg.cfg.d"
     cat > "$PREFIX/etc/dpkg/dpkg.cfg.d/01_termux_ai" <<'EOF'
-# Termux AI automatic configuration handling
 force-confnew
 force-overwrite
+force-confdef
 EOF
+
+    # Asegurar permisos correctos
+    chmod 644 "$PREFIX/etc/apt/sources.list" 2>/dev/null || true
 }
 
 preconfigure_packages() {
-    echo -e "${YELLOW}⚙️ Pre-configuring system packages...${NC}"
+    log_section "⚙️ Preconfigurando entorno para instalaciones no interactivas…"
+
     export DEBIAN_FRONTEND=noninteractive
     export APT_LISTCHANGES_FRONTEND=none
     export NEEDRESTART_MODE=a
+
     if [[ -f "$PREFIX/etc/ssl/openssl.cnf" && ! -f "$PREFIX/etc/ssl/openssl.cnf.termux-ai-backup" ]]; then
-        cp "$PREFIX/etc/ssl/openssl.cnf" "$PREFIX/etc/ssl/openssl.cnf.termux-ai-backup" 2>/dev/null || true
+        cp "$PREFIX/etc/ssl/openssl.cnf" "$PREFIX/etc/ssl/openssl.cnf.termux-ai-backup" >/dev/null 2>&1 || true
     fi
 }
 
 update_repositories() {
-    echo -e "${YELLOW}🔄 Updating repositories with enhanced retry logic...${NC}"
-    local max_retries=5 retry_count=0
-    local backoff_delay=2
-    
-    while [[ $retry_count -lt $max_retries ]]; do
-        retry_count=$((retry_count+1))
-        echo -e "${CYAN}📡 Repository update attempt $retry_count/$max_retries...${NC}"
-        
-        # Clear any problematic cache first
-        if [[ $retry_count -gt 1 ]]; then
+    log_section "🔄 Actualizando repositorios con reintentos robustos…"
+
+    local max_retries=5
+    local retry=1
+    local backoff=3
+
+    while (( retry <= max_retries )); do
+        log_info "🌐 Intento ${retry}/${max_retries} de actualización."
+
+        # Limpiar caché en reintentos
+        if (( retry > 1 )); then
+            log_info "🧹 Limpiando caché para reintento..."
             rm -rf "$PREFIX/var/lib/apt/lists"/* 2>/dev/null || true
             mkdir -p "$PREFIX/var/lib/apt/lists/partial" 2>/dev/null || true
-        fi
-        
-        if timeout 120 apt update -y -o Acquire::Retries=3 \
-            -o Acquire::http::Timeout=30 \
-            -o Acquire::ftp::Timeout=30 \
-            -o Dpkg::Options::="--force-confnew" \
-            -o Dpkg::Options::="--force-overwrite" 2>/dev/null; then
-            echo -e "${GREEN}✅ Repositories updated successfully${NC}"
-            return 0
-        fi
-        
-        if [[ $retry_count -lt $max_retries ]]; then
-            echo -e "${YELLOW}⚠️ Update failed, waiting ${backoff_delay}s before retry...${NC}"
-            sleep $backoff_delay
-            backoff_delay=$((backoff_delay * 2)) # Exponential backoff
-            
-            # Try changing mirror on repeated failures
-            if [[ $retry_count -eq 3 ]] && command -v termux-change-repo >/dev/null 2>&1; then
-                echo -e "${YELLOW}🔄 Switching to different mirror...${NC}"
-                echo -e "2\n1\n" | termux-change-repo 2>/dev/null || true
+
+            # Verificar conectividad básica
+            if ! ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+                log_warn "⚠️ Sin conectividad de red, esperando..."
+                sleep 5
             fi
         fi
-    done
-    
-    echo -e "${YELLOW}⚠️ Repository update failed after $max_retries attempts${NC}"
-    echo -e "${YELLOW}🔍 Checking repository accessibility...${NC}"
-    
-    # Test repository connectivity
-    if command -v curl >/dev/null 2>&1; then
-        if curl -s --connect-timeout 10 "https://packages.termux.dev/" >/dev/null; then
-            echo -e "${GREEN}✅ Main repository is accessible${NC}"
-        else
-            echo -e "${RED}❌ Repository connectivity issues detected${NC}"
+
+        # Intentar actualización con timeouts más largos
+        if timeout 180 apt update -y \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=60 \
+            -o Acquire::ftp::Timeout=60 \
+            -o Acquire::https::Timeout=60 \
+            -o Dpkg::Options::="--force-confnew" \
+            -o Dpkg::Options::="--force-overwrite" \
+            -o Dpkg::Options::="--force-confdef" 2>/dev/null; then
+            log_success "✅ Repositorios actualizados exitosamente."
+            return 0
         fi
+
+        # Estrategias de recuperación por intento
+        if (( retry < max_retries )); then
+            case $retry in
+                2)
+                    log_info "🔄 Reintentando con mirrors alternativos..."
+                    if command -v termux-change-repo >/dev/null 2>&1; then
+                        printf '2\n1\n' | termux-change-repo >/dev/null 2>&1 || true
+                    fi
+                    ;;
+                3)
+                    log_info "� Usando mirror Cloudflare directo..."
+                    cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
+deb https://packages-cf.termux.dev/apt/termux-main stable main
+EOF
+                    ;;
+                4)
+                    log_info "🔄 Fallback a mirror principal..."
+                    cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
+deb https://packages.termux.dev/apt/termux-main stable main
+EOF
+                    ;;
+            esac
+
+            log_warn "⏳ Esperando ${backoff}s antes del siguiente intento..."
+            sleep "$backoff"
+            backoff=$(( backoff + 2 ))
+        fi
+
+        ((retry++))
+    done
+
+    # Diagnóstico final si todo falla
+    log_warn "⚠️ No se pudieron actualizar repositorios tras ${max_retries} intentos."
+
+    if command -v curl >/dev/null 2>&1; then
+        log_info "🔍 Verificando conectividad..."
+        local test_urls=(
+            "https://packages.termux.dev/"
+            "https://packages-cf.termux.dev/"
+            "https://mirror.termux.dev/"
+        )
+
+        for url in "${test_urls[@]}"; do
+            if curl -s --connect-timeout 10 --max-time 20 "$url" >/dev/null 2>&1; then
+                log_info "✅ Conectividad OK con: $url"
+                break
+            else
+                log_warn "❌ Sin acceso a: $url"
+            fi
+        done
     fi
-    
-    echo -e "${CYAN}💡 Continuing with cached package data...${NC}"
+
+    log_warn "� Continuando con caché existente..."
     return 0
 }
 
 upgrade_packages() {
-    echo -e "${YELLOW}⬆️ Upgrading existing packages...${NC}"
-    DEBIAN_FRONTEND=noninteractive apt upgrade -y \
+    log_section "⬆️ Actualizando paquetes existentes…"
+
+    if ! apt upgrade -y \
         -o Dpkg::Options::="--force-confnew" \
         -o Dpkg::Options::="--force-overwrite" \
         -o Dpkg::Options::="--force-confdef" \
-        -o APT::Get::Assume-Yes=true 2>/dev/null || echo -e "${YELLOW}⚠️ Some upgrades failed, continuing...${NC}"
+        -o APT::Get::Assume-Yes=true >/dev/null 2>&1; then
+        log_warn "⚠️ Algunas actualizaciones fallaron, se continuará con la instalación."
+    fi
 }
 
-echo -e "${YELLOW}💡 Ensure mirrors are healthy for speed${NC}"
+is_package_installed() {
+    local package=$1
 
-ESSENTIAL_PACKAGES=(
-    curl wget git unzip zip 
-    nodejs-lts python python-pip 
-    make clang nano vim tree htop 
-    openssh jq ca-certificates
-    termux-tools pkg
-)
-OPTIONAL_PACKAGES=(ripgrep fd fzf bat exa zoxide)
-
-is_package_installed() { dpkg -s "$1" >/dev/null 2>&1; }
-
-install_package_with_retry() {
-    local package=$1 max_retries=3 retry_count=0
-    
-    # Check if already installed first
-    if is_package_installed "$package"; then
-        echo -e "${GREEN}✅ ${package} already installed${NC}"
+    # Verificar con dpkg primero
+    if dpkg -s "$package" >/dev/null 2>&1; then
         return 0
     fi
-    
-    # Check if package exists in repository
-    if ! apt-cache show "$package" >/dev/null 2>&1; then
-        echo -e "${RED}❌ Package ${package} not found in repository${NC}"
-        return 1
-    fi
-    
-    echo -e "${CYAN}📦 Installing ${package}...${NC}"
-    
-    while [[ $retry_count -lt $max_retries ]]; do
-        retry_count=$((retry_count+1))
-        
-        # Clear any partial package states
-        apt --fix-broken install -y >/dev/null 2>&1 || true
-        
-        if timeout 300 apt install -y \
-                -o Dpkg::Options::="--force-confnew" \
-                -o Dpkg::Options::="--force-overwrite" \
-                -o Dpkg::Options::="--force-confdef" \
-                -o APT::Get::Assume-Yes=true \
-                -o Acquire::Retries=2 \
-                -o Acquire::http::Timeout=60 \
-                "$package" 2>/dev/null; then
-            
-            # Verify installation was successful
-            if is_package_installed "$package"; then
-                echo -e "${GREEN}✅ ${package} installed successfully${NC}"
+
+    # Verificar si el comando está disponible (para algunos paquetes)
+    case $package in
+        "git"|"curl"|"wget"|"python"|"node"|"npm"|"zsh")
+            if command -v "$package" >/dev/null 2>&1; then
                 return 0
-            else
-                echo -e "${YELLOW}⚠️ ${package} installation reported success but verification failed${NC}"
             fi
-        fi
-        
-        if [[ $retry_count -lt $max_retries ]]; then
-            local wait_time=$((retry_count * 3))
-            echo -e "${YELLOW}⏳ Retry $retry_count/$max_retries for ${package} in ${wait_time}s...${NC}"
-            sleep $wait_time
-            
-            # Try to fix any dependency issues
-            apt --fix-broken install -y >/dev/null 2>&1 || true
-        fi
-    done
-    
-    echo -e "${RED}❌ Failed to install ${package} after $max_retries attempts${NC}"
+            ;;
+        "nodejs-lts")
+            if command -v "node" >/dev/null 2>&1; then
+                return 0
+            fi
+            ;;
+        "python-pip")
+            if command -v "pip" >/dev/null 2>&1 || command -v "pip3" >/dev/null 2>&1; then
+                return 0
+            fi
+            ;;
+    esac
+
     return 1
 }
 
-main() {
-    fix_termux_mirrors
-    preconfigure_packages
-    update_repositories
-    upgrade_packages
+package_available() {
+    apt-cache show "$1" >/dev/null 2>&1 || apt show "$1" >/dev/null 2>&1
+}
 
-    echo -e "${YELLOW}📋 Installing ${#ESSENTIAL_PACKAGES[@]} essential packages...${NC}"
-    local failed_packages=() successful_packages=()
-    for package in "${ESSENTIAL_PACKAGES[@]}"; do
-        if install_package_with_retry "$package"; then
-            successful_packages+=("$package")
-        else
-            failed_packages+=("$package")
-        fi
-    done
+install_package_with_retry() {
+    local package=$1
+    local max_retries=3
+    local attempt=1
 
-    echo -e "\n${YELLOW}� Installing ${#OPTIONAL_PACKAGES[@]} optional packages...${NC}"
-    local optional_failed=() optional_successful=()
-    for package in "${OPTIONAL_PACKAGES[@]}"; do
-        if install_package_with_retry "$package"; then
-            optional_successful+=("$package")
-        else
-            optional_failed+=("$package")
-        fi
-    done
-
-    echo -e "${YELLOW}⚙️ Configurando Git...${NC}"
-    if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        if ! git config --global user.name >/dev/null 2>&1; then
-            git config --global user.name "${TERMUX_AI_GIT_NAME:-Termux Developer}" 2>/dev/null || true
-        fi
-        if ! git config --global user.email >/dev/null 2>&1; then
-            git config --global user.email "${TERMUX_AI_GIT_EMAIL:-dev@termux.local}" 2>/dev/null || true
-        fi
+    if is_package_installed "$package"; then
+        log_success "✅ ${package} ya está instalado."
+        return 0
     fi
 
-    echo -e "${YELLOW}🔧 Configurando aliases útiles...${NC}"
-    local ALIASES_FILE="$HOME/.bash_aliases"
-    cat > "$ALIASES_FILE" <<'EOF'
+    if ! package_available "$package"; then
+        log_error "❌ ${package} no está disponible en el repositorio actual."
+        return 1
+    fi
+
+    log_info "📦 Instalando ${package}…"
+    while (( attempt <= max_retries )); do
+        # Limpiar problemas de dependencias antes de cada intento
+        apt --fix-broken install -y >/dev/null 2>&1 || true
+        dpkg --configure -a >/dev/null 2>&1 || true
+
+        # Instalación con configuración robusta
+        if timeout 300 apt install -y \
+            -o Dpkg::Options::="--force-confnew" \
+            -o Dpkg::Options::="--force-overwrite" \
+            -o Dpkg::Options::="--force-confdef" \
+            -o APT::Get::Assume-Yes=true \
+            -o APT::Get::Fix-Broken=true \
+            -o APT::Get::Fix-Missing=true \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=90 \
+            -o Acquire::https::Timeout=90 \
+            "$package" >/dev/null 2>&1; then
+
+            # Verificación post-instalación
+            if is_package_installed "$package"; then
+                log_success "✅ ${package} instalado correctamente."
+                return 0
+            else
+                log_warn "⚠️ ${package} reportó éxito pero la verificación falló."
+            fi
+        fi
+
+        # Estrategias de recuperación por intento
+        if (( attempt < max_retries )); then
+            local wait=$(( attempt * 3 ))
+            log_warn "⏳ Reintento ${attempt}/${max_retries} para ${package} en ${wait}s."
+
+            # Limpiezas más agresivas en reintentos
+            case $attempt in
+                1)
+                    apt-get clean >/dev/null 2>&1 || true
+                    ;;
+                2)
+                    apt-get autoclean >/dev/null 2>&1 || true
+                    apt --fix-broken install -y >/dev/null 2>&1 || true
+                    ;;
+            esac
+
+            sleep "$wait"
+        fi
+
+        ((attempt++))
+    done
+
+    log_error "❌ No se pudo instalar ${package} tras ${max_retries} intentos."
+    return 1
+}
+
+install_critical_packages_first() {
+    log_section "⚡ Instalando paquetes críticos fundamentales primero..."
+
+    local critical_packages=(
+        "apt"
+        "dpkg"
+        "termux-tools"
+        "ca-certificates"
+        "curl"
+        "wget"
+    )
+
+    for package in "${critical_packages[@]}"; do
+        if ! is_package_installed "$package"; then
+            log_info "🔧 Instalando crítico: ${package}"
+            # Instalación ultra-simple para paquetes críticos
+            pkg install -y "$package" 2>/dev/null || {
+                apt-get install -y "$package" 2>/dev/null || {
+                    log_warn "⚠️ No se pudo instalar $package, continuando..."
+                }
+            }
+        else
+            log_success "✅ Crítico ya presente: ${package}"
+        fi
+    done
+}
+
+install_essential_packages() {
+    log_section "📋 Instalando ${#ESSENTIAL_PACKAGES[@]} paquetes esenciales…"
+
+    local total=${#ESSENTIAL_PACKAGES[@]}
+    local index=0
+
+    for package in "${ESSENTIAL_PACKAGES[@]}"; do
+        index=$(( index + 1 ))
+        log_info "[${index}/${total}] ${package}"
+
+        if install_package_with_retry "$package"; then
+            INSTALLED_ESSENTIAL+=("$package")
+        else
+            FAILED_ESSENTIAL+=("$package")
+
+            # Para paquetes críticos fallidos, intentar método alternativo
+            case $package in
+                "git"|"python"|"zsh"|"nodejs-lts")
+                    log_warn "⚡ Reintentando paquete crítico $package con método alternativo..."
+                    if pkg install -y "$package" 2>/dev/null; then
+                        if is_package_installed "$package"; then
+                            log_success "✅ $package instalado con método alternativo."
+                            INSTALLED_ESSENTIAL+=("$package")
+                            # Remover de fallidos
+                            for i in "${!FAILED_ESSENTIAL[@]}"; do
+                                if [[ "${FAILED_ESSENTIAL[i]}" == "$package" ]]; then
+                                    unset "FAILED_ESSENTIAL[i]"
+                                fi
+                            done
+                            FAILED_ESSENTIAL=("${FAILED_ESSENTIAL[@]}")  # Reindexar array
+                        fi
+                    fi
+                    ;;
+            esac
+        fi
+    done
+}
+
+install_optional_packages() {
+    log_section "🎯 Instalando ${#OPTIONAL_PACKAGES[@]} paquetes opcionales…"
+
+    local total=${#OPTIONAL_PACKAGES[@]}
+    local index=0
+
+    for package in "${OPTIONAL_PACKAGES[@]}"; do
+        index=$(( index + 1 ))
+        log_info "[${index}/${total}] ${package}"
+
+        if install_package_with_retry "$package"; then
+            INSTALLED_OPTIONAL+=("$package")
+        else
+            FAILED_OPTIONAL+=("$package")
+        fi
+    done
+}
+
+configure_git_identity() {
+    log_section "⚙️ Configurando identidad de Git si es necesario…"
+
+    if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+        if ! git config --global user.name >/dev/null 2>&1; then
+            git config --global user.name "${TERMUX_AI_GIT_NAME:-Termux Developer}" >/dev/null 2>&1 || true
+        fi
+
+        if ! git config --global user.email >/dev/null 2>&1; then
+            git config --global user.email "${TERMUX_AI_GIT_EMAIL:-dev@termux.local}" >/dev/null 2>&1 || true
+        fi
+    fi
+}
+
+configure_aliases() {
+    log_section "🔧 Configurando aliases de conveniencia…"
+
+    local aliases_file="$HOME/.bash_aliases"
+
+    cat > "$aliases_file" <<'EOF'
 # Aliases de Termux AI
 alias ll='ls -alF'
 alias la='ls -A'
@@ -400,46 +498,136 @@ alias gl='git log --oneline'
 alias gd='git diff'
 if command -v bat >/dev/null 2>&1; then alias cat='bat'; fi
 if command -v exa >/dev/null 2>&1; then alias ls='exa --icons'; fi
-if command -v fd  >/dev/null 2>&1; then alias find='fd'; fi
+if command -v fd >/dev/null 2>&1; then alias find='fd'; fi
 if command -v zoxide >/dev/null 2>&1; then alias cd='z'; fi
 alias apt='pkg'
 alias python='python3'
 alias pip='pip3'
 EOF
-    grep -q "source ~/.bash_aliases" "$HOME/.bashrc" 2>/dev/null || echo "source ~/.bash_aliases" >> "$HOME/.bashrc"
+
+    if [[ -f "$HOME/.bashrc" ]]; then
+        if ! grep -Fq 'source ~/.bash_aliases' "$HOME/.bashrc"; then
+            echo "source ~/.bash_aliases" >> "$HOME/.bashrc"
+        fi
+    else
+        echo "source ~/.bash_aliases" > "$HOME/.bashrc"
+    fi
+}
+
+ensure_npm_prefix() {
+    local expected_prefix="${HOME}/.npm-global"
+    local current_prefix
+
+    current_prefix=$(npm config get prefix 2>/dev/null || echo "")
+    if [[ -z "$current_prefix" || "$current_prefix" == "null" ]]; then
+        current_prefix=""
+    fi
+
+    if [[ "$current_prefix" != "$expected_prefix" ]]; then
+        log_info "🛠️ Configurando prefix global de npm en ${expected_prefix}."
+        mkdir -p "$expected_prefix"
+        npm config set prefix "$expected_prefix" >/dev/null 2>&1 || log_warn "⚠️ No se pudo establecer el prefix global de npm."
+    fi
+
+    local path_entry="export PATH=\"$HOME/.npm-global/bin:$PATH\""
+
+    if [[ -f "$HOME/.bashrc" ]]; then
+        if ! grep -Fq "$path_entry" "$HOME/.bashrc"; then
+            echo "$path_entry" >> "$HOME/.bashrc"
+        fi
+    else
+        echo "$path_entry" > "$HOME/.bashrc"
+    fi
+}
+
+ensure_directories_and_path() {
+    log_section "📁 Asegurando estructura de directorios y PATH…"
 
     mkdir -p "$HOME/bin" "$HOME/dev" "$HOME/.config"
-    local NPM_GBIN
-    NPM_GBIN=$(npm bin -g 2>/dev/null || echo "")
-    if [[ -n "$NPM_GBIN" ]] && ! grep -q "$NPM_GBIN" "$HOME/.bashrc" 2>/dev/null; then
-        echo "export PATH=\"$NPM_GBIN:\$PATH\"" >> "$HOME/.bashrc"
+
+    if command -v npm >/dev/null 2>&1; then
+        ensure_npm_prefix
+    fi
+}
+
+generate_summary() {
+    log_section "📊 Resumen de instalación"
+
+    log_success "Esenciales ok: ${#INSTALLED_ESSENTIAL[@]} / ${#ESSENTIAL_PACKAGES[@]}"
+    if (( ${#FAILED_ESSENTIAL[@]} )); then
+        log_error "Esenciales fallidos: ${FAILED_ESSENTIAL[*]}"
     fi
 
-    echo -e "\n${GREEN}📊 INSTALLATION SUMMARY${NC}"
-    echo -e "${GREEN}Essential: ${#successful_packages[@]} ok / ${#ESSENTIAL_PACKAGES[@]} total${NC}"
-    [[ ${#failed_packages[@]} -gt 0 ]] && echo -e "${RED}Failed essential: ${failed_packages[*]}${NC}"
-    echo -e "${GREEN}Optional: ${#optional_successful[@]} ok / ${#OPTIONAL_PACKAGES[@]} total${NC}"
-    [[ ${#optional_failed[@]} -gt 0 ]] && echo -e "${YELLOW}Skipped optional: ${optional_failed[*]}${NC}"
+    log_success "Opcionales ok: ${#INSTALLED_OPTIONAL[@]} / ${#OPTIONAL_PACKAGES[@]}"
+    if (( ${#FAILED_OPTIONAL[@]} )); then
+        log_warn "Opcionales omitidos: ${FAILED_OPTIONAL[*]}"
+    fi
+}
 
-    local all_ok=true
-    for t in git curl node python npm; do
-        if ! command -v "$t" >/dev/null 2>&1; then all_ok=false; fi
-    done
+verify_critical_tools() {
+    local tools=(git curl python node npm pkg)
+    MISSING_CRITICAL=()
 
-    if $all_ok; then
-        echo -e "${GREEN}🎉 Base packages installation completed successfully!${NC}"
-        touch "$MODULE_MARKER" 2>/dev/null || true
-        if command -v termux_ai_record_module_state >/dev/null 2>&1; then
-            termux_ai_record_module_state "$MODULE_NAME" "$0" "completed" 0 || true
+    for tool in "${tools[@]}"; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            MISSING_CRITICAL+=("$tool")
         fi
+    done
+}
+
+finalize() {
+    generate_summary
+    verify_critical_tools
+
+    if (( ${#MISSING_CRITICAL[@]} == 0 )) && (( ${#FAILED_ESSENTIAL[@]} == 0 )); then
+        log_success "🎉 Instalación completada correctamente. Todas las herramientas críticas disponibles."
+        touch "$MODULE_MARKER" >/dev/null 2>&1 || true
+        record_module_state "completed" 0
+        trap - ERR
+        exit 0
+    elif (( ${#MISSING_CRITICAL[@]} == 0 )); then
+        log_warn "⚠️ Instalación completada con fallos en paquetes opcionales."
+        touch "$MODULE_MARKER" >/dev/null 2>&1 || true
+        record_module_state "completed" 0
+        trap - ERR
         exit 0
     else
-        echo -e "${YELLOW}⚠️ Some critical tools missing, you can rerun this module.${NC}"
-        if command -v termux_ai_record_module_state >/dev/null 2>&1; then
-            termux_ai_record_module_state "$MODULE_NAME" "$0" "partial" 1 || true
-        fi
+        log_error "❌ Faltan herramientas críticas: ${MISSING_CRITICAL[*]}"
+        log_warn "💡 Reejecuta el módulo para reintentar la instalación."
+        record_module_state "partial" 1
+        trap - ERR
         exit 1
     fi
+}
+
+main() {
+    log_section "📦 Iniciando instalación robusta de paquetes base…"
+
+    ensure_state_dir
+    check_previous_run
+    assert_termux_environment
+
+    # Paso 1: Instalar críticos primero
+    install_critical_packages_first
+
+    # Paso 2: Configurar mirrors
+    fix_termux_mirrors
+    preconfigure_packages
+
+    # Paso 3: Actualizar repos
+    update_repositories
+    upgrade_packages
+
+    # Paso 4: Instalar paquetes principales
+    install_essential_packages
+    install_optional_packages
+
+    # Paso 5: Configuraciones finales
+    configure_git_identity
+    configure_aliases
+    ensure_directories_and_path
+
+    finalize
 }
 
 main "$@"
