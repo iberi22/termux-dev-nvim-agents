@@ -2,6 +2,22 @@
 
 Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes, docs) indicando fecha y resumen.
 
+## 2025-01-09
+
+### Refactorización Completa del Módulo Zsh con Selección de Tema
+
+- `modules/01-zsh-setup.sh`: refactorización completa con sistema de selección de tema interactivo
+  - Tema Rastafari: colores rojo/amarillo/verde con bloques visuales completos
+  - Tema Minimalista: solo nombre de directorio, ícono de git y uso de RAM (colores azul/verde/cyan)
+  - Función `select_zsh_theme()` para elección interactiva con validación
+  - Funciones separadas `configure_rastafari_theme()` y `configure_minimal_theme()` para configuración específica
+  - Creación de `create_minimal_p10k_config()` y `create_minimal_zshrc()` para tema minimalista
+  - Eliminación de tips extensivos y limpieza completa del código
+  - Corrección de errores de sintaxis en heredocs y estructura del código
+  - Mantenimiento de fuente FiraCode Mono para ambos temas
+- Validación con lints: código verificado sin errores de sintaxis
+- Despliegue: cambios commited y pushed a rama main exitosamente
+
 ## 2025-09-25
 
 ### Orquestador endurecido y reporting consistente
