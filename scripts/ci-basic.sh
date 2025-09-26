@@ -52,20 +52,20 @@ check_executable_bits() {
 bash_syntax_check() {
     log_info "Ejecutando verificación de sintaxis bash..."
     local failed=0
-    
+
     while IFS= read -r -d '' file; do
         if ! bash -n "$file"; then
             log_error "Error de sintaxis en: $file"
             failed=1
         fi
     done < <(find "$PROJECT_ROOT" -name "*.sh" -type f -print0)
-    
+
     if [[ $failed -eq 0 ]]; then
         log_success "Todas las verificaciones de sintaxis bash pasaron"
     else
         log_error "Algunas verificaciones de sintaxis bash fallaron"
     fi
-    
+
     return $failed
 }
 
@@ -90,15 +90,15 @@ main() {
     log_info "=== CI BÁSICO para termux-dev-nvim-agents ==="
     log_info "Directorio del proyecto: $PROJECT_ROOT"
     log_info "Solo ejecutando verificaciones esenciales (sin herramientas externas)"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Ejecutar verificaciones básicas
     convert_line_endings
     check_executable_bits
     bash_syntax_check
     run_smoke_tests
-    
+
     # Resumen final
     if [[ $ERRORS -eq 0 ]]; then
         log_success "=== ✅ VERIFICACIONES BÁSICAS COMPLETADAS ✅ ==="

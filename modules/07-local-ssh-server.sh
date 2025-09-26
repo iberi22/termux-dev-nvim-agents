@@ -16,6 +16,12 @@ IFS=$'\n\t'
 # shellcheck source=../scripts/helpers.sh
 source "$(dirname "$0")/../scripts/helpers.sh"
 
+# Variables defined in helpers.sh but not visible to shellcheck
+# shellcheck disable=SC2154
+: "${YELLOW:=${YELLOW:-}}"
+# shellcheck disable=SC2154  
+: "${NC:=${NC:-}}"
+
 # --- Constants ---
 # shellcheck disable=SC2154
 readonly SSHD_CONFIG_FILE="$PREFIX/etc/ssh/sshd_config"
@@ -28,7 +34,7 @@ prompt_for_ssh_password() {
     local password=""
 
     while true; do
-        read -s -p "$(printf "%b🔐 Ingresa una contraseña para SSH: %b" "${YELLOW}" "${NC}")" password
+        read -r -s -p "$(printf "%b🔐 Ingresa una contraseña para SSH: %b" "${YELLOW}" "${NC}")" password
         echo
 
         if [[ -n "$password" ]]; then
@@ -90,21 +96,21 @@ configure_sshd() {
     # Set key parameters for secure password-based login.
     # Use robust match-or-append logic for configuration.
     local port="${TERMUX_AI_SSH_PORT:-8022}"
-    
+
     # Port configuration
     if grep -Eq '^[[:space:]]*#?[[:space:]]*Port\b' "$SSHD_CONFIG_FILE"; then
         sed -i -E 's/^[[:space:]]*#?[[:space:]]*Port\b.*/Port '"$port"'/g' "$SSHD_CONFIG_FILE"
     else
         printf '\nPort %s\n' "$port" >> "$SSHD_CONFIG_FILE"
     fi
-    
+
     # PasswordAuthentication configuration
     if grep -Eq '^[[:space:]]*#?[[:space:]]*PasswordAuthentication\b' "$SSHD_CONFIG_FILE"; then
         sed -i -E 's/^[[:space:]]*#?[[:space:]]*PasswordAuthentication\b.*/PasswordAuthentication yes/g' "$SSHD_CONFIG_FILE"
     else
         printf 'PasswordAuthentication yes\n' >> "$SSHD_CONFIG_FILE"
     fi
-    
+
     # PermitEmptyPasswords configuration
     if grep -Eq '^[[:space:]]*#?[[:space:]]*PermitEmptyPasswords\b' "$SSHD_CONFIG_FILE"; then
         sed -i -E 's/^[[:space:]]*#?[[:space:]]*PermitEmptyPasswords\b.*/PermitEmptyPasswords no/g' "$SSHD_CONFIG_FILE"
@@ -126,7 +132,7 @@ set_user_password() {
         pkg install -y expect || { log_error "No se pudo instalar 'expect'."; exit 1; }
     fi
 
-    expect << EOF
+    if expect << EOF
 spawn passwd
 expect "New password:"
 send "${password}\r"
@@ -134,8 +140,7 @@ expect "Retype new password:"
 send "${password}\r"
 expect eof
 EOF
-
-    if [ $? -eq 0 ]; then
+    then
         log_success "Contraseña establecida correctamente."
     else
         log_error "Falló el establecimiento de la contraseña."

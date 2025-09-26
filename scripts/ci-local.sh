@@ -37,7 +37,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; ERRORS=$((ERRORS + 1)); }
 check_tool() {
     local tool="$1"
     local install_cmd="${2:-}"
-    
+
     if ! command -v "$tool" &> /dev/null; then
         if [[ -n "$install_cmd" ]]; then
             log_warn "$tool no encontrado. Intentando instalar..."
@@ -59,7 +59,7 @@ check_tool() {
 # Instalar herramientas necesarias
 install_tools() {
     log_info "Verificando e instalando herramientas necesarias..."
-    
+
     # Detectar el sistema operativo y gestor de paquetes
     if command -v apt &> /dev/null; then
         # Debian/Ubuntu/Termux
@@ -118,14 +118,14 @@ convert_line_endings() {
 bash_syntax_check() {
     log_info "Ejecutando verificación de sintaxis bash..."
     local failed=0
-    
+
     while IFS= read -r -d '' file; do
         if ! bash -n "$file"; then
             log_error "Error de sintaxis en: $file"
             failed=1
         fi
     done < <(find "$PROJECT_ROOT" -name "*.sh" -print0)
-    
+
     if [[ $failed -eq 0 ]]; then
         log_success "Todas las verificaciones de sintaxis bash pasaron"
     else
@@ -137,12 +137,12 @@ bash_syntax_check() {
 # Ejecutar shellcheck
 run_shellcheck() {
     log_info "Ejecutando shellcheck..."
-    
+
     if ! command -v shellcheck &> /dev/null; then
         log_error "shellcheck no está disponible"
         return 1
     fi
-    
+
     local failed=0
     while IFS= read -r -d '' file; do
         if ! shellcheck "$file"; then
@@ -150,7 +150,7 @@ run_shellcheck() {
             failed=1
         fi
     done < <(find "$PROJECT_ROOT" -name "*.sh" -print0)
-    
+
     if [[ $failed -eq 0 ]]; then
         log_success "Todas las verificaciones de shellcheck pasaron"
     else
@@ -162,12 +162,12 @@ run_shellcheck() {
 # Verificar formato con shfmt
 check_format() {
     log_info "Verificando formato con shfmt..."
-    
+
     if ! command -v shfmt &> /dev/null; then
         log_warn "shfmt no está disponible, omitiendo verificación de formato"
         return 0
     fi
-    
+
     local failed=0
     while IFS= read -r -d '' file; do
         if ! shfmt -d -i 4 "$file"; then
@@ -175,7 +175,7 @@ check_format() {
             failed=1
         fi
     done < <(find "$PROJECT_ROOT" -name "*.sh" -print0)
-    
+
     if [[ $failed -eq 0 ]]; then
         log_success "Todas las verificaciones de formato pasaron"
     else
@@ -187,7 +187,7 @@ check_format() {
 # Ejecutar pruebas smoke
 run_smoke_tests() {
     log_info "Ejecutando pruebas smoke..."
-    
+
     local smoke_script="$PROJECT_ROOT/tests/smoke.sh"
     if [[ -f "$smoke_script" ]]; then
         if bash "$smoke_script"; then
@@ -204,12 +204,12 @@ run_smoke_tests() {
 # Ejecutar pruebas bats
 run_bats_tests() {
     log_info "Ejecutando pruebas bats..."
-    
+
     if ! command -v bats &> /dev/null; then
         log_error "bats no está disponible"
         return 1
     fi
-    
+
     local bats_dir="$PROJECT_ROOT/tests/bats"
     if [[ -d "$bats_dir" ]]; then
         if bats "$bats_dir"/*.bats; then
@@ -226,7 +226,7 @@ run_bats_tests() {
 # Verificar permisos ejecutables
 check_executable_bits() {
     log_info "Verificando bits ejecutables en scripts..."
-    
+
     local failed=0
     while IFS= read -r -d '' file; do
         if [[ ! -x "$file" ]]; then
@@ -234,7 +234,7 @@ check_executable_bits() {
             chmod +x "$file"
         fi
     done < <(find "$PROJECT_ROOT" -name "*.sh" -print0)
-    
+
     log_success "Verificación de bits ejecutables completada"
 }
 
@@ -242,9 +242,9 @@ check_executable_bits() {
 main() {
     log_info "=== Iniciando CI Local para termux-dev-nvim-agents ==="
     log_info "Directorio del proyecto: $PROJECT_ROOT"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Detectar automáticamente si necesitamos modo básico
     if [[ "$BASIC_MODE" == "false" ]]; then
         if ! command -v shellcheck &> /dev/null && ! command -v apt &> /dev/null && ! command -v yum &> /dev/null; then
@@ -252,7 +252,7 @@ main() {
             log_warn "Herramientas de análisis no disponibles. Ejecutando en modo básico."
         fi
     fi
-    
+
     # Si no estamos en modo básico, instalar herramientas
     if [[ "$BASIC_MODE" == "false" ]]; then
         log_info "Verificando e instalando herramientas necesarias..."
@@ -263,14 +263,14 @@ main() {
     else
         log_info "Modo básico activado: solo verificaciones esenciales"
     fi
-    
+
     # Ejecutar verificaciones
     convert_line_endings
     check_executable_bits
-    
+
     # Verificaciones principales
     bash_syntax_check
-    
+
     if [[ "$BASIC_MODE" == "false" ]]; then
         log_info "Ejecutando verificaciones completas..."
         run_shellcheck || true
@@ -279,10 +279,10 @@ main() {
     else
         log_info "Modo básico: solo sintaxis bash y pruebas smoke"
     fi
-    
+
     # Las pruebas smoke siempre se ejecutan (no requieren herramientas especiales)
     run_smoke_tests
-    
+
     # Resumen final
     if [[ $ERRORS -eq 0 ]]; then
         if [[ "$BASIC_MODE" == "true" ]]; then

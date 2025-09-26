@@ -22,7 +22,7 @@ readonly CONFIG_MARKER="# --- Managed by Termux AI Setup ---"
 # Configures dpkg to be non-interactive.
 configure_dpkg_noninteractive() {
     log_info "Configurando dpkg para evitar conflictos interactivos..."
-    
+
     mkdir -p "$(dirname "$DPKG_CONFIG_FILE")"
 
     # Check if the configuration is already present.

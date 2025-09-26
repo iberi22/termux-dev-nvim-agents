@@ -50,7 +50,12 @@ setup() {
 }
 
 @test "SSH module handles PORT variable correctly" {
-    run grep -q 'Port 8022' "$BATS_SSH_MODULE"
+    # Check that the module uses TERMUX_AI_SSH_PORT variable with default 8022
+    run grep -q 'TERMUX_AI_SSH_PORT' "$BATS_SSH_MODULE"
+    [ "$status" -eq 0 ]
+    
+    # Check that it configures Port in sshd_config
+    run grep -q 'Port.*port' "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
 
