@@ -1,376 +1,191 @@
 #!/bin/bash
 
-# ====================================
-# MÓDULO: Instalación y Configuración de Zsh
-# Classic Style - Clean and Professional
-# ====================================
+# =================================================================
+# MODULE: 01-ZSH-SETUP
+#
+# Configures Zsh as the default shell, installs Oh My Zsh,
+# essential plugins (zsh-autosuggestions, zsh-syntax-highlighting),
+# and the Powerlevel10k theme.
+#
+# The script is fully idempotent.
+# =================================================================
 
-set -euo pipefail
+# --- Source Helper Functions ---
+# shellcheck disable=SC1091
+source "$(dirname "$0")/../scripts/helpers.sh"
 
-# Colores para salida
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly CYAN='\033[0;36m'
-readonly NC='\033[0m'
+# --- Constants ---
+readonly OH_MY_ZSH_DIR="$HOME/.oh-my-zsh"
+readonly ZSH_CUSTOM_DIR="${OH_MY_ZSH_DIR}/custom"
+readonly ZSHRC_FILE="$HOME/.zshrc"
+readonly P10K_CONFIG_FILE="$HOME/.p10k.zsh"
+readonly ZSH_CONFIG_MARKER="# --- TERMUX_AI_ZSH_CONFIG_BLOCK ---"
 
-# Variables globales
-readonly MODULE_NAME="01-zsh-setup"
-readonly STATE_MARKER_DIR="$HOME/.termux-ai-setup/state"
-readonly MODULE_MARKER="$STATE_MARKER_DIR/${MODULE_NAME}.ok"
-readonly CONFIG_DIR="$(dirname "$0")/../config/zsh"
-readonly USER_ZSH_CONFIG="$HOME/.config/zsh"
+# --- Functions ---
 
-# Funciones de logging
-log() { printf "%b%s%b\n" "$1" "$2" "$NC"; }
-log_section() { log "$BLUE" "■ $1"; }
-log_info() { log "$CYAN" "→ $1"; }
-log_success() { log "$GREEN" "✓ $1"; }
-log_warn() { log "$YELLOW" "⚠ $1"; }
-log_error() { log "$RED" "✗ $1"; }
-
-# Función de error
-handle_error() {
-    local exit_code=$?
-    local line=${BASH_LINENO[0]:-unknown}
-    log_error "Error en ${MODULE_NAME} (línea ${line}). Código: ${exit_code}"
-    exit "$exit_code"
-}
-
-trap 'handle_error' ERR
-
-# Verificar si ya está completado
-check_previous_run() {
-    if [[ -f "$MODULE_MARKER" && "${TERMUX_AI_FORCE_MODULES:-0}" != "1" ]]; then
-        log_success "${MODULE_NAME} ya completado anteriormente"
-        exit 0
+# Ensures Oh My Zsh is installed.
+ensure_oh_my_zsh() {
+    if [[ -d "$OH_MY_ZSH_DIR" ]]; then
+        log_success "Oh My Zsh ya está instalado."
+        return
     fi
-}
 
-# Verificar entorno Termux
-assert_termux_environment() {
-    if ! command -v pkg >/dev/null 2>&1; then
-        log_error "Este módulo requiere ejecutarse dentro de Termux"
+    log_info "Instalando Oh My Zsh..."
+    # Use RUNZSH=no and KEEP_ZSHRC=yes to prevent the installer from taking over the shell
+    # or overwriting a potentially existing .zshrc file.
+    if RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"; then
+        log_success "Oh My Zsh instalado correctamente."
+    else
+        log_error "Falló la instalación de Oh My Zsh."
         exit 1
     fi
 }
 
-# Sistema de selección de tema - Solo Classic Style disponible
-prepare_classic_theme() {
-    log_section "Preparando Classic Style"
+# Ensures a specific Zsh plugin is cloned.
+ensure_plugin() {
+    local name="$1"
+    local repo_url="$2"
+    local target_dir="${ZSH_CUSTOM_DIR}/plugins/${name}"
 
-    if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        log_info "Modo automático: usando Classic Style"
-        return 0
+    if [[ -d "$target_dir" ]]; then
+        log_success "Plugin '${name}' ya existe."
+        return
     fi
 
-    log_info "Configurando Classic Style - Bloques profesionales con colores termux-dev"
-}
-
-# Instalar componentes base
-install_base_components() {
-    log_section "Instalando componentes base"
-
-    # Zsh
-    if ! command -v zsh >/dev/null 2>&1; then
-        log_info "Instalando Zsh..."
-        pkg install -y zsh
-        log_success "Zsh instalado"
+    log_info "Instalando el plugin de Zsh: ${name}..."
+    if git clone --depth=1 "$repo_url" "$target_dir"; then
+        log_success "Plugin '${name}' instalado."
     else
-        log_success "Zsh ya está instalado"
-    fi
-
-    # Oh My Zsh
-    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-        log_info "Instalando Oh My Zsh..."
-        export RUNZSH=no
-        export KEEP_ZSHRC=yes
-        curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh
-        log_success "Oh My Zsh instalado"
-    else
-        log_success "Oh My Zsh ya está instalado"
-    fi
-
-    # Plugins esenciales
-    local plugins=(
-        "zsh-autosuggestions"
-        "zsh-syntax-highlighting"
-        "zsh-completions"
-    )
-
-    for plugin in "${plugins[@]}"; do
-        local plugin_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/${plugin}"
-        if [[ ! -d "$plugin_dir" ]]; then
-            log_info "Instalando plugin: ${plugin}"
-            git clone --depth=1 "https://github.com/zsh-users/${plugin}" "$plugin_dir"
-            log_success "Plugin ${plugin} instalado"
-        else
-            log_success "Plugin ${plugin} ya está instalado"
-        fi
-    done
-
-    # Powerlevel10k
-    local p10k_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
-    if [[ ! -d "$p10k_dir" ]]; then
-        log_info "Instalando Powerlevel10k..."
-        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$p10k_dir"
-        log_success "Powerlevel10k instalado"
-    else
-        log_success "Powerlevel10k ya está instalado"
+        log_error "Falló la clonación del plugin '${name}'."
     fi
 }
 
-# Configurar Classic Style
-configure_classic_style() {
-    log_section "Configurando Classic Style"
+# Ensures the Powerlevel10k theme is cloned.
+ensure_p10k() {
+    local target_dir="${ZSH_CUSTOM_DIR}/themes/powerlevel10k"
+    if [[ -d "$target_dir" ]]; then
+        log_success "El tema Powerlevel10k ya existe."
+        return
+    fi
 
-    # Crear directorio de configuración
-    mkdir -p "$USER_ZSH_CONFIG"
-
-    # Copiar configuración Classic p10k
-    if [[ -f "$CONFIG_DIR/p10k-classic.zsh" ]]; then
-        cp "$CONFIG_DIR/p10k-classic.zsh" "$USER_ZSH_CONFIG/"
-        log_success "Configuración Classic p10k instalada"
+    log_info "Instalando el tema Powerlevel10k..."
+    if git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$target_dir"; then
+        log_success "Powerlevel10k instalado."
     else
-        log_warn "Archivo p10k-classic.zsh no encontrado, creando configuración básica"
-        create_basic_classic_config
+        log_error "Falló la clonación de Powerlevel10k."
     fi
+}
 
-    # Copiar .zshrc Classic
-    if [[ -f "$CONFIG_DIR/zshrc-classic.template" ]]; then
-        cp "$CONFIG_DIR/zshrc-classic.template" "$HOME/.zshrc"
-        log_success "Configuración .zshrc Classic instalada"
+# Appends a block of configuration to a file if a marker is not present.
+append_config_block_if_missing() {
+    local file_path="$1"
+    local marker="$2"
+    # Here Document containing the configuration to add.
+    local config_block
+    config_block="$(cat)"
+
+    if grep -qF -- "$marker" "$file_path"; then
+        log_success "La configuración de Zsh en '${file_path}' ya existe. Omitiendo."
     else
-        log_warn "Template zshrc-classic no encontrado, creando configuración básica"
-        create_basic_zshrc
-    fi
-
-    # Crear enlace simbólico para p10k
-    if [[ -f "$USER_ZSH_CONFIG/p10k-classic.zsh" && ! -f "$HOME/.p10k.zsh" ]]; then
-        ln -sf "$USER_ZSH_CONFIG/p10k-classic.zsh" "$HOME/.p10k.zsh"
-        log_success "Enlace simbólico p10k creado"
+        log_info "Añadiendo configuración personalizada a '${file_path}'..."
+        # Append a newline just in case the file doesn't end with one.
+        echo -e "\n$config_block" >> "$file_path"
+        log_success "Configuración añadida a '${file_path}'."
     fi
 }
 
-# Crear configuración básica si no existen los templates
-create_basic_classic_config() {
-    cat > "$USER_ZSH_CONFIG/p10k-classic.zsh" << 'EOF'
-# Basic Classic Style Configuration
-'builtin' 'local' '-a' 'p10k_config_opts'
-[[ ! -o 'aliases' ]] || p10k_config_opts+=('aliases')
-[[ ! -o 'sh_glob' ]] || p10k_config_opts+=('sh_glob')
-[[ ! -o 'no_brace_expand' ]] || p10k_config_opts+=('no_brace_expand')
-'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
+# Configures the .zshrc file with our defaults.
+configure_zshrc() {
+    log_info "Asegurando la configuración de .zshrc..."
 
-() {
-  emulate -L zsh -o extended_glob
-  unset -m '(POWERLEVEL9K_*|DEFAULT_USER)~POWERLEVEL9K_GITSTATUS_DIR'
-  [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
+    # This is the main configuration block we want to ensure is in .zshrc
+    # It sets the theme, plugins, and other useful settings.
+    append_config_block_if_missing "$ZSHRC_FILE" "$ZSH_CONFIG_MARKER" <<EOF
+${ZSH_CONFIG_MARKER}
+# This block is managed by the Termux AI Setup script.
 
-  # Classic Style - Single line with blocks
-  typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(ram)
-  typeset -g POWERLEVEL9K_PROMPT_ON_NEWLINE=false
-
-  # Block separators
-  typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
-
-  # Directory - Blue
-  typeset -g POWERLEVEL9K_DIR_FOREGROUND=255
-  typeset -g POWERLEVEL9K_DIR_BACKGROUND=33
-
-  # VCS - Green
-  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=255
-  typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=28
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=255
-  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=208
-
-  # RAM - Cyan
-  typeset -g POWERLEVEL9K_RAM_FOREGROUND=0
-  typeset -g POWERLEVEL9K_RAM_BACKGROUND=123
-
-  typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
-}
-
-(( ${#p10k_config_opts} )) && setopt ${p10k_config_opts[@]}
-'builtin' 'unset' 'p10k_config_opts'
-EOF
-}
-
-create_basic_zshrc() {
-    cat > "$HOME/.zshrc" << 'EOF'
-# Basic ZSH Configuration - Classic Style
-export ZSH="$HOME/.oh-my-zsh"
+# Set Zsh theme to Powerlevel10k
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
+# Define plugins to load
 plugins=(
     git
     zsh-autosuggestions
     zsh-syntax-highlighting
-    zsh-completions
 )
 
-source $ZSH/oh-my-zsh.sh
+# Source Oh My Zsh
+source \$ZSH/oh-my-zsh.sh
 
-# Environment
+# Source Powerlevel10k configuration
+[[ -f "${P10K_CONFIG_FILE}" ]] && source "${P10K_CONFIG_FILE}"
+
+# Set default editor
 export EDITOR='nvim'
 export VISUAL='nvim'
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
 
-# Basic aliases
-alias ll='ls -la'
+# Useful Aliases
+alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
-alias ..='cd ..'
 alias ...='cd ../..'
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias python='python3'
-alias pip='pip3'
-
-# Load P10k Classic
-[[ -f "$HOME/.config/zsh/p10k-classic.zsh" ]] && source "$HOME/.config/zsh/p10k-classic.zsh"
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+alias g='git'
+alias py='python'
 EOF
 }
 
+# Creates a default .p10k.zsh configuration if it doesn't exist.
+configure_p10k() {
+    if [[ -f "$P10K_CONFIG_FILE" ]]; then
+        log_success "El archivo de configuración de Powerlevel10k ya existe."
+        return
+    fi
 
-
-# Crear configuración P10k minimalista
-create_minimal_p10k_config() {
-    cat > "$HOME/.p10k.zsh" << 'EOF'
-# Minimal Theme Configuration - Termux Dev Setup Colors
-'builtin' 'local' '-a' 'p10k_config_opts'
-[[ ! -o 'aliases' ]] || p10k_config_opts+=('aliases')
-[[ ! -o 'sh_glob' ]] || p10k_config_opts+=('sh_glob')
-[[ ! -o 'no_brace_expand' ]] || p10k_config_opts+=('no_brace_expand')
-'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
-
-() {
-  emulate -L zsh -o extended_glob
-
-  [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
-
-  # Minimal elements: directory, git, ram
-  typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
-    dir vcs ram
-  )
-  typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=()
-
-  # Single line prompt
-  typeset -g POWERLEVEL9K_PROMPT_ON_NEWLINE=false
-  typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=''
-  typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX='▶ '
-
-  # Clean separators
-  typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=' '
-  typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=' '
-  typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
-  typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
-
-  # Directory - Blue block
-  typeset -g POWERLEVEL9K_DIR_FOREGROUND=15
-  typeset -g POWERLEVEL9K_DIR_BACKGROUND=4
-  typeset -g POWERLEVEL9K_SHORTEN_STRATEGY=truncate_to_last
-  typeset -g POWERLEVEL9K_SHORTEN_DELIMITER=
-
-  # Git - Green block
-  typeset -g POWERLEVEL9K_VCS_FOREGROUND=0
-  typeset -g POWERLEVEL9K_VCS_BACKGROUND=2
-
-  # RAM - Cyan block
-  typeset -g POWERLEVEL9K_RAM_FOREGROUND=0
-  typeset -g POWERLEVEL9K_RAM_BACKGROUND=6
-  typeset -g POWERLEVEL9K_RAM_ELEMENTS=(ram_free)
-
-  # Prompt char
-  typeset -g POWERLEVEL9K_PROMPT_CHAR_FOREGROUND=2
-  typeset -g POWERLEVEL9K_PROMPT_CHAR_BACKGROUND=
-}
-
-(( ${#p10k_config_opts} )) && setopt ${p10k_config_opts[@]}
-'builtin' 'unset' 'p10k_config_opts'
-EOF
-}
-
-
-
-
-
-# Configurar fuente FiraCode Mono
-configure_font() {
-    log_section "Configurando fuente FiraCode Mono"
-
-    mkdir -p "$HOME/.termux"
-
-    # Solo configurar si no existe ya una fuente personalizada
-    if [[ ! -f "$HOME/.termux/font.ttf" ]]; then
-        log_info "Descargando FiraCode Mono..."
-        local tmp_dir
-        tmp_dir=$(mktemp -d)
-
-        if curl -L -o "$tmp_dir/firacode.zip" \
-            "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/FiraCode.zip" 2>/dev/null; then
-
-            if unzip -j "$tmp_dir/firacode.zip" "*FiraCodeNerdFontMono-Regular.ttf" -d "$tmp_dir" >/dev/null 2>&1; then
-                cp "$tmp_dir/FiraCodeNerdFontMono-Regular.ttf" "$HOME/.termux/font.ttf"
-                log_success "Fuente FiraCode Mono instalada"
-            else
-                log_warn "No se pudo extraer la fuente"
-            fi
-        else
-            log_warn "No se pudo descargar la fuente"
-        fi
-
-        rm -rf "$tmp_dir"
+    log_info "Creando archivo de configuración por defecto para Powerlevel10k..."
+    if (p10k configure -y > /dev/null 2>&1); then
+         log_success "Archivo .p10k.zsh creado con la configuración por defecto."
     else
-        log_success "Fuente ya configurada"
+        log_warn "No se pudo crear la configuración por defecto de p10k. Es posible que necesites configurarlo manualmente ejecutando 'p10k configure'."
     fi
 }
 
-# Configurar Zsh como shell por defecto
-configure_default_shell() {
-    log_section "Configurando Zsh como shell por defecto"
+# Sets Zsh as the default login shell.
+ensure_default_shell() {
+    # Check if the default shell is already zsh
+    if [[ "$SHELL" == *"/zsh" ]]; then
+        log_success "Zsh ya es la shell por defecto."
+        return
+    fi
 
-    # Configurar en .bashrc para auto-switch
-    if [[ -f "$HOME/.bashrc" ]]; then
-        if ! grep -q "exec zsh" "$HOME/.bashrc" 2>/dev/null; then
-            echo "" >> "$HOME/.bashrc"
-            echo "# Auto-switch to Zsh" >> "$HOME/.bashrc"
-            echo "if command -v zsh >/dev/null 2>&1; then" >> "$HOME/.bashrc"
-            echo "    exec zsh" >> "$HOME/.bashrc"
-            echo "fi" >> "$HOME/.bashrc"
-            log_success "Auto-switch a Zsh configurado"
-        fi
+    log_info "Cambiando la shell por defecto a Zsh..."
+    if chsh -s zsh; then
+        log_success "Shell por defecto cambiada a Zsh."
+        log_warn "Necesitarás reiniciar Termux para que el cambio de shell tenga efecto completo."
+    else
+        log_error "No se pudo cambiar la shell por defecto."
+        log_warn "Puedes intentar cambiarla manualmente con: chsh -s zsh"
     fi
 }
 
-# Función principal
+# --- Main Function ---
 main() {
-    log_section "Iniciando configuración de Zsh - Classic Style"
+    log_info "=== Iniciando Módulo: Configuración de Zsh ==="
 
-    mkdir -p "$STATE_MARKER_DIR"
-    check_previous_run
-    assert_termux_environment
+    ensure_oh_my_zsh
 
-    prepare_classic_theme
-    install_base_components
-    configure_classic_style
-    configure_font
-    configure_default_shell
+    # Ensure plugins are installed
+    ensure_plugin "zsh-autosuggestions" "https://github.com/zsh-users/zsh-autosuggestions"
+    ensure_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting"
 
-    # Marcar como completado
-    touch "$MODULE_MARKER"
+    ensure_p10k
 
-    log_success "Configuración de Zsh Classic Style completada"
-    log_info "Estilo: Classic Style - Bloques azul/cyan/verde, memoria solo"
-    log_info "Reinicia el terminal para aplicar los cambios"
+    configure_zshrc
+    configure_p10k
+
+    ensure_default_shell
+
+    log_info "=== Módulo de Configuración de Zsh Completado ==="
 }
 
-main "$@"
+# --- Execute Main Function ---
+main
