@@ -7,7 +7,7 @@
 # Quick install: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 # ====================================
 
-set -Eeuo pipefail
+set -euo pipefail
 IFS=$'\n\t'
 
 # Colors for output
@@ -83,9 +83,18 @@ if [[ -d "$SCRIPT_DIR" ]]; then
     cd "$SCRIPT_DIR"
 fi
 
-# Function for logging
+# --- Source Helper Functions ---
+# shellcheck disable=SC1091
+if [[ -f "${SCRIPT_DIR}/scripts/helpers.sh" ]]; then
+    source "${SCRIPT_DIR}/scripts/helpers.sh"
+else
+    echo "Error: El archivo de ayuda 'scripts/helpers.sh' no se encontró." >&2
+    exit 1
+fi
+
+# Function for logging to file (legacy, for compatibility)
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 
 add_summary() {
@@ -98,14 +107,15 @@ on_error() {
     SCRIPT_EXIT_CODE=$exit_code
     SCRIPT_FAILURE_CMD="$failed_command"
     SCRIPT_STATUS="error"
-    log "[ERROR] Command failed: ${failed_command} (exit ${exit_code})"
+    log_error "Comando fallido: ${failed_command} (código de salida: ${exit_code})"
+    log "Command failed: ${failed_command} (exit ${exit_code})"
 }
 
 on_interrupt() {
     SCRIPT_EXIT_CODE=130
     SCRIPT_STATUS="interrupted"
-    log "[WARN] Installation interrupted by user"
-    echo -e "${RED}[ERROR] Installation interrupted by user${NC}"
+    log_warn "Instalación interrumpida por el usuario."
+    log "Installation interrupted by user"
     exit 130
 }
 
@@ -156,58 +166,39 @@ show_banner() {
 
 # Function to check prerequisites
 check_prerequisites() {
-    echo -e "${BLUE}[INFO] Checking prerequisites...${NC}"
+    log_info "Verificando los prerrequisitos..."
 
     # Verify we're running in Termux
-    if [[ ! -d "/data/data/com.termux" ]]; then
-        echo -e "${RED}[ERROR] This script must be run in Termux${NC}"
+    if [[ -z "${PREFIX-}" || ! -d "$PREFIX" ]]; then
+        log_error "Este script debe ejecutarse en Termux."
         exit 1
     fi
+    log_info "Verificación de Termux superada."
 
     # Verify internet connection
     if ! ping -c 1 google.com &> /dev/null; then
-        echo -e "${RED}[ERROR] Internet connection required${NC}"
+        log_error "Se requiere conexión a internet."
         exit 1
     fi
+    log_info "Verificación de conexión a internet superada."
 
-    # Attempt to switch to the default install directory if modules are missing but the repo exists there
+    # Attempt to switch to the default install directory
     if [[ ! -d "$MODULES_DIR" && -d "$DEFAULT_INSTALL_DIR/modules" ]]; then
-        echo -e "${YELLOW}[!] Modules directory missing in current path.${NC}"
-        echo -e "${YELLOW}[>] Switching to: $DEFAULT_INSTALL_DIR${NC}"
+        log_warn "El directorio de módulos no se encuentra en la ruta actual."
+        log_info "Cambiando a: $DEFAULT_INSTALL_DIR"
         SCRIPT_DIR="$DEFAULT_INSTALL_DIR"
         MODULES_DIR="${SCRIPT_DIR}/modules"
-        CONFIG_DIR="${SCRIPT_DIR}/config"
-        LOG_FILE="${SCRIPT_DIR}/setup.log"
         cd "$SCRIPT_DIR"
     fi
 
     # Verify we have the correct directory structure
     if [[ ! -d "$MODULES_DIR" ]]; then
-        echo -e "${RED}[x] Modules directory not found: $MODULES_DIR${NC}"
-        echo -e "${YELLOW}[!] Please ensure you're running this script from the correct location.${NC}"
-
-        # Check if we're in the wrong directory but repository exists
-        if [[ -d "$DEFAULT_INSTALL_DIR" && "$PWD" != "$DEFAULT_INSTALL_DIR" ]]; then
-            echo -e "${CYAN}[i] Found installation at: $DEFAULT_INSTALL_DIR${NC}"
-            echo -e "${CYAN}[i] Please run: cd ~/termux-dev-nvim-agents && ./setup.sh${NC}"
-            exit 1
-        fi
-
-        echo -e "${YELLOW}[!] Try re-running the installer:${NC}"
-        echo -e "${CYAN}   wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
+        log_error "Directorio de módulos no encontrado: $MODULES_DIR"
+        log_warn "Por favor, asegúrate de ejecutar el script desde la ubicación correcta."
         exit 1
     fi
-    # Verify essential modules exist
-    local essential_modules=("00-base-packages.sh" "test-installation.sh")
-    for module in "${essential_modules[@]}"; do
-        if [[ ! -f "$MODULES_DIR/$module" ]]; then
-            echo -e "${RED}❌ Essential module missing: $module${NC}"
-            echo -e "${YELLOW}💡 Please re-run the installer to restore missing files.${NC}"
-            exit 1
-        fi
-    done
 
-    echo -e "${GREEN}✅ Prerequisites verified${NC}"
+    log_success "Prerrequisitos verificados."
 }
 
 # Function to show main menu
@@ -239,64 +230,43 @@ run_module() {
 
     termux_ai_state_init
 
-    echo -e "${BLUE}[RUN] Preparing to run: ${module_name}${NC}"
-    echo -e "${CYAN}[INFO] Looking for module at: ${module_path}${NC}"
-    echo -e "${CYAN}[INFO] Current directory: ${PWD}${NC}"
-    echo -e "${CYAN}[INFO] Script directory: ${SCRIPT_DIR}${NC}"
-    echo -e "${CYAN}[INFO] Modules directory: ${MODULES_DIR}${NC}"
+    log_info "Preparando para ejecutar el módulo: ${module_name}"
+    log "Preparing to run module: ${module_name}"
 
     if [[ "${TERMUX_AI_FORCE_MODULES:-0}" != "1" ]]; then
         if termux_ai_module_completed "$module_name" "$module_path"; then
-            echo -e "${GREEN}[SKIP] ${module_name} ya completado. Usa --force para reejecutar.${NC}"
+            log_success "Módulo '${module_name}' ya completado. Omitiendo."
             log "Module skipped (cached): ${module_name}"
             return 0
         fi
     else
-        echo -e "${YELLOW}[FORCE] Reejecutando módulo ${module_name} a petición.${NC}"
+        log_warn "Forzando la reejecución del módulo '${module_name}'."
         termux_ai_reset_module_state "$module_name"
     fi
 
     if [[ ! -f "$module_path" ]]; then
-        echo -e "${RED}[ERROR] Module not found: ${module_path}${NC}"
-
-        if [[ -d "$MODULES_DIR" ]]; then
-            echo -e "${CYAN}[INFO] Available modules in ${MODULES_DIR}:${NC}"
-            ls -la "$MODULES_DIR"/*.sh 2>/dev/null || echo -e "${YELLOW}[WARN] No .sh files found${NC}"
-        else
-            echo -e "${RED}[ERROR] Modules directory does not exist: ${MODULES_DIR}${NC}"
-        fi
-
-        echo -e "${YELLOW}[HINT] Solutions:${NC}"
-        echo -e "${CYAN}  1. Ensure you're in the right directory: cd ~/termux-dev-nvim-agents${NC}"
-        echo -e "${CYAN}  2. Re-run the installer: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash${NC}"
+        log_error "Módulo no encontrado: ${module_path}"
+        log "Module not found: ${module_path}"
         return 1
     fi
 
     if [[ ! -x "$module_path" ]]; then
-        echo -e "${YELLOW}[WARN] Making ${module_name} executable...${NC}"
+        log_warn "Haciendo ejecutable el módulo: ${module_name}"
         chmod +x "$module_path"
     fi
 
-    local auto_flag="${TERMUX_AI_AUTO:-}"
     local exit_code=0
-
-    if [[ -n "$auto_flag" ]]; then
-        if ! TERMUX_AI_AUTO="$auto_flag" bash "$module_path"; then
-            exit_code=$?
-        fi
-    else
-        if ! bash "$module_path"; then
-            exit_code=$?
-        fi
+    if ! bash "$module_path"; then
+        exit_code=$?
     fi
 
     if [[ $exit_code -eq 0 ]]; then
-        echo -e "${GREEN}[OK] ${module_name} completed successfully${NC}"
+        log_success "Módulo '${module_name}' completado exitosamente."
         log "Module completed: ${module_name}"
         termux_ai_record_module_state "$module_name" "$module_path" "completed" 0
         return 0
     else
-        echo -e "${RED}[ERROR] Error in ${module_name} (exit code: ${exit_code})${NC}"
+        log_error "Error en el módulo '${module_name}' (código de salida: ${exit_code})."
         log "Error in module: ${module_name} (exit code: ${exit_code})"
         termux_ai_record_module_state "$module_name" "$module_path" "failed" "$exit_code"
         SCRIPT_EXIT_CODE=$exit_code
@@ -980,88 +950,65 @@ EOF
 
 # Function for complete installation
 full_installation() {
-    echo -e "${BLUE}[AUTO] Starting COMPLETE SILENT installation...${NC}"
-
+    log_info "Iniciando la instalación completa y automática..."
     termux_ai_state_init
 
-    # Verificar modo completamente automático
-    if [[ "${TERMUX_AI_AUTO:-}" == "1" && "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        echo -e "${GREEN}🤖 Modo completamente automático activado${NC}"
-        echo -e "${CYAN}⏰ Instalación sin intervención del usuario iniciada...${NC}"
+    if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
+        log_info "Modo automático detectado. La instalación procederá sin menús."
     fi
 
+    # --- Module Execution Order ---
     local modules=(
-        "00-network-fixes"         # NUEVO: Arreglar problemas de red y timeouts
-        "00-fix-conflicts"         # NUEVO: Arreglar conflictos de configuración
-        "00-system-optimization"   # NUEVO: Permisos, servicios, optimizaciones
-        "00-user-setup"           # Configuración inicial de usuario
-        "00-base-packages"        # Paquetes base con configuración automática
-        "01-zsh-setup"            # Zsh + Oh My Zsh
-        "02-neovim-setup"         # Neovim con configuración completa
-        "06-fonts-setup"          # FiraCode Nerd Font como predeterminado
-        "03-ai-integration"       # Agentes IA con últimas versiones
-        "07-local-ssh-server"     # Servidor SSH persistente
-        "05-ssh-setup"            # Claves SSH para GitHub (al final)
+        "00-user-input"            # NUEVO: Recolecta toda la información del usuario al principio.
+        "00-network-fixes"         # Arregla problemas de red y timeouts.
+        "00-fix-conflicts"         # Arregla conflictos de configuración.
+        "00-system-optimization"   # Permisos, servicios, optimizaciones.
+        "00-base-packages"         # Paquetes base con configuración automática.
+        "01-zsh-setup"             # Zsh + Oh My Zsh.
+        "02-neovim-setup"          # Neovim con configuración completa.
+        "06-fonts-setup"           # FiraCode Nerd Font como predeterminado.
+        "03-ai-integration"        # Agentes IA con últimas versiones.
+        "07-local-ssh-server"      # Servidor SSH persistente.
+        "05-ssh-setup"             # Claves SSH para GitHub (usa datos de 00-user-input).
     )
-    # Configurar Gemini CLI automáticamente
-    setup_gemini_cli_auto
 
-    local previous_auto="${TERMUX_AI_AUTO:-}"
-    export TERMUX_AI_AUTO=1
-    export TERMUX_AI_SILENT=1
     local install_status=0
-
     for module in "${modules[@]}"; do
-        echo -e "${PURPLE}🔧 Ejecutando módulo: ${module}${NC}"
+        log_info "---------------------------------------------"
+        log_info "Ejecutando módulo: ${module}"
+        log_info "---------------------------------------------"
         if ! run_module "$module"; then
             install_status=1
-            echo -e "${RED}[ERROR] Error en módulo: ${module}${NC}"
-            if [[ "${TERMUX_AI_SILENT:-}" != "1" ]]; then
-                read -p "¿Continuar con el siguiente módulo? (y/N): " continue_install
-                if [[ ! "$continue_install" =~ ^[Yy]$ ]]; then
-                    install_status=1
-                    break
-                fi
-            else
-                echo -e "${YELLOW}[AUTO] Continuando automáticamente...${NC}"
-                sleep 2
-            fi
-        else
-            echo -e "${GREEN}✅ Módulo ${module} completado${NC}"
+            log_error "El módulo '${module}' falló. La instalación no puede continuar."
+            return 1 # Exit on first failure to prevent cascading errors
         fi
-        echo -e "${CYAN}---------------------------------------------${NC}"
     done
 
-    if [[ -n "$previous_auto" ]]; then
-        export TERMUX_AI_AUTO="$previous_auto"
-    else
-        unset TERMUX_AI_AUTO
-    fi
-
     if (( install_status != 0 )); then
+        log_error "La instalación falló durante la ejecución de los módulos."
         return "$install_status"
     fi
 
-    echo -e "${GREEN}[DONE] Instalación completa finalizada!${NC}"
-    # Crear marcador global de instalación completa
+    log_success "Instalación de módulos completada."
+
+    # --- Final Steps ---
+    log_info "Creando marcador de instalación completada..."
     mkdir -p "$HOME/.termux-ai-setup" 2>/dev/null || true
     {
         echo "completed_at=$(date '+%Y-%m-%dT%H:%M:%S%z')"
-        echo "version=2.0"
+        echo "version=3.0" # Version Bump
         echo "script_commit=${SCRIPT_COMMIT:-local}"
     } > "$HOME/.termux-ai-setup/INSTALL_DONE" 2>/dev/null || true
-    add_summary "Instalación automática completada"
+
+    add_summary "Instalación automática completada exitosamente."
     add_summary "Estado guardado en ~/.termux-ai-setup/INSTALL_DONE"
-    add_summary "Módulos ejecutados: ${#modules[@]}"
+    add_summary "Total de módulos ejecutados: ${#modules[@]}"
 
-    # Post-instalación automática
-    post_installation_setup_auto
+    # Reload shell configuration to apply changes immediately
+    log_info "Recargando la configuración de la shell para aplicar los cambios..."
+    source ~/.zshrc 2>/dev/null || source ~/.bashrc 2>/dev/null || log_warn "No se pudo recargar .zshrc o .bashrc."
 
-    echo -e "${CYAN}[INFO] Reiniciando terminal...${NC}"
-
-    # Reload configuration (suave, sin exec forzado para no interrumpir pipeline remoto)
-    source ~/.bashrc 2>/dev/null || true
-    # No hacemos exec aquí para permitir que el caller continúe (especialmente install.sh)
+    log_success "Instalación completa finalizada."
 }
 
 # Main function

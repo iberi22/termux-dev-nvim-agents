@@ -1,264 +1,113 @@
 #!/bin/bash
 
-# ====================================
-# MODULE: System Optimization for Termux
-# Configuración de permisos, optimización de rendimiento
-# ====================================
+# =================================================================
+# MODULE: 00-SYSTEM-OPTIMIZATION
+#
+# Performs essential system optimizations for Termux, including:
+#   - Requesting storage permissions.
+#   - Setting up local cache directories for package managers.
+#   - Configuring performance-related environment variables.
+# =================================================================
 
-set -euo pipefail
+# --- Source Helper Functions ---
+# shellcheck disable=SC1091
+source "$(dirname "$0")/../scripts/helpers.sh"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# --- Constants ---
+readonly CONFIG_MARKER="# --- Termux AI Performance Optimizations ---"
 
-echo -e "${PURPLE}🚀 Optimizando sistema Termux...${NC}"
+# --- Functions ---
 
-# Función para solicitar permisos de almacenamiento
-request_storage_permissions() {
-    echo -e "${BLUE}📱 Solicitando permisos de almacenamiento...${NC}"
+# Requests storage access for Termux.
+request_storage_permission() {
+    log_info "Solicitando permisos de almacenamiento..."
+    if [[ -d "$HOME/storage" ]]; then
+        log_success "Los permisos de almacenamiento ya están concedidos."
+        return
+    fi
 
-    # Solicitar permisos de almacenamiento si no están concedidos
-    if [[ ! -d "$HOME/storage" ]]; then
-        echo -e "${YELLOW}⚠️ Permisos de almacenamiento requeridos${NC}"
-        if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
-            echo -e "${CYAN}🤖 Modo automático: configurando automáticamente${NC}"
-            # Try multiple times with timeout
-            timeout 10 termux-setup-storage || true
-            sleep 3
-            # If still not working, create a placeholder
-            if [[ ! -d "$HOME/storage" ]]; then
-                mkdir -p "$HOME/storage/shared" 2>/dev/null || true
-                echo -e "${YELLOW}⚠️ Permisos de almacenamiento pueden requerir configuración manual${NC}"
-            fi
-        else
-            echo -e "${CYAN}Por favor, concede permisos de almacenamiento cuando se soliciten${NC}"
-            timeout 30 termux-setup-storage || {
-                echo -e "${YELLOW}⚠️ Timeout en permisos de almacenamiento${NC}"
-            }
-        fi
+    log_warn "Se necesitan permisos de almacenamiento para acceder a archivos fuera del directorio de Termux."
+    termux-setup-storage
+    # Give it a moment for the directory to be created.
+    sleep 3
+
+    if [[ -d "$HOME/storage" ]]; then
+        log_success "Permisos de almacenamiento concedidos exitosamente."
     else
-        echo -e "${GREEN}✅ Permisos de almacenamiento ya concedidos${NC}"
+        log_error "No se pudieron obtener los permisos de almacenamiento. Algunas funciones pueden no funcionar."
+        log_warn "Por favor, intenta ejecutar 'termux-setup-storage' manualmente."
     fi
 }
 
-# Función para configurar Termux como servicio real
-setup_termux_service() {
-    echo -e "${BLUE}🔧 Configurando Termux como servicio real...${NC}"
+# Creates optimized cache directories for pip and npm.
+configure_local_caches() {
+    log_info "Configurando directorios de caché locales para pip y npm..."
 
-    # Instalar termux-services si no está instalado
-    if ! pkg list-installed | grep -q termux-services; then
-        echo -e "${YELLOW}📦 Instalando termux-services...${NC}"
-        pkg install -y termux-services >/dev/null 2>&1
-    fi
-
-    # Configurar servicios para inicio automático
-    mkdir -p "$HOME/.termux/boot"
-
-    # Script de inicio automático
-    cat > "$HOME/.termux/boot/startup.sh" << 'EOF'
-#!/bin/bash
-# Auto-start services on Termux boot
-
-# Configurar prioridad de procesos
-if command -v renice >/dev/null 2>&1; then
-    renice -n -10 -p $$ 2>/dev/null || true
-fi
-
-# Configurar límites de memoria
-ulimit -v unlimited 2>/dev/null || true
-ulimit -m unlimited 2>/dev/null || true
-
-# Iniciar SSH server si está configurado
-if command -v sshd >/dev/null 2>&1 && [[ -f "$HOME/.ssh/authorized_keys" || -f "/data/data/com.termux/files/usr/etc/ssh/sshd_config" ]]; then
-    sshd -D -p 8022 &
-fi
-
-# Optimizaciones del sistema
-export TMPDIR="$HOME/.cache/tmp"
-mkdir -p "$TMPDIR"
-EOF
-
-    chmod +x "$HOME/.termux/boot/startup.sh"
-    echo -e "${GREEN}✅ Termux configurado como servicio${NC}"
-}
-
-# Función para optimizar prioridad de CPU y memoria
-optimize_performance() {
-    echo -e "${BLUE}⚡ Optimizando rendimiento del sistema...${NC}"
-
-    # Configurar variables de entorno para optimización
-    local perf_marker="# === OPTIMIZACIONES DE TERMUX AI ==="
-    touch "$HOME/.bashrc"
-    if ! grep -q "$perf_marker" "$HOME/.bashrc" 2>/dev/null; then
-        cat >> "$HOME/.bashrc" << 'EOF'
-
-# === OPTIMIZACIONES DE TERMUX AI ===
-export TMPDIR="$HOME/.cache/tmp"
-export TEMP="$TMPDIR"
-export TMP="$TMPDIR"
-mkdir -p "$TMPDIR"
-
-# Optimizaciones de rendimiento
-export NODE_OPTIONS="--max-old-space-size=4096"
-export PYTHON_OPTIMIZE=1
-export PYTHONDONTWRITEBYTECODE=1
-
-# Configurar límites de recursos
-ulimit -n 4096 2>/dev/null || true
-ulimit -u 4096 2>/dev/null || true
-
-# Configurar prioridad alta para procesos críticos
-if command -v renice >/dev/null 2>&1; then
-    renice -n -5 -p $$ 2>/dev/null || true
-fi
-EOF
-    fi
-
-    # Crear directorio de cache optimizado
-    mkdir -p "$HOME/.cache/tmp"
-    mkdir -p "$HOME/.cache/npm"
-    mkdir -p "$HOME/.cache/pip"
-
-    # Configurar npm para usar cache local
-    if command -v npm >/dev/null 2>&1; then
-        npm config set cache "$HOME/.cache/npm" --global 2>/dev/null || true
-        npm config set prefer-offline true --global 2>/dev/null || true
-    fi
-
-    # Configurar pip para usar cache local
-    mkdir -p "$HOME/.config/pip"
-    cat > "$HOME/.config/pip/pip.conf" << 'EOF'
+    # Pip cache configuration
+    local pip_config_file="$HOME/.config/pip/pip.conf"
+    mkdir -p "$(dirname "$pip_config_file")"
+    if [[ ! -f "$pip_config_file" ]]; then
+        cat > "$pip_config_file" <<EOF
 [global]
-cache-dir = /data/data/com.termux/files/home/.cache/pip
-trusted-host = pypi.org
-               pypi.python.org
-               files.pythonhosted.org
+cache-dir = $HOME/.cache/pip
 EOF
-
-    echo -e "${GREEN}✅ Optimizaciones de rendimiento aplicadas${NC}"
-}
-
-# Función para configurar wake locks (mantener CPU activa)
-setup_wake_locks() {
-    echo -e "${BLUE}🔋 Configurando wake locks para estabilidad...${NC}"
-
-    # Instalar termux-api si no está instalado
-    if ! pkg list-installed | grep -q termux-api; then
-        echo -e "${YELLOW}📦 Instalando termux-api...${NC}"
-        pkg install -y termux-api >/dev/null 2>&1
-    fi
-
-    # Script para mantener CPU activa durante operaciones críticas
-    cat > "$HOME/bin/wake-lock" << 'EOF'
-#!/bin/bash
-# Script para mantener CPU activa durante operaciones largas
-
-if command -v termux-wake-lock >/dev/null 2>&1; then
-    termux-wake-lock
-    echo "Wake lock activado"
-
-    # Ejecutar comando con wake lock
-    if [[ $# -gt 0 ]]; then
-        "$@"
-        termux-wake-unlock
-        echo "Wake lock desactivado"
+        log_success "Configuración de caché para pip creada."
     else
-        echo "Mantén la CPU activa. Ejecuta 'termux-wake-unlock' para liberar."
+        log_success "La configuración de caché para pip ya existe."
     fi
-else
-    echo "termux-api no disponible"
-    # Ejecutar comando sin wake lock
-    if [[ $# -gt 0 ]]; then
-        "$@"
+
+    # Npm cache configuration
+    if command -v npm >/dev/null 2>&1; then
+        npm config set cache "$HOME/.cache/npm" --global
+        log_success "Configuración de caché para npm establecida."
+    else
+        log_info "npm no encontrado, omitiendo configuración de caché de npm."
     fi
-fi
-EOF
-
-    mkdir -p "$HOME/bin"
-    chmod +x "$HOME/bin/wake-lock"
-
-    echo -e "${GREEN}✅ Wake locks configurados${NC}"
 }
 
-# Función para optimizar configuración de red
-optimize_network() {
-    echo -e "${BLUE}🌐 Optimizando configuración de red...${NC}"
+# Appends performance-related environment variables to shell profiles.
+configure_shell_performance() {
+    log_info "Aplicando optimizaciones de rendimiento a los perfiles de la shell..."
 
-    # Configurar DNS confiables
-    cat > "$PREFIX/etc/resolv.conf" << 'EOF'
-# Optimized DNS configuration for Termux
-nameserver 8.8.8.8
-nameserver 8.8.4.4
-nameserver 1.1.1.1
-nameserver 1.0.0.1
-EOF
+    local perf_block
+    perf_block="
+${CONFIG_MARKER}
+# Set a dedicated temporary directory.
+export TMPDIR=\"\$HOME/.cache/tmp\"
+mkdir -p \"\$TMPDIR\"
 
-    # Configurar timeout más rápido para conexiones
-    local net_marker="# Optimizaciones de red"
-    touch "$HOME/.bashrc"
-    if ! grep -q "$net_marker" "$HOME/.bashrc" 2>/dev/null; then
-        cat >> "$HOME/.bashrc" << 'EOF'
-
-# Optimizaciones de red
-export CONNECT_TIMEOUT=10
-export READ_TIMEOUT=30
-export CURL_CA_BUNDLE="$PREFIX/etc/tls/cert.pem"
-EOF
+# Performance tweaks for Node.js and Python.
+export NODE_OPTIONS=\"--max-old-space-size=4096\"
+export PYTHONDONTWRITEBYTECODE=1
+${CONFIG_MARKER}
+"
+    # Apply to .bashrc
+    if [[ -f "$HOME/.bashrc" ]] && ! grep -qF -- "$CONFIG_MARKER" "$HOME/.bashrc"; then
+        echo "$perf_block" >> "$HOME/.bashrc"
+        log_success "Optimizaciones añadidas a .bashrc."
+    else
+        log_info "Las optimizaciones ya existen en .bashrc o el archivo no existe."
     fi
 
-    echo -e "${GREEN}✅ Red optimizada${NC}"
-}
-
-# Función para configurar logging optimizado
-setup_logging() {
-    echo -e "${BLUE}📝 Configurando logging optimizado...${NC}"
-
-    mkdir -p "$HOME/.logs"
-
-    # Configurar rotación de logs
-    cat > "$HOME/.logs/cleanup.sh" << 'EOF'
-#!/bin/bash
-# Limpiar logs antiguos automáticamente
-find "$HOME/.logs" -name "*.log" -mtime +7 -delete 2>/dev/null || true
-find "$HOME/.cache" -name "*.log" -mtime +3 -delete 2>/dev/null || true
-EOF
-
-    chmod +x "$HOME/.logs/cleanup.sh"
-
-    # Agregar limpieza automática al cron o startup
-    mkdir -p "$HOME/.termux/boot"
-    touch "$HOME/.termux/boot/startup.sh"
-    if ! grep -q "$HOME/.logs/cleanup.sh" "$HOME/.termux/boot/startup.sh" 2>/dev/null; then
-        echo "$HOME/.logs/cleanup.sh" >> "$HOME/.termux/boot/startup.sh"
+    # Apply to .zshrc
+    if [[ -f "$HOME/.zshrc" ]] && ! grep -qF -- "$CONFIG_MARKER" "$HOME/.zshrc"; then
+        echo "$perf_block" >> "$HOME/.zshrc"
+        log_success "Optimizaciones añadidas a .zshrc."
+    else
+        log_info "Las optimizaciones ya existen en .zshrc o el archivo no existe."
     fi
-
-    echo -e "${GREEN}✅ Logging configurado${NC}"
 }
 
-# Función principal
+# --- Main Function ---
 main() {
-    echo -e "${CYAN}┌─────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│           OPTIMIZACIÓN DEL SISTEMA              │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
+    log_info "=== Iniciando Módulo: Optimización del Sistema ==="
 
-    request_storage_permissions
-    setup_termux_service
-    optimize_performance
-    setup_wake_locks
-    optimize_network
-    setup_logging
+    request_storage_permission
+    configure_local_caches
+    configure_shell_performance
 
-    echo -e "\n${GREEN}🎉 Optimización del sistema completada${NC}"
-    echo -e "${YELLOW}💡 Reinicia Termux para aplicar todas las optimizaciones${NC}"
-
-    # Aplicar configuraciones inmediatamente
-    source "$HOME/.bashrc" 2>/dev/null || true
+    log_info "=== Módulo de Optimización del Sistema Completado ==="
 }
 
-# Ejecutar optimizaciones
-main "$@"
+# --- Execute Main Function ---
+main

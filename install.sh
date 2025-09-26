@@ -292,18 +292,10 @@ run_main_setup() {
         return 0
     fi
 
-    # Ejecutar instalación automática SIN INTERVENCIÓN
-    export TERMUX_AI_AUTO=1
-    export TERMUX_AI_SILENT=1
-
-    # Configurar valores por defecto para evitar prompts
-    export TERMUX_AI_GIT_NAME="Termux Developer"
-    export TERMUX_AI_GIT_EMAIL="developer@termux.local"
-    export TERMUX_AI_SSH_USER="termux-dev"
-    export TERMUX_AI_SSH_PASS="termux2025"
-    export TERMUX_AI_SETUP_SSH="1"
-    export TERMUX_AI_START_SERVICES="1"
-    export TERMUX_AI_LAUNCH_WEB="1"
+    # Ejecutar instalación automática.
+    # El nuevo módulo 00-user-input.sh se encargará de pedir los datos al usuario.
+    export TERMUX_AI_AUTO=1 # Mantiene el modo "auto" para el flujo de setup.sh
+    export TERMUX_AI_SILENT=1 # Mantiene el modo silencioso para evitar menús
 
     local setup_args=("auto")
     if [[ "$FORCE_MODULES" == true ]]; then

@@ -146,14 +146,28 @@ npm --version
 
 ## 🔐 Configuración SSH (Opcional)
 
-Para acceso remoto a tu dispositivo:
+Para acceso remoto a tu dispositivo, el script instala y configura un servidor SSH.
+
+### Gestión del Servidor SSH
+
+Hemos incluido scripts de ayuda para facilitar la gestión del servidor:
+
+-   `ssh-local-start`: Inicia el servidor SSH.
+-   `ssh-local-stop`: Detiene el servidor SSH.
+-   `ssh-local-info`: Muestra la información de conexión actual (IP, puerto, etc.).
+
+**Ejemplo de uso:**
 
 ```bash
-# Habilitar durante instalación o manualmente
-sv-enable sshd
+# Iniciar el servidor y ver cómo conectarse
+ssh-local-start
+```
 
-# Conectar desde otra máquina
-ssh -p 8022 usuario@IP_DEL_DISPOSITIVO
+Para conectar desde otra máquina en la misma red:
+
+```bash
+# El puerto por defecto es 8022
+ssh -p 8022 tu_usuario@IP_DEL_DISPOSITIVO
 ```
 
 ## Quick Installation

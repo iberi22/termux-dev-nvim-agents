@@ -1,136 +1,87 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
 
-# ====================================
-# MODULE: Nerd Fonts Setup for Termux
-# Installs popular Nerd Fonts and sets default terminal font
-# Default: FiraCode Nerd Font Mono
-# ====================================
+# =================================================================
+# MODULE: 06-FONTS-SETUP
+#
+# Installs the FiraCode Nerd Font to ensure proper rendering of
+# icons and symbols in the terminal.
+#
+# This script is idempotent and will not run if a custom font
+# is already configured, to avoid overwriting user preferences.
+# =================================================================
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# --- Source Helper Functions ---
+# shellcheck disable=SC1091
+source "$(dirname "$0")/../scripts/helpers.sh"
 
-info() { echo -e "${CYAN}➤${NC} $*"; }
-ok() { echo -e "${GREEN}✓${NC} $*"; }
-warn() { echo -e "${YELLOW}!${NC} $*"; }
-err() { echo -e "${RED}✗${NC} $*"; }
+# --- Constants ---
+readonly TERMUX_CONFIG_DIR="$HOME/.termux"
+readonly FONT_FILE_PATH="${TERMUX_CONFIG_DIR}/font.ttf"
+readonly FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip"
+readonly TMP_DIR=$(mktemp -d)
 
-# Top 10 popular Nerd Fonts (Mono variants preferred for terminals)
-NF_BASE="https://github.com/ryanoasis/nerd-fonts/releases/latest/download"
-declare -A FONTS=([
-  FiraCode]=FiraCode [JetBrainsMono]=JetBrainsMono [Hack]=Hack [CascadiaCode]=CascadiaCode [SourceCodePro]=SourceCodePro \
-  [Meslo]=Meslo [UbuntuMono]=UbuntuMono [Mononoki]=Mononoki [VictorMono]=VictorMono [Iosevka]=Iosevka
-)
-
-TERMUX_DIR="$HOME/.termux"
-FONT_TTF="$TERMUX_DIR/font.ttf"
-WORK_DIR="$(mktemp -d)"
-
-cleanup() { rm -rf "$WORK_DIR" 2>/dev/null || true; }
+# --- Cleanup Function ---
+# Ensures the temporary directory is removed on exit.
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
 trap cleanup EXIT INT TERM
 
-ensure_tools() {
-  info "Ensuring required tools (unzip, curl/wget)"
-  pkg update -y >/dev/null 2>&1 || true
-  pkg install -y unzip wget curl >/dev/null 2>&1 || true
-  mkdir -p "$TERMUX_DIR"
+# --- Functions ---
+
+# Downloads and installs the FiraCode Nerd Font.
+install_firacode_font() {
+    log_info "Instalando FiraCode Nerd Font..."
+
+    local zip_path="${TMP_DIR}/FiraCode.zip"
+
+    log_info "Descargando la fuente desde ${FONT_URL}..."
+    if ! curl -L -o "$zip_path" "$FONT_URL"; then
+        log_error "Falló la descarga de FiraCode Nerd Font."
+        return 1
+    fi
+
+    log_info "Extrayendo el archivo de la fuente..."
+    # We extract only the Regular Mono font, which is ideal for terminals.
+    if ! unzip -j "$zip_path" "*FiraCodeNerdFontMono-Regular.ttf" -d "$TMP_DIR"; then
+        log_error "No se pudo extraer el archivo TTF del ZIP."
+        return 1
+    fi
+
+    local ttf_path
+    ttf_path=$(find "$TMP_DIR" -name "*FiraCodeNerdFontMono-Regular.ttf" | head -n 1)
+
+    if [[ -z "$ttf_path" ]]; then
+        log_error "No se encontró el archivo de fuente esperado en el archivo descargado."
+        return 1
+    fi
+
+    log_info "Instalando la fuente en '${FONT_FILE_PATH}'..."
+    mv "$ttf_path" "$FONT_FILE_PATH"
+
+    # Reload Termux settings to apply the font immediately.
+    termux-reload-settings
+
+    log_success "FiraCode Nerd Font instalada y aplicada."
 }
 
-download_and_set_font() {
-  local key="$1"
-  local zipName="${key}.zip"
-  local url="${NF_BASE}/${key}.zip"
-
-  info "Downloading ${key} Nerd Font from ${url}"
-  if ! wget -q -O "$WORK_DIR/$zipName" "$url"; then
-    err "Failed to download ${key} Nerd Font"
-    return 1
-  fi
-
-  info "Unzipping ${zipName}"
-  unzip -oq "$WORK_DIR/$zipName" -d "$WORK_DIR/${key}"
-
-  # Prefer Mono Regular variant for terminal
-  local ttf
-  ttf="$(ls "$WORK_DIR/${key}"/*NerdFontMono-Regular.ttf 2>/dev/null | head -n1 || true)"
-  if [[ -z "${ttf}" ]]; then
-    # Fallback to any NerdFontMono
-    ttf="$(ls "$WORK_DIR/${key}"/*NerdFontMono*.ttf 2>/dev/null | head -n1 || true)"
-  fi
-  if [[ -z "${ttf}" ]]; then
-    # Last resort: any NerdFont .ttf
-    ttf="$(ls "$WORK_DIR/${key}"/*NerdFont*.ttf 2>/dev/null | head -n1 || true)"
-  fi
-
-  if [[ -z "${ttf}" ]]; then
-    err "Could not locate a suitable TTF in ${key} archive"
-    return 1
-  fi
-
-  cp -f "$ttf" "$FONT_TTF"
-  termux-reload-settings || true
-  ok "Set Termux font to ${key} Nerd Font (Mono)"
-}
-
-show_menu() {
-  echo -e "${BLUE}==> Nerd Fonts for Termux${NC}"
-  echo "Select a font to install and set as default:"
-  local i=1
-  for key in "${!FONTS[@]}"; do
-    echo "  $i) ${FONTS[$key]}"
-    i=$((i+1))
-  done | sort -n
-  echo "  0) Cancel"
-  printf "Enter choice [0-%d]: " $((i-1))
-}
-
+# --- Main Function ---
 main() {
-  ensure_tools
+    log_info "=== Iniciando Módulo: Configuración de Fuentes ==="
 
-  local mode="${1:-default}"
-  if [[ "$mode" == "default" ]]; then
-    # Default to FiraCode
-    download_and_set_font "FiraCode" || exit 1
-    ok "Default font applied: FiraCode Nerd Font Mono"
-    echo -e "${YELLOW}Tip:${NC} You can change font anytime: cd ~/termux-dev-nvim-agents && bash modules/06-fonts-setup.sh menu"
-    return 0
-  fi
-
-  if [[ "$mode" == "menu" ]]; then
-    show_menu
-    read -r choice
-    if [[ "$choice" == "0" ]]; then
-      warn "Cancelled by user"
-      exit 0
+    # Idempotency Check: If a font is already configured, do nothing.
+    if [[ -f "$FONT_FILE_PATH" ]]; then
+        log_warn "Ya existe una fuente personalizada en '${FONT_FILE_PATH}'. Omitiendo la instalación para no sobreescribir."
+        log_info "=== Módulo de Configuración de Fuentes Omitido ==="
+        return
     fi
-    local keys=("${!FONTS[@]}")
-    # Keep array order deterministic
-    keys=(FiraCode JetBrainsMono Hack CascadiaCode SourceCodePro Meslo UbuntuMono Mononoki VictorMono Iosevka)
-    local idx=$((choice-1))
-    if (( idx < 0 || idx >= ${#keys[@]} )); then
-      err "Invalid selection"
-      exit 1
-    fi
-    download_and_set_font "${keys[$idx]}" || exit 1
-    ok "Font changed successfully"
-    exit 0
-  fi
 
-  # If a specific key is provided
-  local key="$mode"
-  if [[ -n "${FONTS[$key]:-}" ]]; then
-    download_and_set_font "$key" || exit 1
-  else
-    err "Unknown font key: $key"
-    echo "Available: FiraCode JetBrainsMono Hack CascadiaCode SourceCodePro Meslo UbuntuMono Mononoki VictorMono Iosevka"
-    exit 1
-  fi
+    mkdir -p "$TERMUX_CONFIG_DIR"
+
+    install_firacode_font
+
+    log_info "=== Módulo de Configuración de Fuentes Completado ==="
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  main "$@"
-fi
+# --- Execute Main Function ---
+main

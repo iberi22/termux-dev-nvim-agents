@@ -1,57 +1,45 @@
-# CodeRabbit Configuration
-# See: https://docs.coderabbit.ai/guides/configure-coderabbit
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# CodeRabbit Configuration - Corrected based on official template
+# Reference: https://docs.coderabbit.ai/reference/configuration
 
-# General settings
+# Global language setting for reviews
+language: "en-US"
+
 reviews:
-  auto_review: true
-  draft_reviews: false
-  ignore_patterns:
-    - '*.log'
-    - '*.tmp'
-    - 'node_modules/**'
-    - '.git/**'
-  languages:
-    bash:
-      enhanced_review: true
-      security_analysis: true
-    markdown:
-      documentation_review: true
-
-# Issue creation settings (Pro feature)
-issue_creation:
-  auto_create: true
-  platforms:
-    - github
-  templates:
-    bug:
-      title: '🐛 Bug found during review'
-      labels: ['bug', 'coderabbit-created']
-    improvement:
-      title: '💡 Improvement suggestion'
-      labels: ['enhancement', 'coderabbit-created']
-
-# Comment settings
-comments:
-  concise_mode: true
-  skip_trivial: true
-  focus_areas:
-    - security
-    - performance
-    - maintainability
-    - shell-best-practices
-
-# Integration settings
-integrations:
-  github_actions: true
-  status_checks:
+  # Automatically review new pull requests
+  auto_review:
     enabled: true
-    block_merge_on_failure: false
+    drafts: false # Do not review draft PRs
 
-# Learning settings
-learning:
-  repository_context: true
-  focus_domains:
-    - 'termux'
-    - 'android'
-    - 'shell-scripting'
-    - 'ai-integration'
+  # Filter which files to review.
+  # These patterns are crucial for avoiding noise.
+  path_filters:
+    - "!node_modules/**"
+    - "!.git/**"
+    - "!*.log"
+    - "!*.tmp"
+    - "!dist/**"
+    - "!build/**"
+
+  # Enable specific linters and analysis tools
+  tools:
+    # For shell script analysis
+    shellcheck:
+      enabled: true
+    # For Markdown file analysis
+    markdownlint:
+      enabled: true
+
+# Knowledge base settings to improve review context
+knowledge_base:
+  # Learn from the repository itself
+  learnings:
+    scope: 'local'
+
+  # Learn from specific guideline files in the repository
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "GEMINI.md"
+      - "specs/*.md"
