@@ -24,7 +24,6 @@ declare -ar ESSENTIAL_PACKAGES=(
     make
     openssh
     python
-    python-pip
     coreutils
     termux-tools
     unzip

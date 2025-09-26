@@ -82,19 +82,33 @@ export PYTHONDONTWRITEBYTECODE=1
 ${CONFIG_MARKER}
 "
     # Apply to .bashrc
-    if [[ -f "$HOME/.bashrc" ]] && ! grep -qF -- "$CONFIG_MARKER" "$HOME/.bashrc"; then
-        echo "$perf_block" >> "$HOME/.bashrc"
+    local bashrc="$HOME/.bashrc"
+    if [[ ! -f "$bashrc" ]]; then
+        touch "$bashrc"
+        log_info "Creando $bashrc para aplicar optimizaciones."
+    fi
+    if ! grep -qF -- "$CONFIG_MARKER" "$bashrc"; then
+        echo "$perf_block" >> "$bashrc"
         log_success "Optimizaciones añadidas a .bashrc."
     else
-        log_info "Las optimizaciones ya existen en .bashrc o el archivo no existe."
+        log_info "Las optimizaciones ya existen en .bashrc."
     fi
 
     # Apply to .zshrc
-    if [[ -f "$HOME/.zshrc" ]] && ! grep -qF -- "$CONFIG_MARKER" "$HOME/.zshrc"; then
-        echo "$perf_block" >> "$HOME/.zshrc"
-        log_success "Optimizaciones añadidas a .zshrc."
+    if command -v zsh > /dev/null 2>&1; then
+        local zshrc="$HOME/.zshrc"
+        if [[ ! -f "$zshrc" ]]; then
+            touch "$zshrc"
+            log_info "Creando $zshrc para aplicar optimizaciones."
+        fi
+        if ! grep -qF -- "$CONFIG_MARKER" "$zshrc"; then
+            echo "$perf_block" >> "$zshrc"
+            log_success "Optimizaciones añadidas a .zshrc."
+        else
+            log_info "Las optimizaciones ya existen en .zshrc."
+        fi
     else
-        log_info "Las optimizaciones ya existen en .zshrc o el archivo no existe."
+        log_info "zsh no está instalado, omitiendo optimizaciones para .zshrc."
     fi
 }
 

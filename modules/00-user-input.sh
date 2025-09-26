@@ -90,6 +90,18 @@ main() {
     export TERMUX_AI_SSH_USER="$git_name" # Use Git name for SSH user
     export TERMUX_AI_SSH_PASS="$ssh_pass"
 
+    # Persist for downstream modules (loaded by setup.sh)
+    local env_dir="$HOME/.termux-ai-setup"
+    local env_file="${env_dir}/user.env"
+    mkdir -p "$env_dir"
+    cat > "$env_file" <<EOF
+export TERMUX_AI_GIT_NAME=${git_name@Q}
+export TERMUX_AI_GIT_EMAIL=${git_email@Q}
+export TERMUX_AI_SSH_USER=${git_name@Q}
+export TERMUX_AI_SSH_PASS=${ssh_pass@Q}
+EOF
+    chmod 600 "$env_file"
+
     log_success "Información del usuario guardada y exportada."
     log_info "La instalación continuará con estos datos."
 }

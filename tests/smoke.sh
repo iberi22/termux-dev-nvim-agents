@@ -22,9 +22,9 @@ echo "[smoke] All required files are present."
 echo "[smoke] Syntax check on key scripts..."
 bash -n "$(dirname "$0")/../setup.sh"
 bash -n "$(dirname "$0")/../install.sh"
-for module in modules/*.sh; do
-    echo "[smoke] Syntax check for $module..."
-    bash -n "$(dirname "$0")/../$module"
+for module in "$(dirname "$0")"/../modules/*.sh; do
+    echo "[smoke] Syntax check for $(basename "$module")..."
+    bash -n "$module"
 done
 echo "[smoke] Syntax checks passed."
 

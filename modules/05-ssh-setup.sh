@@ -17,6 +17,15 @@
 # shellcheck disable=SC1091
 source "$(dirname "$0")/../scripts/helpers.sh"
 
+USER_ENV_FILE="$HOME/.termux-ai-setup/user.env"
+if [[ -f "$USER_ENV_FILE" ]]; then
+    # Export all variables from the persisted env
+    set -a
+    # shellcheck disable=SC1090
+    source "$USER_ENV_FILE"
+    set +a
+fi
+
 # --- Constants ---
 readonly SSH_DIR="$HOME/.ssh"
 readonly KEY_PATH="${SSH_DIR}/id_ed25519"

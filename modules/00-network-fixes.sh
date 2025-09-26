@@ -30,9 +30,11 @@ append_config_if_missing() {
         log_success "La configuración en '${file_path}' ya existe. Omitiendo."
     else
         log_info "Aplicando configuración a '${file_path}'..."
-        # Append a newline and the config block
-        echo -e "\n$config_block" >> "$file_path"
-        log_success "Configuración aplicada a '${file_path}'."
+        if printf '\n%s\n' "$config_block" >> "$file_path"; then
+            log_success "Configuración aplicada a '${file_path}'."
+        else
+            log_warn "No se pudo escribir en '${file_path}'. Revisa permisos y vuelve a intentarlo."
+        fi
     fi
 }
 

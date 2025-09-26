@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-IFS=$'\n\t'
-
 # =================================================================
 # MODULE: 07-LOCAL-SSH-SERVER
 #
@@ -10,6 +7,9 @@ IFS=$'\n\t'
 # allowing remote access. It sets the user's password based on
 # input from the '00-user-input.sh' module.
 # =================================================================
+
+set -euo pipefail
+IFS=$'\n\t'
 
 # --- Source Helper Functions ---
 # shellcheck disable=SC1091
@@ -88,10 +88,29 @@ configure_sshd() {
     sed -i "1i${CONFIG_MARKER}\n" "$SSHD_CONFIG_FILE"
 
     # Set key parameters for secure password-based login.
-    # Use sed to find and replace or append if not found.
-    sed -i '/^#*Port/c\Port 8022' "$SSHD_CONFIG_FILE"
-    sed -i '/^#*PasswordAuthentication/c\PasswordAuthentication yes' "$SSHD_CONFIG_FILE"
-    sed -i '/^#*PermitEmptyPasswords/c\PermitEmptyPasswords no' "$SSHD_CONFIG_FILE"
+    # Use robust match-or-append logic for configuration.
+    local port="${TERMUX_AI_SSH_PORT:-8022}"
+    
+    # Port configuration
+    if grep -Eq '^[[:space:]]*#?[[:space:]]*Port\b' "$SSHD_CONFIG_FILE"; then
+        sed -i -E 's/^[[:space:]]*#?[[:space:]]*Port\b.*/Port '"$port"'/g' "$SSHD_CONFIG_FILE"
+    else
+        printf '\nPort %s\n' "$port" >> "$SSHD_CONFIG_FILE"
+    fi
+    
+    # PasswordAuthentication configuration
+    if grep -Eq '^[[:space:]]*#?[[:space:]]*PasswordAuthentication\b' "$SSHD_CONFIG_FILE"; then
+        sed -i -E 's/^[[:space:]]*#?[[:space:]]*PasswordAuthentication\b.*/PasswordAuthentication yes/g' "$SSHD_CONFIG_FILE"
+    else
+        printf 'PasswordAuthentication yes\n' >> "$SSHD_CONFIG_FILE"
+    fi
+    
+    # PermitEmptyPasswords configuration
+    if grep -Eq '^[[:space:]]*#?[[:space:]]*PermitEmptyPasswords\b' "$SSHD_CONFIG_FILE"; then
+        sed -i -E 's/^[[:space:]]*#?[[:space:]]*PermitEmptyPasswords\b.*/PermitEmptyPasswords no/g' "$SSHD_CONFIG_FILE"
+    else
+        printf 'PermitEmptyPasswords no\n' >> "$SSHD_CONFIG_FILE"
+    fi
 
     log_success "sshd_config actualizado para permitir acceso con contraseña en el puerto 8022."
 }

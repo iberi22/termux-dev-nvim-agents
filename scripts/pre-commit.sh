@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-# Pre-commit hook for ShellCheck and Version Update
+# =================================================================
+# PRE-COMMIT HOOK MEJORADO
+#
+# Ejecuta verificaciones completas antes de commit para asegurar
+# que el código pase el CI de GitHub Actions
+#
 # Install: cp scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# =================================================================
 
 set -euo pipefail
 
@@ -12,38 +18,74 @@ PROJECT_ROOT="$(dirname "$HOOK_DIR")"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${YELLOW}[PRE-COMMIT] Starting pre-commit checks...${NC}"
+log_info() { echo -e "${BLUE}[PRE-COMMIT]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Note: Version update script was removed in spec-kit refactoring
-# Version management is now manual or via CI/CD pipeline
-echo -e "${GREEN}[PRE-COMMIT] Version check skipped (manual versioning)${NC}"
-
-echo -e "${YELLOW}[PRE-COMMIT] Running ShellCheck on staged .sh files...${NC}"
+log_info "Iniciando verificaciones pre-commit..."
 
 # Get staged .sh files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.sh$' || true)
 
 if [[ -z "$STAGED_FILES" ]]; then
-    echo -e "${GREEN}[OK] No .sh files to check${NC}"
+    log_success "No hay archivos .sh para verificar"
     exit 0
 fi
 
-# Run shellcheck on staged files
 cd "$PROJECT_ROOT"
-LINT_SCRIPT="$PROJECT_ROOT/scripts/lint.sh"
 
-if [[ -f "$LINT_SCRIPT" ]]; then
-    if bash "$LINT_SCRIPT" $STAGED_FILES; then
-        echo -e "${GREEN}[PRE-COMMIT] ShellCheck passed!${NC}"
-        exit 0
-    else
-        echo -e "${RED}[PRE-COMMIT] ShellCheck failed. Fix issues before committing.${NC}"
-        echo "Run: bash scripts/lint.sh $STAGED_FILES"
+log_info "Archivos a verificar: $STAGED_FILES"
+
+# 1. Verificación de sintaxis bash
+log_info "Verificando sintaxis bash..."
+for file in $STAGED_FILES; do
+    if [[ -f "$file" ]]; then
+        if ! bash -n "$file"; then
+            log_error "Error de sintaxis en: $file"
+            exit 1
+        fi
+    fi
+done
+log_success "Sintaxis bash verificada"
+
+# 2. ShellCheck
+if command -v shellcheck &> /dev/null; then
+    log_info "Ejecutando shellcheck..."
+    if ! shellcheck $STAGED_FILES; then
+        log_error "Shellcheck falló. Usa 'bash scripts/lint.sh' para más detalles"
         exit 1
     fi
+    log_success "Shellcheck completado"
 else
-    echo -e "${YELLOW}[WARNING] Lint script not found, skipping check${NC}"
-    exit 0
+    log_warn "Shellcheck no disponible, omitiendo verificación"
 fi
+
+# 3. Verificación de line endings (si dos2unix está disponible)
+if command -v dos2unix &> /dev/null; then
+    log_info "Verificando line endings..."
+    for file in $STAGED_FILES; do
+        if [[ -f "$file" ]]; then
+            dos2unix "$file" 2>/dev/null || true
+        fi
+    done
+    log_success "Line endings verificados"
+fi
+
+# 4. Ejecutar CI local completo si está disponible
+if [[ -f "$PROJECT_ROOT/scripts/ci-local.sh" ]]; then
+    log_info "Ejecutando CI local completo..."
+    if ! bash "$PROJECT_ROOT/scripts/ci-local.sh"; then
+        log_error "CI local falló. Ejecuta manualmente: bash scripts/ci-local.sh"
+        exit 1
+    fi
+    log_success "CI local completado"
+else
+    log_warn "CI local no disponible, solo verificaciones básicas"
+fi
+
+log_success "Todas las verificaciones pre-commit pasaron!"
+log_info "Listo para commit con confianza 🚀"
