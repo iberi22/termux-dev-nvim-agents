@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -euo pipefail
+IFS=$'\n\t'
+
 # =================================================================
 # MODULE: 07-LOCAL-SSH-SERVER
 #
@@ -10,9 +13,11 @@
 
 # --- Source Helper Functions ---
 # shellcheck disable=SC1091
+# shellcheck source=../scripts/helpers.sh
 source "$(dirname "$0")/../scripts/helpers.sh"
 
 # --- Constants ---
+# shellcheck disable=SC2154
 readonly SSHD_CONFIG_FILE="$PREFIX/etc/ssh/sshd_config"
 readonly CONFIG_MARKER="# --- Managed by Termux AI Setup ---"
 
