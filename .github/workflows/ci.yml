@@ -20,6 +20,7 @@ jobs:
       - name: Update version
         run: |
           bash scripts/update-version.sh
+        timeout-minutes: 2
 
       - name: Install shellcheck and shfmt
         run: |
@@ -28,16 +29,19 @@ jobs:
           curl -sSLo shfmt https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.10.0_linux_amd64
           chmod +x shfmt
           sudo mv shfmt /usr/local/bin/
+        timeout-minutes: 5
 
       - name: Bash syntax check
         run: |
           set -e
           find . -type f -name '*.sh' -print0 | xargs -0 -I{} bash -n {}
+        timeout-minutes: 2
 
       - name: ShellCheck
         run: |
           set -e
           shellcheck -S warning $(git ls-files '**/*.sh') || true
+        timeout-minutes: 5
 
       - name: shfmt (diff only)
         run: |
@@ -48,21 +52,25 @@ jobs:
           else
             echo "No .sh files to format"
           fi
+        timeout-minutes: 2
 
       - name: Install Bats
         run: |
           git clone https://github.com/bats-core/bats-core.git /tmp/bats
           sudo /tmp/bats/install.sh /usr/local
+        timeout-minutes: 3
 
       - name: Smoke test
         run: |
           bash tests/smoke.sh
+        timeout-minutes: 5
 
       - name: Run Bats tests
         run: |
           bats tests/bats/test_core.bats
           bats tests/bats/test_ssh_module.bats
           bats tests/bats/test_integration.bats
+        timeout-minutes: 10
 
   meta:
     name: Metadata Sanity
@@ -77,6 +85,7 @@ jobs:
           chmod +x *.sh || true
           chmod +x modules/*.sh || true
           chmod +x *.ps1 || true
+        timeout-minutes: 1
 
   notify-failure:
     name: Create Issue on CI Failure
@@ -122,6 +131,7 @@ jobs:
 
             ---
             *This issue was automatically created by the CI failure detection system.*
+        timeout-minutes: 2
 
   # Optional job to test installation in a container environment
   container-test:
@@ -137,6 +147,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y curl git bash wget
+        timeout-minutes: 5
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -160,3 +171,4 @@ jobs:
             echo "❌ Installation failed"
             exit 1
           fi
+        timeout-minutes: 10
