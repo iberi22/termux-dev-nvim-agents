@@ -31,6 +31,11 @@ jobs:
           sudo mv shfmt /usr/local/bin/
         timeout-minutes: 5
 
+      - name: Convert line endings to LF
+        run: |
+          find . -type f -name '*.sh' -exec sed -i 's/\r$//' {} \;
+        timeout-minutes: 1
+
       - name: Bash syntax check
         run: |
           set -e
