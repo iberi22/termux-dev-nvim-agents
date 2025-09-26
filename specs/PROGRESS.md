@@ -2,6 +2,17 @@
 
 Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes, docs) indicando fecha y resumen.
 
+## 2025-09-25 (v3)
+
+### Licencia, Versionado y Despliegue Final
+
+- **Licencia añadida**: MIT License with Non-Commercial Restriction (libre uso/modificación, sin venta comercial)
+- **Sistema de versionado mejorado**: Versión actualizada a v2025-09-25.1b42aca en install.sh y README.md
+- **Script de versionado manual**: `scripts/update-version-manual.sh` para futuras actualizaciones fáciles
+- **Lints verificados**: Código 100% limpio (ShellCheck sin errores)
+- **Despliegue exitoso**: Push a main completado, specs documentation restaurada
+- **GitHub CI**: Pipeline ejecutándose, vulnerabilidades dependabot detectadas para revisión
+
 ## 2025-09-25 (v2)
 
 ### Refactoring Completo - Implementación Spec-Kit Minimalista
