@@ -99,7 +99,10 @@ jobs:
         uses: jayqi/failed-build-issue-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          title-template: "🚨 CI Pipeline Failed - {{runNumber}}"
+          title-template: "🚨 CI Pipeline Failed"
+          label: "build failed"
+          update-existing: true
+          comment-on-existing: false
           body-template: |
             ## CI Pipeline Failure Report
 
@@ -111,6 +114,7 @@ jobs:
             **Actor:** {{actor}}
             **Repository:** {{repository}}
             **Event:** {{eventName}}
+            **Last Updated:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
 
             ### Failure Details
             One or more jobs in the CI pipeline have failed. Please check the [workflow run]({{workflowRunUrl}}) for detailed error information.
@@ -130,7 +134,7 @@ jobs:
             - **Smoke test:** Verify all required files are present and executable
 
             ---
-            *This issue was automatically created by the CI failure detection system.*
+            *This issue was automatically updated by the CI failure detection system.*
         timeout-minutes: 2
 
   # Optional job to test installation in a container environment
