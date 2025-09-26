@@ -37,7 +37,7 @@ Instalar y mantener un entorno de desarrollo en Termux es lento y propenso a err
 ✅ **Core completado:**
 
 - Instalación automática con comando único
-- Agente IA OAuth2 con comando `:` headless  
+- Agente IA OAuth2 con comando `:` headless
 - Panel termux-ai-panel para estado del sistema
 - Documentación consolidada según spec-kit
 

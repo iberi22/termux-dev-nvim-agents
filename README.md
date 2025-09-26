@@ -191,7 +191,7 @@ Use ':' to ask Gemini. Examples:
 
 ## 📚 Documentación
 
-- **[AGENTS.md](./AGENTS.md)** - Agentes IA soportados y configuración  
+- **[AGENTS.md](./AGENTS.md)** - Agentes IA soportados y configuración
 - **[GEMINI.md](./GEMINI.md)** - Guía completa del CLI de Gemini
 - **Especificaciones y Roadmap**: [SPEC](./specs/SPEC.md) · [ROADMAP](./specs/ROADMAP.md) · [TASKS](./specs/TASKS.md) · [PROGRESS](./specs/PROGRESS.md)
 

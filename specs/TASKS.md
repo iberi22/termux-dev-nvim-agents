@@ -7,7 +7,7 @@
 ### Phase 3: Panel y Utilidades (del ROADMAP)
 
 - [ ] **ROADMAP-P3.1**: Panel: detectar repos en ~/src/*, mostrar rama y cambios
-- [ ] **ROADMAP-P3.2**: Panel: acción para `git pull`/`git push` por repo  
+- [ ] **ROADMAP-P3.2**: Panel: acción para `git pull`/`git push` por repo
 - [ ] **ROADMAP-P3.3**: Panel: iniciar servidor HTTP estático en puerto 9999
 - [ ] **ROADMAP-P3.4**: Panel: opción para pruebas rápidas de puertos/servicios
 - [ ] **ROADMAP-P3.5**: Setup automático de `~/src` y plantillas de repos
@@ -34,7 +34,7 @@
 - [x] **ROADMAP-P1.1**: Migración completa a OAuth2 (Gemini CLI oficial)
 - [x] **ROADMAP-P1.2**: Agente `:` headless (gemini-2.5-flash)
 - [x] **ROADMAP-P1.3**: Noninteractive apt/dpkg
-- [x] **ROADMAP-P1.4**: Verbose, logs a ~/termux-setup.log  
+- [x] **ROADMAP-P1.4**: Verbose, logs a ~/termux-setup.log
 - [x] **ROADMAP-P2.1**: SSH keys, passwd, sshd permanente (prompt final)
 - [x] **ROADMAP-P2.2**: termux-ai-panel comando
 

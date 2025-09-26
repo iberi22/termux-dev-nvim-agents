@@ -26,10 +26,10 @@ check() {
     local test_name="$1"
     local test_cmd="$2"
     local optional="${3:-false}"
-    
+
     ((TOTAL++))
     echo -n "  $test_name... "
-    
+
     if eval "$test_cmd" >/dev/null 2>&1; then
         echo -e "${GREEN}✓${NC}"
         ((PASSED++))
@@ -51,7 +51,7 @@ section "Core Files"
 check "Main setup script exists" "[[ -f setup.sh ]]"
 check "Installation script exists" "[[ -f install.sh ]]"
 check "README.md exists" "[[ -f README.md ]]"
-check "AGENTS.md exists" "[[ -f AGENTS.md ]]" 
+check "AGENTS.md exists" "[[ -f AGENTS.md ]]"
 check "GEMINI.md exists" "[[ -f GEMINI.md ]]"
 check "CI workflow exists" "[[ -f .github/workflows/ci.yml ]]"
 check "Auto-deploy workflow exists" "[[ -f .github/workflows/auto-deploy.yml ]]"
@@ -63,7 +63,7 @@ check "ROADMAP.md exists" "[[ -f specs/ROADMAP.md ]]"
 check "TASKS.md exists" "[[ -f specs/TASKS.md ]]"
 check "PROGRESS.md exists" "[[ -f specs/PROGRESS.md ]]"
 
-section "Quality Tools"  
+section "Quality Tools"
 check "ShellCheck config exists" "[[ -f .shellcheckrc ]]"
 check "Local lint script exists" "[[ -f scripts/lint.sh ]]"
 check "Pre-commit hook exists" "[[ -f scripts/pre-commit.sh ]]"
@@ -88,7 +88,7 @@ check "Git attributes configured" "[[ -f .gitattributes ]]" "true"
 
 section "Tool Availability"
 check "ShellCheck available" "command -v shellcheck" "true"
-check "Bats available" "command -v bats" "true" 
+check "Bats available" "command -v bats" "true"
 check "GitHub CLI available" "command -v gh" "true"
 
 # Summary
