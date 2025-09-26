@@ -7,7 +7,7 @@
 # Quick install: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 # ====================================
 
-set -Eeuo pipefail
+set -euo pipefail
 IFS=$'\n\t'
 
 # Colors for output
