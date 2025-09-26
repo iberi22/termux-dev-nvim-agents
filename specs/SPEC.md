@@ -29,4 +29,20 @@ Instalar y mantener un entorno de desarrollo en Termux es lento y propenso a err
 
 - Instalación completa sin intervención; salida verbose opcional; logs en `~/termux-setup.log`.
 - `:` funciona y abre agente IA; `termux-ai-panel` visible en PATH.
+- Documentación minimalista spec-kit: README.md + GEMINI.md + AGENTS.md + specs/.
 - README y PROGRESS actualizados en cada release.
+
+## Implementation Status (Post-Refactoring v2)
+
+✅ **Core completado:**
+
+- Instalación automática con comando único
+- Agente IA OAuth2 con comando `:` headless  
+- Panel termux-ai-panel para estado del sistema
+- Documentación consolidada según spec-kit
+
+✅ **Calidad de código:**
+
+- Eliminado código legacy rastafari y archivos duplicados
+- Scripts consolidados, mantenidos solo los esenciales
+- Estructura de carpetas limpia y minimalista

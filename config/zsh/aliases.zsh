@@ -69,7 +69,7 @@ alias update='pkg update && pkg upgrade'
 alias python='python3'
 alias pip='pip3'
 
-# Desarrollo
+# Desarrollo básico
 alias vi='nvim'
 alias vim='nvim'
 alias code='nvim'
@@ -82,10 +82,3 @@ alias d='docker'
 alias dc='docker-compose'
 alias dps='docker ps'
 alias di='docker images'
-
-# AI aliases
-alias ai-chat='nvim -c "CodeCompanionChat"'
-alias ai-help='ai-help'
-alias ai-review='ai-code-review'
-alias ai-docs='ai-generate-docs'
-alias ai-init='ai-init-project'

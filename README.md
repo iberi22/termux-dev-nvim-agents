@@ -1,4 +1,4 @@
-# 🚀 Termux AI Setup - Entorno de Desarrollo con IA (v2025-09-22.4)
+# 🚀 Termux AI Setup - Entorno de Desarrollo con IA (v2025-09-25.1b42aca)
 
 [![CI](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml)
 
@@ -49,6 +49,24 @@ termux-ai-agent --setup     # Reconfigurar Gemini CLI
 - **Android** con Termux instalado
 - **Conexión a internet** para descargas
 - **Cuenta Google** para autenticación Gemini CLI
+
+### Instalación en Windows (Desarrollo/Testing)
+
+Para desarrollo en Windows usando Android Emulator:
+
+```powershell
+# 1. Instalar Android Studio y crear AVD con Android 13+
+# 2. Descargar Termux desde F-Droid en el emulador
+# 3. Ejecutar en Termux dentro del emulador:
+curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
+```
+
+**Alternativamente**, usa WSL2 para una experiencia nativa:
+
+```bash
+# En WSL2 Ubuntu/Debian
+curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
+```
 
 ## 🔧 Configuración Manual
 
@@ -171,16 +189,13 @@ Use ':' to ask Gemini. Examples:
 : "Configurar GitHub SSH"
 ```
 
-## 📚 Documentación Adicional
+## 📚 Documentación
 
-- [Guía de Instalación](./INSTALLATION_TUTORIAL.md)
-- [Comandos Rápidos](./QUICK_COMMANDS.md)
-- [Configuración Avanzada](./SETUP_GUIDE.md)
-- [Agentes soportados](./AGENTS.md)
-- [Guía de Gemini CLI](./GEMINI.md)
-- Especificaciones y Roadmap: [SPEC](./specs/SPEC.md) · [ROADMAP](./specs/ROADMAP.md) · [TASKS](./specs/TASKS.md) · [PROGRESS](./specs/PROGRESS.md)
+- **[AGENTS.md](./AGENTS.md)** - Agentes IA soportados y configuración  
+- **[GEMINI.md](./GEMINI.md)** - Guía completa del CLI de Gemini
+- **Especificaciones y Roadmap**: [SPEC](./specs/SPEC.md) · [ROADMAP](./specs/ROADMAP.md) · [TASKS](./specs/TASKS.md) · [PROGRESS](./specs/PROGRESS.md)
 
-Regla del proyecto: cada cambio relevante debe actualizar `specs/PROGRESS.md`.
+> **Regla del proyecto**: cada cambio relevante debe actualizar `specs/PROGRESS.md`.
 
 ## 🤝 Contribuir
 

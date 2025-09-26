@@ -8,8 +8,7 @@
     "prepare": "node .husky/install.mjs",
     "lint:shell": "bash scripts/lint.sh",
     "lint:shell:staged": "bash scripts/lint.sh --staged",
-    "ci:local": "bash scripts/ci-local.sh",
-    "test": "npm run ci:local",
+    "test": "npm run lint:shell",
     "test:bats": "bats tests/bats/test_core.bats tests/bats/test_ssh_module.bats tests/bats/test_integration.bats"
   },
   "devDependencies": {

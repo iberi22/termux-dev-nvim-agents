@@ -3,7 +3,7 @@
 # ====================================
 # TERMUX AI SETUP - INSTALADOR RÁPIDO
 # Script de instalación con un comando
-SCRIPT_VERSION="2025-09-25.c68a0a0"
+SCRIPT_VERSION="2025-09-25.1b42aca"
 SCRIPT_COMMIT="c68a0a0"
 # ====================================
 
@@ -299,8 +299,8 @@ run_main_setup() {
     # Configurar valores por defecto para evitar prompts
     export TERMUX_AI_GIT_NAME="Termux Developer"
     export TERMUX_AI_GIT_EMAIL="developer@termux.local"
-    export TERMUX_AI_SSH_USER="termux"
-    export TERMUX_AI_SSH_PASS="termux"
+    export TERMUX_AI_SSH_USER="termux-dev"
+    export TERMUX_AI_SSH_PASS="termux2025"
     export TERMUX_AI_SETUP_SSH="1"
     export TERMUX_AI_START_SERVICES="1"
     export TERMUX_AI_LAUNCH_WEB="1"

@@ -135,9 +135,26 @@ EOF
     if command -v termux-change-repo >/dev/null 2>&1; then
         log_info "🔄 Configurando mirrors optimizados..."
         # Seleccionar mirror automático (opción 1) y main repo (opción 1)
-        if ! printf '1\n1\n' | termux-change-repo >/dev/null 2>&1; then
-            log_warn "⚠️ Fallback a configuración manual de mirrors."
-            # Usar Cloudflare mirror como fallback (más confiable)
+        # Usar expect si está disponible para mayor control
+        if command -v expect >/dev/null 2>&1; then
+            if ! expect <<'EOF' >/dev/null 2>&1
+spawn termux-change-repo
+expect {
+    "Select" { send "1\r"; exp_continue }
+    "Choose" { send "1\r"; exp_continue }
+    eof
+}
+EOF
+            then
+                log_warn "⚠️ Fallback a configuración manual de mirrors."
+                # Usar Cloudflare mirror como fallback (más confiable)
+                cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
+deb https://packages-cf.termux.dev/apt/termux-main stable main
+EOF
+            fi
+        else
+            # Método alternativo: configurar directamente sin prompts
+            log_info "📦 Configurando mirror Cloudflare directamente..."
             cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
 deb https://packages-cf.termux.dev/apt/termux-main stable main
 EOF
@@ -214,9 +231,11 @@ update_repositories() {
             case $retry in
                 2)
                     log_info "🔄 Reintentando con mirrors alternativos..."
-                    if command -v termux-change-repo >/dev/null 2>&1; then
-                        printf '2\n1\n' | termux-change-repo >/dev/null 2>&1 || true
-                    fi
+                    # Configurar mirrors alternativos directamente
+                    cat > "$PREFIX/etc/apt/sources.list" <<'EOF'
+deb https://dl.bintray.com/termux/termux-packages-24 stable main
+deb https://termux.mentality.rip/termux-packages-24 stable main
+EOF
                     ;;
                 3)
                     log_info "� Usando mirror Cloudflare directo..."
@@ -575,6 +594,58 @@ verify_critical_tools() {
     done
 }
 
+configure_node_environment() {
+    log_info "⚙️ Configurando entorno de Node.js para Termux..."
+
+    # Crear directorio para configuración de entorno
+    local env_config_dir="$HOME/.config/termux-ai"
+    mkdir -p "$env_config_dir"
+
+    # Crear archivo de configuración de entorno para node-gyp
+    cat > "$env_config_dir/node-env.sh" << 'EOF'
+# Configuración de Node.js y node-gyp para Termux
+export GYP_DEFINES="android_ndk_path=/dev/null"
+export npm_config_build_from_source=true
+export npm_config_python="$(command -v python3 2>/dev/null || echo python3)"
+export CC=clang
+export CXX=clang++
+export NODE_OPTIONS="--max-old-space-size=4096"
+
+# Configuración SSL para Node.js
+if [[ -f "${PREFIX:-/data/data/com.termux/files/usr}/etc/tls/cert.pem" ]]; then
+    export SSL_CERT_FILE="${PREFIX:-/data/data/com.termux/files/usr}/etc/tls/cert.pem"
+    export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
+fi
+
+# NPM global prefix
+export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+export npm_config_prefix="$HOME/.npm-global"
+
+# Agregar npm global bin al PATH si no está
+if [[ ":$PATH:" != *":$HOME/.npm-global/bin:"* ]]; then
+    export PATH="$HOME/.npm-global/bin:$PATH"
+fi
+EOF
+
+    # Hacer que se cargue automáticamente en shells futuros
+    local profile_file="$HOME/.profile"
+    local source_line="source \"$env_config_dir/node-env.sh\""
+
+    if [[ -f "$profile_file" ]]; then
+        if ! grep -Fxq "$source_line" "$profile_file"; then
+            echo "$source_line" >> "$profile_file"
+        fi
+    else
+        echo "$source_line" > "$profile_file"
+    fi
+
+    # Cargar las variables en la sesión actual
+    # shellcheck disable=SC1090
+    source "$env_config_dir/node-env.sh"
+
+    log_success "✅ Entorno de Node.js configurado para evitar errores de compilación"
+}
+
 finalize() {
     generate_summary
     verify_critical_tools
@@ -626,6 +697,7 @@ main() {
     configure_git_identity
     configure_aliases
     ensure_directories_and_path
+    configure_node_environment
 
     finalize
 }

@@ -2,6 +2,17 @@
 
 Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes, docs) indicando fecha y resumen.
 
+## 2025-09-25 (v2)
+
+### Refactoring Completo - Implementación Spec-Kit Minimalista
+
+- **Eliminación de código legacy**: Funciones rastafari obsoletas en `01-zsh-setup.sh`, archivo duplicado `03-ai-integration-updated.sh`
+- **Consolidación de scripts**: Eliminados scripts CI/CD no esenciales (`ci-local.sh`, `update-version.sh`, `colon-command.sh`), mantenidos solo los core
+- **Estructura spec-kit implementada**: Documentación consolidada en 3 archivos principales (README.md, GEMINI.md, AGENTS.md) + carpeta specs/
+- **Limpieza documentación**: Eliminados 10+ archivos .md obsoletos, información consolidada en README con sección Windows
+- **Referencias specs restauradas**: Enlaces a SPEC.md, ROADMAP.md, TASKS.md, PROGRESS.md en README.md
+- **Package.json actualizado**: Scripts simplificados, referencias a archivos eliminados removidas
+
 ## 2025-01-09
 
 ### Sistema de Versionado Automático Implementado

@@ -14,25 +14,11 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}[PRE-COMMIT] Updating version...${NC}"
+echo -e "${YELLOW}[PRE-COMMIT] Starting pre-commit checks...${NC}"
 
-# Update version automatically
-VERSION_SCRIPT="$PROJECT_ROOT/scripts/update-version.sh"
-if [[ -f "$VERSION_SCRIPT" ]]; then
-    if bash "$VERSION_SCRIPT"; then
-        echo -e "${GREEN}[PRE-COMMIT] Version updated successfully!${NC}"
-
-        # Stage the updated install.sh if it was modified
-        if git diff --name-only | grep -q "install.sh"; then
-            echo -e "${YELLOW}[PRE-COMMIT] Staging updated install.sh...${NC}"
-            git add "$PROJECT_ROOT/install.sh"
-        fi
-    else
-        echo -e "${RED}[PRE-COMMIT] Version update failed. Continuing with commit...${NC}"
-    fi
-else
-    echo -e "${YELLOW}[WARNING] Version script not found, skipping version update${NC}"
-fi
+# Note: Version update script was removed in spec-kit refactoring
+# Version management is now manual or via CI/CD pipeline
+echo -e "${GREEN}[PRE-COMMIT] Version check skipped (manual versioning)${NC}"
 
 echo -e "${YELLOW}[PRE-COMMIT] Running ShellCheck on staged .sh files...${NC}"
 

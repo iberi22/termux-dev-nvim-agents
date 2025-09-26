@@ -584,8 +584,8 @@ post_installation_setup_auto() {
 
     # Configuración automática de usuario SSH
     echo -e "${BLUE}🔐 Configurando usuario SSH automáticamente...${NC}"
-    local requested_ssh_user="${TERMUX_AI_SSH_USER:-termux}"
-    local ssh_pass="${TERMUX_AI_SSH_PASS:-termux}"
+    local requested_ssh_user="${TERMUX_AI_SSH_USER:-termux-dev}"
+    local ssh_pass="${TERMUX_AI_SSH_PASS:-termux2025}"
     local effective_ssh_user="$requested_ssh_user"
 
     echo -e "${CYAN}Usuario SSH preferido: ${requested_ssh_user}${NC}"

@@ -50,9 +50,18 @@ section() {
 section "Core Files"
 check "Main setup script exists" "[[ -f setup.sh ]]"
 check "Installation script exists" "[[ -f install.sh ]]"
+check "README.md exists" "[[ -f README.md ]]"
+check "AGENTS.md exists" "[[ -f AGENTS.md ]]" 
+check "GEMINI.md exists" "[[ -f GEMINI.md ]]"
 check "CI workflow exists" "[[ -f .github/workflows/ci.yml ]]"
 check "Auto-deploy workflow exists" "[[ -f .github/workflows/auto-deploy.yml ]]"
 check "CodeRabbit config exists" "[[ -f .coderabbit.yml ]]"
+
+section "Spec-Kit Documentation"
+check "SPEC.md exists" "[[ -f specs/SPEC.md ]]"
+check "ROADMAP.md exists" "[[ -f specs/ROADMAP.md ]]"
+check "TASKS.md exists" "[[ -f specs/TASKS.md ]]"
+check "PROGRESS.md exists" "[[ -f specs/PROGRESS.md ]]"
 
 section "Quality Tools"  
 check "ShellCheck config exists" "[[ -f .shellcheckrc ]]"
