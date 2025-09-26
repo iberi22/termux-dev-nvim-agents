@@ -25,11 +25,12 @@ readonly CONFIG_MARKER="# --- GITHUB_SSH_CONFIG_BLOCK ---"
 
 # --- Functions ---
 
-# Prompts for Git email when not supplied via environment variables.
+# Requests the Git email if it's not available via environment variables.
 prompt_for_git_email() {
     local email=""
 
     while true; do
+        # shellcheck disable=SC2154
         read -r -p "$(printf "%b📧 Ingresa tu email de Git (para el comentario de la clave SSH): %b" "${YELLOW}" "${NC}")" email
 
         if [[ -n "$email" && "$email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
