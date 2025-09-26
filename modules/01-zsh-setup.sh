@@ -301,10 +301,7 @@ EOF
 
 
 
-# Load P10k
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-EOF
-}
+
 
 # Configurar fuente FiraCode Mono
 configure_font() {
