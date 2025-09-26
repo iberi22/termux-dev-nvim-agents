@@ -18,12 +18,38 @@ readonly CONFIG_MARKER="# --- Managed by Termux AI Setup ---"
 
 # --- Functions ---
 
-# Verifies that the required environment variables are set.
+# Requests the SSH password if it's not available via environment variables.
+prompt_for_ssh_password() {
+    local password=""
+
+    while true; do
+        read -s -p "$(printf "%b🔐 Ingresa una contraseña para SSH: %b" "${YELLOW}" "${NC}")" password
+        echo
+
+        if [[ -n "$password" ]]; then
+            TERMUX_AI_SSH_PASS="$password"
+            export TERMUX_AI_SSH_PASS
+            log_success "Contraseña SSH registrada."
+            break
+        fi
+
+        log_error "La contraseña de SSH no puede estar vacía."
+    done
+}
+
+# Verifies that the required environment variables are set, gathering them
+# interactively when running in modo manual.
 check_env_variables() {
     if [[ -z "${TERMUX_AI_SSH_PASS:-}" ]]; then
-        log_error "La variable de entorno TERMUX_AI_SSH_PASS no está definida."
-        log_error "Este script depende de '00-user-input.sh' para ser ejecutado primero."
-        exit 1
+        if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+            TERMUX_AI_SSH_PASS="${TERMUX_AI_SSH_PASS:-termux-password}"
+            export TERMUX_AI_SSH_PASS
+            log_warn "TERMUX_AI_SSH_PASS no definido. Usando valor predeterminado para modo automático."
+            return
+        fi
+
+        log_warn "No se detectó TERMUX_AI_SSH_PASS. Recopilando datos ahora..."
+        prompt_for_ssh_password
     fi
 }
 

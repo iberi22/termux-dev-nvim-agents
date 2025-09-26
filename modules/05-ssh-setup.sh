@@ -25,12 +25,37 @@ readonly CONFIG_MARKER="# --- GITHUB_SSH_CONFIG_BLOCK ---"
 
 # --- Functions ---
 
-# Verifies that the required environment variables are set.
+# Prompts for Git email when not supplied via environment variables.
+prompt_for_git_email() {
+    local email=""
+
+    while true; do
+        read -r -p "$(printf "%b📧 Ingresa tu email de Git (para el comentario de la clave SSH): %b" "${YELLOW}" "${NC}")" email
+
+        if [[ -n "$email" && "$email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+            TERMUX_AI_GIT_EMAIL="$email"
+            export TERMUX_AI_GIT_EMAIL
+            log_success "Email de Git registrado: ${TERMUX_AI_GIT_EMAIL}."
+            break
+        fi
+
+        log_error "Por favor, ingresa un formato de email válido."
+    done
+}
+
+# Verifies that the required environment variables are set, and interactively
+# requests them if missing when running en modo manual.
 check_env_variables() {
     if [[ -z "${TERMUX_AI_GIT_EMAIL:-}" ]]; then
-        log_error "La variable de entorno TERMUX_AI_GIT_EMAIL no está definida."
-        log_error "Este script depende de '00-user-input.sh' para ser ejecutado primero."
-        exit 1
+        if [[ "${TERMUX_AI_AUTO:-}" == "1" || "${TERMUX_AI_SILENT:-}" == "1" ]]; then
+            TERMUX_AI_GIT_EMAIL="${TERMUX_AI_GIT_EMAIL:-termux@localhost}"
+            export TERMUX_AI_GIT_EMAIL
+            log_warn "TERMUX_AI_GIT_EMAIL no definido. Usando valor predeterminado: ${TERMUX_AI_GIT_EMAIL}."
+            return
+        fi
+
+        log_warn "No se detectó TERMUX_AI_GIT_EMAIL. Recopilando datos ahora..."
+        prompt_for_git_email
     fi
 }
 
