@@ -65,7 +65,6 @@ lint_file() {
     local file="$1"
     local basename="$(basename "$file")"
 
-    echo -e "${BLUE}[LINT] Checking $basename...${NC}"
     # 1) Syntax check first
     if ! bash -n "$file" 2>/dev/null; then
         echo -e "${RED}[FAIL] $basename has bash syntax errors (bash -n)${NC}"
@@ -74,20 +73,20 @@ lint_file() {
 
     # 2) ShellCheck analysis (if available)
     if [[ "$SHELLCHECK_AVAILABLE" == "true" ]]; then
-        # Run shellcheck capturing stderr
-        if output=$( { ${SHELLCHECK_RUNNER} --rcfile="$SHELLCHECK_RC" "$file"; } 2>&1 ); then
-            echo -e "${GREEN}[OK] $basename passed (bash + shellcheck)${NC}"
-            return 0
-        else
-            # If the failure looks like an execution problem, fallback to syntax-only
-            if echo "$output" | grep -E "node: not found|command not found|No such file or directory|npm ERR!" >/dev/null 2>&1; then
-                echo -e "${YELLOW}[WARN] ShellCheck execution failed, using syntax check only${NC}"
-                echo -e "${GREEN}[OK] $basename passed (syntax checked by bash -n)${NC}"
-                return 0
+        # Try to use rcfile, but fallback if not supported (for older shellcheck versions)
+        echo -e "${BLUE}[LINT] Checking $file...${NC}"
+        if $SHELLCHECK_RUNNER --rcfile="$SHELLCHECK_RC" "$file" 2>/dev/null; then
+            echo -e "${GREEN}[OK] $file passed.${NC}"
+        # shellcheck disable=SC2181
+        elif [[ $? -ne 0 ]]; then
+            # Fallback for older versions: run without rcfile but with manual excludes
+            if $SHELLCHECK_RUNNER --exclude=SC1091 "$file"; then
+                echo -e "${GREEN}[OK] $file passed (fallback mode).${NC}"
             else
-                echo -e "${RED}[FAIL] $basename has shellcheck issues${NC}"
-                echo "$output"
-                return 1
+                echo -e "${RED}[FAIL] $file has shellcheck issues${NC}"
+                # Rerun to capture output
+                $SHELLCHECK_RUNNER --exclude=SC1091 "$file" || true
+                failed_files+=("$file")
             fi
         fi
     else
