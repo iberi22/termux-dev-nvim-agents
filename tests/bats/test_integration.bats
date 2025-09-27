@@ -42,7 +42,7 @@ load "test_helper"
         run grep -q "reviews:" "$config_file"
         [ "$status" -eq 0 ]
         
-        run grep -q "comments:" "$config_file"
+        run grep -q "knowledge_base:" "$config_file"
         [ "$status" -eq 0 ]
     else
         skip "CodeRabbit config not found"
@@ -77,7 +77,7 @@ load "test_helper"
     [ "$status" -eq 0 ]
     
     # Check for file existence validation  
-    run grep -q "Missing:" "$smoke_file"
+    run grep -q "Missing required file" "$smoke_file"
     [ "$status" -eq 0 ]
 }
 
