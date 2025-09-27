@@ -1,182 +1,108 @@
 #!/bin/bash
 
-# ====================================
-# MODULE: Network and Timeout Fixes
-# Fixes network issues, timeouts, and connection problems
-# ====================================
+# =================================================================
+# MODULE: 00-NETWORK-FIXES
+#
+# Configures network settings for robustness, including timeouts
+# for various tools and setting reliable DNS servers. This module
+# is idempotent and safe to re-run.
+# =================================================================
 
-set -euo pipefail
+# --- Source Helper Functions ---
+# shellcheck disable=SC1091
+source "$(dirname "$0")/../scripts/helpers.sh"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# --- Constants ---
+readonly CONFIG_MARKER="# --- Managed by Termux AI Setup ---"
 
-echo -e "${BLUE}🌐 Fixing network and timeout issues...${NC}"
+# --- Functions ---
 
-# Function to configure network timeouts
-configure_network_timeouts() {
-    echo -e "${CYAN}⏱️ Configuring network timeouts...${NC}"
+# Appends a configuration block to a file if the marker is not present.
+append_config_if_missing() {
+    local file_path="$1"
+    local config_block
+    config_block="$(cat)" # Reads from stdin (heredoc)
 
-    # Configure apt timeouts
-    mkdir -p "$PREFIX/etc/apt/apt.conf.d"
-    cat > "$PREFIX/etc/apt/apt.conf.d/99termux-ai-timeouts" << 'EOF'
-# Termux AI - Network timeout configuration
-Acquire::http::Timeout "30";
-Acquire::https::Timeout "30";
-Acquire::ftp::Timeout "30";
-Acquire::Retries "3";
-APT::Get::Assume-Yes "true";
-APT::Install-Recommends "false";
-APT::Install-Suggests "false";
-EOF
+    # Create parent directory if it doesn't exist
+    mkdir -p "$(dirname "$file_path")"
 
-    # Configure wget timeouts
-    cat > "$HOME/.wgetrc" << 'EOF'
-# Termux AI - wget configuration
-timeout = 30
-tries = 3
-retry_connrefused = on
-trust_server_names = on
-EOF
-
-    # Configure curl timeouts
-    cat > "$HOME/.curlrc" << 'EOF'
-# Termux AI - curl configuration
-connect-timeout = 30
-max-time = 60
-retry = 3
-retry-delay = 1
-retry-max-time = 180
-EOF
-
-    echo -e "${GREEN}✅ Network timeouts configured${NC}"
+    if [[ -f "$file_path" ]] && grep -qF -- "$CONFIG_MARKER" "$file_path"; then
+        log_success "La configuración en '${file_path}' ya existe. Omitiendo."
+    else
+        log_info "Aplicando configuración a '${file_path}'..."
+        if printf '\n%s\n' "$config_block" >> "$file_path"; then
+            log_success "Configuración aplicada a '${file_path}'."
+        else
+            log_warn "No se pudo escribir en '${file_path}'. Revisa permisos y vuelve a intentarlo."
+        fi
+    fi
 }
 
-# Function to fix DNS resolution
-fix_dns_resolution() {
-    echo -e "${CYAN}🔍 Fixing DNS resolution...${NC}"
+# Configures network timeouts for apt, wget, and curl.
+configure_network_timeouts() {
+    log_info "Configurando timeouts de red para apt, wget y curl..."
 
-    # Configure reliable DNS servers
-    cat > "$PREFIX/etc/resolv.conf" << 'EOF'
-# Termux AI - DNS configuration
+    append_config_if_missing "$PREFIX/etc/apt/apt.conf.d/99-termux-ai-timeouts" <<EOF
+${CONFIG_MARKER}
+Acquire::http::Timeout "60";
+Acquire::https::Timeout "60";
+Acquire::Retries "3";
+EOF
+
+    append_config_if_missing "$HOME/.wgetrc" <<EOF
+${CONFIG_MARKER}
+timeout = 60
+tries = 3
+retry_connrefused = on
+EOF
+
+    append_config_if_missing "$HOME/.curlrc" <<EOF
+${CONFIG_MARKER}
+connect-timeout = 60
+max-time = 120
+retry = 3
+EOF
+}
+
+# Sets reliable DNS servers in resolv.conf.
+configure_dns() {
+    log_info "Configurando servidores DNS de confianza..."
+
+    # Check if the file is a symlink and writable, which might indicate a non-standard setup.
+    if [[ -L "$PREFIX/etc/resolv.conf" || ! -w "$PREFIX/etc/resolv.conf" ]]; then
+         log_warn "El archivo 'resolv.conf' es un enlace simbólico o no tiene permisos de escritura. Omitiendo la configuración de DNS."
+         log_warn "Esto puede ocurrir en algunos dispositivos. Si tienes problemas de red, configúralo manualmente."
+         return
+    fi
+
+    append_config_if_missing "$PREFIX/etc/resolv.conf" <<EOF
+${CONFIG_MARKER}
 nameserver 8.8.8.8
 nameserver 8.8.4.4
 nameserver 1.1.1.1
-nameserver 1.0.0.1
-nameserver 208.67.222.222
-nameserver 208.67.220.220
 EOF
-
-    echo -e "${GREEN}✅ DNS resolution fixed${NC}"
 }
 
-# Function to test network connectivity
-test_network_connectivity() {
-    echo -e "${CYAN}🔗 Testing network connectivity...${NC}"
-
-    local test_sites=("google.com" "github.com" "packages.termux.org")
-    local successful_tests=0
-
-    for site in "${test_sites[@]}"; do
-        if ping -c 1 -W 5 "$site" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ $site: OK${NC}"
-            successful_tests=$((successful_tests + 1))
-        else
-            echo -e "${YELLOW}⚠️ $site: Failed${NC}"
-        fi
-    done
-
-    if [[ $successful_tests -gt 0 ]]; then
-        echo -e "${GREEN}✅ Network connectivity: OK ($successful_tests/3 sites reachable)${NC}"
-        return 0
+# Tests basic internet connectivity.
+test_connectivity() {
+    log_info "Probando la conectividad de red básica..."
+    if ping -c 1 -W 5 google.com >/dev/null 2>&1; then
+        log_success "La conectividad a google.com funciona."
     else
-        echo -e "${RED}❌ Network connectivity: FAILED${NC}"
-        return 1
+        log_warn "No se pudo hacer ping a google.com. Puede haber problemas de conexión."
     fi
 }
 
-# Function to configure package manager retries
-configure_package_manager_retries() {
-    echo -e "${CYAN}🔄 Configuring package manager retry logic...${NC}"
-
-    # Create retry wrapper for apt
-    cat > "$PREFIX/bin/apt-retry" << 'EOF'
-#!/bin/bash
-# APT retry wrapper
-
-max_retries=3
-retry_delay=5
-command="$@"
-
-for ((i=1; i<=max_retries; i++)); do
-    echo "Attempt $i/$max_retries: $command"
-    if timeout 300 $command; then
-        exit 0
-    fi
-
-    if [[ $i -lt $max_retries ]]; then
-        echo "Command failed, retrying in ${retry_delay}s..."
-        sleep $retry_delay
-        retry_delay=$((retry_delay * 2))
-    fi
-done
-
-echo "Command failed after $max_retries attempts"
-exit 1
-EOF
-
-    chmod +x "$PREFIX/bin/apt-retry"
-    echo -e "${GREEN}✅ Package manager retries configured${NC}"
-}
-
-# Function to fix certificate issues
-fix_certificate_issues() {
-    echo -e "${CYAN}🔐 Fixing certificate issues...${NC}"
-
-    # Set certificate environment variables
-    export SSL_CERT_FILE="$PREFIX/etc/tls/cert.pem"
-    export SSL_CERT_DIR="$PREFIX/etc/tls/certs"
-    export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
-    export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-
-    # Add to bashrc for persistence
-    local cert_marker="# Termux AI - Certificate configuration"
-    touch "$HOME/.bashrc"
-    if ! grep -q "$cert_marker" "$HOME/.bashrc" 2>/dev/null; then
-        cat >> "$HOME/.bashrc" << 'EOF'
-
-# Termux AI - Certificate configuration
-export SSL_CERT_FILE="$PREFIX/etc/tls/cert.pem"
-export SSL_CERT_DIR="$PREFIX/etc/tls/certs"
-export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
-export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-EOF
-    fi
-
-    echo -e "${GREEN}✅ Certificate issues fixed${NC}"
-}
-
-# Main function
+# --- Main Function ---
 main() {
-    echo -e "${BLUE}🔧 Applying network and timeout fixes...${NC}"
+    log_info "=== Iniciando Módulo: Arreglos de Red ==="
 
     configure_network_timeouts
-    fix_dns_resolution
-    configure_package_manager_retries
-    fix_certificate_issues
+    configure_dns
+    test_connectivity
 
-    if test_network_connectivity; then
-        echo -e "\n${GREEN}🎉 Network fixes applied successfully${NC}"
-        echo -e "${CYAN}💡 Network connectivity verified${NC}"
-    else
-        echo -e "\n${YELLOW}⚠️ Network fixes applied but connectivity issues remain${NC}"
-        echo -e "${CYAN}💡 Please check your internet connection${NC}"
-    fi
+    log_info "=== Módulo de Arreglos de Red Completado ==="
 }
 
-# Execute main function
-main "$@"
+# --- Execute Main Function ---
+main

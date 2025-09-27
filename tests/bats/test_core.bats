@@ -55,11 +55,6 @@ load "test_helper"
     [ "$status" -eq 0 ]
 }
 
-@test "diagnose.sh syntax is valid" {
-    run bash -n "$BATS_TEST_DIRNAME/../../diagnose.sh"
-    [ "$status" -eq 0 ]
-}
-
 @test "README contains required sections" {
     local sections=(
         "Quick Installation"

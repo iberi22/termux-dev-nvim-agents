@@ -2,12 +2,11 @@
 # Bats tests for SSH module functionality
 # Run: bats tests/bats/test_ssh_module.bats
 
-load "test_helper"
-
 setup() {
+    load 'test_helper'
     mock_termux_env
     export TERMUX_AI_AUTO=1
-    export BATS_SSH_MODULE="$BATS_TEST_DIRNAME/../../modules/07-local-ssh-server.sh"
+    export BATS_SSH_MODULE="$(cd "$BATS_TEST_DIRNAME/../../modules" && pwd)/07-local-ssh-server.sh"
 }
 
 @test "SSH module has correct shebang" {
@@ -23,11 +22,11 @@ setup() {
 
 @test "SSH module defines required functions" {
     local required_functions=(
-        "ensure_packages"
-        "generate_host_keys"
-        "create_helper_scripts"
-        "link_helper_scripts"
-        "persist_path_update"
+        "ensure_ssh_packages"
+        "configure_sshd"
+        "set_user_password"
+        "enable_sshd_service"
+        "display_summary"
         "main"
     )
 
@@ -38,38 +37,40 @@ setup() {
 }
 
 @test "SSH module creates helper script templates" {
-    # Check that helper script templates are present in the module
-    run grep -q "ssh-local-start" "$BATS_SSH_MODULE"
+    # Check that the module configures SSH server properly
+    run grep -q "configure_sshd" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 
-    run grep -q "ssh-local-stop" "$BATS_SSH_MODULE"
+    run grep -q "sshd_config" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 
-    run grep -q "ssh-local-info" "$BATS_SSH_MODULE"
+    run grep -q "PasswordAuthentication" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
 
 @test "SSH module handles PORT variable correctly" {
-    run grep -q 'PORT="${TERMUX_LOCAL_SSH_PORT:-$default_port}"' "$BATS_SSH_MODULE"
+    # Check that the module uses TERMUX_AI_SSH_PORT variable with default 8022
+    run grep -q 'TERMUX_AI_SSH_PORT' "$BATS_SSH_MODULE"
+    [ "$status" -eq 0 ]
+
+    # Check that it configures Port in sshd_config
+    run grep -q 'Port.*port' "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
 
 @test "SSH module includes symlink creation" {
-    run grep -q "link_helper_scripts" "$BATS_SSH_MODULE"
+    run grep -q "enable_sshd_service" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 
-    run grep -q "ln -sf" "$BATS_SSH_MODULE"
+    run grep -q "sv-enable" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
 
 @test "SSH module includes PATH persistence" {
-    run grep -q "persist_path_update" "$BATS_SSH_MODULE"
+    run grep -q "termux-services" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 
-    run grep -q ".bashrc" "$BATS_SSH_MODULE"
-    [ "$status" -eq 0 ]
-
-    run grep -q ".zshrc" "$BATS_SSH_MODULE"
+    run grep -q "sv up" "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
 }
 
@@ -89,10 +90,11 @@ setup() {
 }
 
 @test "SSH module passes shellcheck" {
-    if command_exists shellcheck; then
-        run lint_check "$BATS_SSH_MODULE"
-        [ "$status" -eq 0 ]
-    else
-        skip "shellcheck not available"
-    fi
+  run lint_check "$BATS_SSH_MODULE"
+  if [ "$status" -ne 0 ]; then
+    echo "--- Shellcheck output for $BATS_SSH_MODULE ---"
+    echo "$output"
+    echo "------------------------------------------"
+  fi
+  [ "$status" -eq 0 ]
 }

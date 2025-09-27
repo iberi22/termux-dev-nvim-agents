@@ -197,3 +197,5 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - GEMINI.md creado con guía completa de instalación, OAuth2, modelos y headless.
 - README actualizado con enlaces a docs y regla de mantener PROGRESS.md.
 - ROADMAP actualizado: AGENTS.md y GEMINI.md marcados como completados.
+### Corrección de CI - Módulo SSH
+- **Fallo en test SSH resuelto**: Corregido path relativo en test_ssh_module.bats causando que lint.sh no encontrara el archivo, y advertencia SC2088 en test-installation.sh cambiando ~ por \C:\Users\belal
