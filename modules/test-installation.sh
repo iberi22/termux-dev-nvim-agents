@@ -177,7 +177,7 @@ run_test "ai-project-analysis ejecutable" "test -x ~/bin/ai-project-analysis"
 run_test "ai-help ejecutable" "test -x ~/bin/ai-help"
 
 # Test de variable de entorno PATH
-run_test_with_output "~/bin en PATH" "echo \$PATH" "/bin"
+run_test_with_output "\$HOME/bin en PATH" "echo \$PATH" "/bin"
 
 # Tests de CLIs IA instalados con npm
 echo -en "${YELLOW}🔍 Test: Codex CLI (codex)... ${NC}"

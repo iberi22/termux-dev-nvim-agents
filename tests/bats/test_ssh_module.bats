@@ -7,7 +7,7 @@ load "test_helper"
 setup() {
     mock_termux_env
     export TERMUX_AI_AUTO=1
-    export BATS_SSH_MODULE="$BATS_TEST_DIRNAME/../../modules/07-local-ssh-server.sh"
+    export BATS_SSH_MODULE="\$(cd "\$BATS_TEST_DIRNAME/../../modules" && pwd)/07-local-ssh-server.sh"
 }
 
 @test "SSH module has correct shebang" {
@@ -53,7 +53,7 @@ setup() {
     # Check that the module uses TERMUX_AI_SSH_PORT variable with default 8022
     run grep -q 'TERMUX_AI_SSH_PORT' "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
-    
+
     # Check that it configures Port in sshd_config
     run grep -q 'Port.*port' "$BATS_SSH_MODULE"
     [ "$status" -eq 0 ]
