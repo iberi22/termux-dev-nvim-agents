@@ -124,7 +124,9 @@ configure_sshd() {
 # Sets the current user's password non-interactively.
 set_user_password() {
     local password="${TERMUX_AI_SSH_PASS}"
-    log_info "Estableciendo la contraseña para el usuario actual ($(whoami))..."
+    local current_user
+    current_user=$(whoami)
+    log_info "Estableciendo la contraseña para el usuario actual ($current_user)..."
 
     # Use 'expect' to automate the 'passwd' command.
     if ! command -v expect >/dev/null 2>&1; then
