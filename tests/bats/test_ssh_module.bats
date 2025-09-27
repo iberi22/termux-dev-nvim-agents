@@ -1,17 +1,12 @@
-#!/usrsetup() {
-    mock_termux_env
-    export TERMUX_AI_AUTO=1
-    export BATS_SSH_MODULE="modules/07-local-ssh-server.sh"
-}env bats
+#!/usr/bin/env bats
 # Bats tests for SSH module functionality
 # Run: bats tests/bats/test_ssh_module.bats
 
-load "test_helper"
-
 setup() {
+    load 'test_helper'
     mock_termux_env
     export TERMUX_AI_AUTO=1
-    export BATS_SSH_MODULE="\$(cd "\$BATS_TEST_DIRNAME/../../modules" && pwd)/07-local-ssh-server.sh"
+    export BATS_SSH_MODULE="$(cd "$BATS_TEST_DIRNAME/../../modules" && pwd)/07-local-ssh-server.sh"
 }
 
 @test "SSH module has correct shebang" {
