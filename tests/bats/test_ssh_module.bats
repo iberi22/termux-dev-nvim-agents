@@ -90,9 +90,9 @@ setup() {
 }
 
 @test "SSH module passes shellcheck" {
-  run lint_check "$MODULE_FILE"
+  run lint_check "$BATS_SSH_MODULE"
   if [ "$status" -ne 0 ]; then
-    echo "--- Shellcheck output for $MODULE_FILE ---"
+    echo "--- Shellcheck output for $BATS_SSH_MODULE ---"
     echo "$output"
     echo "------------------------------------------"
   fi
