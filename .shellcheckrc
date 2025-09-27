@@ -1,4 +1,4 @@
-# ShellCheck Configuration  
+# ShellCheck Configuration
 # See: https://github.com/koalaman/shellcheck/wiki/Ignore
 
 # Disable specific checks that may be too strict for our use case
@@ -10,7 +10,7 @@ enable=all
 # Set shell type
 shell=bash
 
-# External sources (allow sourcing from these paths)  
+# External sources (allow sourcing from these paths)
 external-sources=true
 
 # Format for output

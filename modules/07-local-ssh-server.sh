@@ -19,7 +19,7 @@ source "$(dirname "$0")/../scripts/helpers.sh"
 # Variables defined in helpers.sh but not visible to shellcheck
 # shellcheck disable=SC2154
 : "${YELLOW:=${YELLOW:-}}"
-# shellcheck disable=SC2154  
+# shellcheck disable=SC2154
 : "${NC:=${NC:-}}"
 
 # --- Constants ---
