@@ -62,7 +62,7 @@ lint_check() {
     if [[ -f "scripts/lint.sh" ]]; then
         # Run our lint script on the specific file (with full path)
         local result
-        if bash scripts/lint.sh "$file" >/dev/null 2>&1; then
+        if bash scripts/lint.sh "$file"; then
             result=0
         else
             result=1
