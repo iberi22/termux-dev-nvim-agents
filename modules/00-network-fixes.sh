@@ -93,10 +93,31 @@ test_connectivity() {
     fi
 }
 
+# Selects the main Termux repository to ensure packages can be downloaded.
+select_main_repository() {
+    log_info "Configurando el repositorio principal de Termux..."
+    local sources_file="$PREFIX/etc/apt/sources.list"
+    local main_repo_line="deb https://packages.termux.dev/apt/termux-main stable main"
+
+    # Create parent directory if it doesn't exist
+    mkdir -p "$(dirname "$sources_file")"
+
+    # Overwrite the file with the main repository.
+    # This is simpler and more robust than trying to edit it,
+    # as we want to ensure only the main repo is active initially.
+    if echo "$main_repo_line" > "$sources_file"; then
+        log_success "Repositorio principal de Termux configurado en '${sources_file}'."
+    else
+        log_error "No se pudo escribir en '${sources_file}'. La actualización de paquetes podría fallar."
+        return 1
+    fi
+}
+
 # --- Main Function ---
 main() {
     log_info "=== Iniciando Módulo: Arreglos de Red ==="
 
+    select_main_repository
     configure_network_timeouts
     configure_dns
     test_connectivity

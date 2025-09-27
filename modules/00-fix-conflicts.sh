@@ -36,9 +36,9 @@ configure_dpkg_noninteractive() {
     cat > "$DPKG_CONFIG_FILE" <<EOF
 ${CONFIG_MARKER}
 # Always install the package maintainer's version of configuration files.
---force-confnew
+force-confnew
 # Overwrite existing files if they are in the way of a new package.
---force-overwrite
+force-overwrite
 EOF
     log_success "dpkg configurado para manejar conflictos automáticamente."
 }
