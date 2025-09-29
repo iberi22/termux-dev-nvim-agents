@@ -46,6 +46,16 @@ Este proyecto integra agentes de IA en Termux con foco en Gemini CLI (OAuth2). O
 - Actualiza PROGRESS.md: cada cambio en agentes o flujos debe registrarse.
 - Versiones y modelos: preferimos `gemini-2.5-flash` por rapidez; puedes cambiarlo con `-m` o en `settings.json`.
 
+## Capacidades del Agente
+
+### Lectura de Capturas de Pantalla (scripts/read-screenshot.sh)
+
+El agente tiene la capacidad de leer la captura de pantalla más reciente del dispositivo del usuario. Esto es útil para diagnosticar problemas que son visuales, como errores en la interfaz de una aplicación o mensajes en la terminal.
+
+- **Script**: `scripts/read-screenshot.sh`
+- **Funcionamiento**: El script busca la captura de pantalla más reciente en los directorios `storage/pictures/Screenshots` o `storage/dcim/Screenshots`, la codifica en base64 y la muestra al agente.
+- **Uso**: Si encuentras un error visual, puedes tomar una captura de pantalla y luego pedirle al agente que la lea para entender el problema. Por ejemplo: `"revisa mi última captura de pantalla para ver el error"`.
+
 ## Solución de problemas
 
 - Gemini no autenticado:

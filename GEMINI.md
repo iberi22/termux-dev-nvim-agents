@@ -71,6 +71,13 @@ Puedes fijar el modelo por defecto y otras opciones. Ejemplo mínimo:
 
 ## Solución de problemas
 
+## Solución de problemas
+
+- **Proporcionar contexto visual de un error**:
+  - Si encuentras un error en la terminal que es difícil de describir, puedes tomar una captura de pantalla.
+  - El agente puede leerla si se lo pides. Di algo como: `"revisa mi última captura para ver el error"`.
+  - Esto es posible gracias al script `scripts/read-screenshot.sh`.
+
 - “Gemini no autenticado”:
   - Ejecuta `gemini auth login` y valida con `gemini auth test`.
 - “Node.js no encontrado”:

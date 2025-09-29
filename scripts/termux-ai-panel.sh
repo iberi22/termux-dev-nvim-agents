@@ -18,7 +18,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration
-INSTALL_DIR="$HOME/termux-dev-nvim-agents"
+INSTALL_DIR="$HOME/termux-ai-setup"
 SRC_DIR="$HOME/src"
 HTTP_PORT=9999
 
@@ -98,7 +98,7 @@ show_disk_usage() {
 
     # Individual directories
     echo -e "\n${BLUE}Uso por directorios principales:${NC}"
-    for dir in "$HOME/.npm" "$HOME/termux-dev-nvim-agents" "$HOME/src" "$HOME/.config"; do
+    for dir in "$HOME/.npm" "$HOME/termux-ai-setup" "$HOME/src" "$HOME/.config"; do
         if [[ -d "$dir" ]]; then
             size=$(du -sh "$dir" 2>/dev/null | cut -f1)
             echo -e "  ${YELLOW}$(basename "$dir"):${NC} $size"

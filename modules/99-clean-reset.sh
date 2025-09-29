@@ -111,17 +111,17 @@ main() {
     if [[ -f "$SETUP_SCRIPT" ]]; then
       info "Iniciando reinstalación automática"
       bash "$SETUP_SCRIPT" auto || true
-    elif [[ -f "$HOME/termux-dev-nvim-agents/setup.sh" ]]; then
-      success "Found installer in $HOME/termux-dev-nvim-agents"
-      bash "$HOME/termux-dev-nvim-agents/setup.sh" auto || true
+    elif [[ -f "$HOME/termux-ai-setup/setup.sh" ]]; then
+      success "Found installer in $HOME/termux-ai-setup"
+      bash "$HOME/termux-ai-setup/setup.sh" auto || true
     else
-      warn "  cd ~/termux-dev-nvim-agents && ./setup.sh auto"
+      warn "  cd ~/termux-ai-setup && ./setup.sh auto"
       warn "Or run installer again:"
       warn "  wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash"
     fi
   else
     info "Puedes reinstalar más tarde ejecutando:"
-    info "  cd ~/termux-dev-nvim-agents && ./setup.sh auto"
+    info "  cd ~/termux-ai-setup && ./setup.sh auto"
   fi
 }
 

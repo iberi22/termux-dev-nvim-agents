@@ -2,6 +2,15 @@
 
 Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes, docs) indicando fecha y resumen.
 
+## 2025-09-27
+
+### Nueva Característica - Lector de Capturas de Pantalla
+
+- **Nuevo script `scripts/read-screenshot.sh`**: Añadido para leer la captura de pantalla más reciente del dispositivo.
+  - El script busca en los directorios estándar de capturas de pantalla (`Pictures/Screenshots`, `DCIM/Screenshots`).
+  - Devuelve la imagen codificada en base64 para que pueda ser procesada por la IA.
+  - Incluye verificación de permisos de almacenamiento de Termux.
+
 ## 2025-09-25 (v3)
 
 ### Licencia, Versionado y Despliegue Final

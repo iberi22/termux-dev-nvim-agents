@@ -21,7 +21,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Determine script location with graceful fallbacks
-DEFAULT_INSTALL_DIR="$HOME/termux-dev-nvim-agents"
+DEFAULT_INSTALL_DIR="$HOME/termux-ai-setup"
 
 resolve_script_dir() {
     local source="${BASH_SOURCE[0]}"
@@ -934,10 +934,10 @@ install_ai_panel_command() {
 #!/bin/bash
 # Termux AI Panel - Post-installation management tool
 
-if [[ -f "$HOME/termux-dev-nvim-agents/scripts/termux-ai-panel.sh" ]]; then
-    bash "$HOME/termux-dev-nvim-agents/scripts/termux-ai-panel.sh" "$@"
-elif [[ -f "$HOME/termux-dev-nvim-agents/modules/termux-ai-panel.sh" ]]; then
-    bash "$HOME/termux-dev-nvim-agents/modules/termux-ai-panel.sh" "$@"
+if [[ -f "$HOME/termux-ai-setup/scripts/termux-ai-panel.sh" ]]; then
+    bash "$HOME/termux-ai-setup/scripts/termux-ai-panel.sh" "$@"
+elif [[ -f "$HOME/termux-ai-setup/modules/termux-ai-panel.sh" ]]; then
+    bash "$HOME/termux-ai-setup/modules/termux-ai-panel.sh" "$@"
 else
     echo "❌ Panel script not found. Please reinstall the termux-ai setup."
     exit 1

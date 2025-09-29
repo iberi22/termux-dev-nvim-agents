@@ -131,20 +131,25 @@ get_memory_usage() {
         else
             echo "0%"
         fi
-    elif [[ -f /proc/meminfo ]]; then
-        local total=$(grep '^MemTotal:' /proc/meminfo | awk '{print $2}')
-        local available=$(grep '^MemAvailable:' /proc/meminfo | awk '{print $2}')
-        if [[ -z "$available" ]]; then
-            available=$(grep '^MemFree:' /proc/meminfo | awk '{print $2}')
-        fi
-        if [[ $total -gt 0 && -n "$available" ]]; then
-            local used=$((total - available))
-            local usage=$(( used * 100 / total ))
-            echo "${usage}%"
-        else
-            echo "0%"
-        fi
     else
         echo "N/A"
     fi
+}
+
+# Función para modo headless de Gemini con atajo ':'
+:() {
+    if ! command -v gemini &> /dev/null; then
+        echo "Error: El comando 'gemini' no está instalado o no se encuentra en el PATH."
+        echo "Por favor, instálalo con: npm install -g @google/gemini-cli"
+        return 1
+    fi
+
+    if [ -z "$1" ]; then
+        echo "Uso: : \"tu pregunta\""
+        return 1
+    fi
+
+    # Se elimina la comprobación 'gemini auth test' porque es poco fiable en algunos entornos.
+    # El propio comando 'gemini -p' fallará con un error claro si la autenticación es necesaria.
+    gemini -p "$*"
 }
