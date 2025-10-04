@@ -55,22 +55,51 @@ install_gemini_cli() {
     fi
 }
 
+# Installs the GitHub Copilot CLI if not already installed.
+install_copilot_cli() {
+    log_info "Verificando la instalación de GitHub Copilot CLI..."
+
+    if command -v copilot >/dev/null 2>&1; then
+        log_success "GitHub Copilot CLI ya está instalado."
+        return
+    fi
+
+    if ! command -v npm >/dev/null 2>&1; then
+        log_error "npm no está instalado. No se puede instalar Copilot CLI."
+        return
+    fi
+
+    log_info "Instalando @github/copilot desde npm..."
+
+    # Install dependencies for native modules if on Termux
+    if [ -d "$PREFIX" ] && [ "$(uname -o)" = "Android" ]; then
+      log_info "Installing dependencies for Copilot CLI on Termux..."
+      pkg install -y libsecret
+    fi
+
+    if npm install -g @github/copilot; then
+        log_success "GitHub Copilot CLI instalado correctamente."
+    else
+        log_error "Falló la instalación de GitHub Copilot CLI."
+    fi
+}
+
 # Displays post-installation instructions for the user.
 display_auth_instructions() {
     log_info "--------------------------------------------------"
-    log_info "ACCIÓN REQUERIDA: Autentica Gemini CLI"
+    log_info "ACCIÓN REQUERIDA: Autentica los CLIs de IA"
     log_info "--------------------------------------------------"
-    log_warn "Para usar Gemini, necesitas autenticarte con tu cuenta de Google."
-    log_info "Ejecuta el siguiente comando y sigue las instrucciones en tu navegador:"
-    log_info "   gemini auth login"
+    log_warn "Para usar Gemini, ejecuta: gemini auth login"
+    log_warn "Para usar GitHub Copilot, la autenticación se solicitará en el primer uso."
     log_info "--------------------------------------------------"
 }
 
 # --- Main Function ---
 main() {
-    log_info "=== Iniciando Módulo: Integración de IA (Gemini) ==="
+    log_info "=== Iniciando Módulo: Integración de IA ==="
 
     install_gemini_cli
+    install_copilot_cli
     display_auth_instructions
 
     log_info "=== Módulo de Integración de IA Completado ==="
