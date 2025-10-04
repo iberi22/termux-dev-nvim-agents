@@ -36,9 +36,15 @@ install_gemini_cli() {
     fi
 
     log_info "Instalando @google/gemini-cli desde npm..."
-    # Set environment variables for node-gyp to prevent common build errors in Termux
-    export GYP_DEFINES="android_ndk_path=/dev/null"
-    export npm_config_build_from_source=true
+
+    # Fix for node-gyp build issues in Termux.
+    # This creates a config file that defines the problematic 'android_ndk_path'
+    # variable as empty, which prevents build failures for native modules.
+    if [ -d "$PREFIX" ] && [ "$(uname -o)" = "Android" ]; then
+      log_info "Applying node-gyp fix for Termux..."
+      mkdir -p "$HOME/.gyp"
+      echo "{'variables':{'android_ndk_path':''}}" > "$HOME/.gyp/include.gypi"
+    fi
 
     if npm install -g @google/gemini-cli; then
         log_success "Gemini CLI instalado correctamente."
