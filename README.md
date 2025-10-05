@@ -11,6 +11,7 @@ Sistema automatizado de configuración de Termux con agente de IA integrado usan
 - **🔐 Autenticación OAuth2**: Sin API keys manuales, autenticación persistente
 - **🛠️ Entorno Completo**: Git, Node.js, Zsh, SSH configurados automáticamente
 - **📱 Optimizado para Termux**: Especialmente diseñado para desarrollo en Android
+- **✅ Validación de Dependencias**: Script de validación para asegurar que todas las dependencias de los agentes de IA estén instaladas.
 
 ## 🚀 Instalación Rápida
 

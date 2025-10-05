@@ -37,15 +37,6 @@ install_gemini_cli() {
 
     log_info "Instalando @google/gemini-cli desde npm..."
 
-    # Fix for node-gyp build issues in Termux.
-    # This creates a config file that defines the problematic 'android_ndk_path'
-    # variable as empty, which prevents build failures for native modules.
-    if [ -d "$PREFIX" ] && [ "$(uname -o)" = "Android" ]; then
-      log_info "Applying node-gyp fix for Termux..."
-      mkdir -p "$HOME/.gyp"
-      echo "{'variables':{'android_ndk_path':''}}" > "$HOME/.gyp/include.gypi"
-    fi
-
     if npm install -g @google/gemini-cli; then
         log_success "Gemini CLI instalado correctamente."
     else
@@ -71,6 +62,15 @@ install_copilot_cli() {
 
     log_info "Instalando @github/copilot desde npm..."
 
+    # Fix for node-gyp build issues in Termux.
+    # This creates a config file that defines the problematic 'android_ndk_path'
+    # variable as empty, which prevents build failures for native modules.
+    if [ -d "$PREFIX" ] && [ "$(uname -o)" = "Android" ]; then
+      log_info "Applying node-gyp fix for Termux..."
+      mkdir -p "$HOME/.gyp"
+      echo "{'variables':{'android_ndk_path':''}}" > "$HOME/.gyp/include.gypi"
+    fi
+
     # Install dependencies for native modules if on Termux
     if [ -d "$PREFIX" ] && [ "$(uname -o)" = "Android" ]; then
       log_info "Installing dependencies for Copilot CLI on Termux..."
@@ -84,15 +84,6 @@ install_copilot_cli() {
     fi
 }
 
-# Displays post-installation instructions for the user.
-display_auth_instructions() {
-    log_info "--------------------------------------------------"
-    log_info "ACCIÓN REQUERIDA: Autentica los CLIs de IA"
-    log_info "--------------------------------------------------"
-    log_warn "Para usar Gemini, ejecuta: gemini auth login"
-    log_warn "Para usar GitHub Copilot, la autenticación se solicitará en el primer uso."
-    log_info "--------------------------------------------------"
-}
 
 # --- Main Function ---
 main() {
@@ -100,7 +91,6 @@ main() {
 
     install_gemini_cli
     install_copilot_cli
-    display_auth_instructions
 
     log_info "=== Módulo de Integración de IA Completado ==="
 }
