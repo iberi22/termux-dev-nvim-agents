@@ -32,7 +32,7 @@
 ### Phase 1-2: Base (completadas)
 
 - [x] **ROADMAP-P1.1**: Migración completa a OAuth2 (Gemini CLI oficial)
-- [x] **ROADMAP-P1.2**: Agente `:` headless (gemini-2.5-flash)
+- [x] **ROADMAP-P1.2**: Agente `g` headless (gemini-2.5-flash)
 - [x] **ROADMAP-P1.3**: Noninteractive apt/dpkg
 - [x] **ROADMAP-P1.4**: Verbose, logs a ~/termux-setup.log
 - [x] **ROADMAP-P2.1**: SSH keys, passwd, sshd permanente (prompt final)

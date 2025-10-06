@@ -59,14 +59,14 @@ Puedes fijar el modelo por defecto y otras opciones. Ejemplo mínimo:
 ## Uso interactivo vs headless
 
 - Interactivo: `gemini` abre la TUI del CLI con herramientas integradas (/help, /tools, @file, !shell, etc.).
-- Headless (scripts/`:`):
+- Headless (scripts/`g`):
   - Directo: `gemini -p "Explica este repo" -m gemini-2.5-flash`
-  - Atajo del proyecto: `: "tu pregunta"` (usa el modelo configurado).
+  - Atajo del proyecto: `g "tu pregunta"` (usa el modelo configurado).
 
 ## Integración con este proyecto
 
 - Instalación y login se automatizan en `quick-setup.sh` (OAuth2). Si falla, ejecuta manualmente `gemini auth login`.
-- El comando `:` usa Gemini en modo no interactivo; si no estás autenticado, se te indicará cómo hacerlo.
+- El comando `g` usa Gemini en modo no interactivo; si no estás autenticado, se te indicará cómo hacerlo.
 - Neovim: integrada la extensión `gemini-cli.nvim` para comandos `:Gemini` y `:GeminiChat` (usa el binario del sistema y OAuth2).
 
 ## Solución de problemas

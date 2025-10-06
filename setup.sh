@@ -626,7 +626,7 @@ post_installation_setup_auto() {
     echo -e "${CYAN}  • Usuario SSH: ${effective_ssh_user}${NC}"
     echo -e "${CYAN}  • Puerto SSH: 8022${NC}"
     echo -e "${CYAN}  • Panel Web: http://localhost:3000${NC}"
-    echo -e "${CYAN}  • Comando IA: : \"tu pregunta\"${NC}"
+    echo -e "${CYAN}  • Comando IA: g \"tu pregunta\"${NC}"
     echo -e "${CYAN}  • Panel Control: termux-ai-panel${NC}"
     echo -e "${CYAN}=============================================${NC}"
 
@@ -775,7 +775,7 @@ configure_gemini_auth_final() {
 
     if command -v gemini >/dev/null 2>&1; then
         echo -e "${BLUE}¿Deseas configurar la autenticación OAuth2 con Google ahora?${NC}"
-        echo -e "${YELLOW}Esto te permitirá usar el comando ':' para consultas IA${NC}"
+        echo -e "${YELLOW}Esto te permitirá usar el comando 'g' para consultas IA${NC}"
         read -p "Configurar autenticación Gemini ahora? (y/N): " setup_gemini_auth
 
         if [[ "$setup_gemini_auth" =~ ^[Yy]$ ]]; then
@@ -785,7 +785,7 @@ configure_gemini_auth_final() {
             # Verificar autenticación
             if gemini auth test >/dev/null 2>&1; then
                 echo -e "${GREEN}✅ Autenticación Gemini configurada correctamente${NC}"
-                echo -e "${CYAN}💡 Ahora puedes usar: : \"tu pregunta aquí\"${NC}"
+                echo -e "${CYAN}💡 Ahora puedes usar: g \"tu pregunta aquí\"${NC}"
             else
                 echo -e "${YELLOW}⚠️ Autenticación no verificada${NC}"
             fi
