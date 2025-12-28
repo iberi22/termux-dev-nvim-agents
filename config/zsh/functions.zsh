@@ -13,17 +13,17 @@ extract() {
     if [ -f $1 ] ; then
         case $1 in
             *.tar.bz2)   tar xvjf $1     ;;
-            *.tar.gz)    tar xvzf $1     ;;
-            *.bz2)       bunzip2 $1      ;;
-            *.rar)       unrar x $1      ;;
-            *.gz)        gunzip $1       ;;
-            *.tar)       tar xvf $1      ;;
-            *.tbz2)      tar xvjf $1     ;;
-            *.tgz)       tar xvzf $1     ;;
-            *.zip)       unzip $1        ;;
-            *.Z)         uncompress $1   ;;
-            *.7z)        7z x $1         ;;
-            *)           echo "'$1' cannot be extracted via >extract<" ;;
+            *.tar.gz)    tar xvzf $1     ;; 
+            *.bz2)       bunzip2 $1      ;; 
+            *.rar)       unrar x $1      ;; 
+            *.gz)        gunzip $1       ;; 
+            *.tar)       tar xvf $1      ;; 
+            *.tbz2)      tar xvjf $1     ;; 
+            *.tgz)       tar xvzf $1     ;; 
+            *.zip)       unzip $1        ;; 
+            *.Z)         uncompress $1   ;; 
+            *.7z)        7z x $1         ;; 
+            *)           echo "'$1' cannot be extracted via >extract<" ;; 
         esac
     else
         echo "'$1' is not a valid file!"
@@ -56,7 +56,7 @@ sysinfo() {
     echo -e "${BLUE}Terminal:${NC} $TERM"
     echo -e "${BLUE}CPU:${NC} $(nproc) cores"
     echo -e "${BLUE}Memory:${NC} $(free -h | awk '/^Mem:/ {print $3 "/" $2}')"
-    echo -e "${BLUE}Disk:${NC} $(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 " used)"}')"
+    echo -e "${BLUE}Disk:${NC} $(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 " used)"}' )"
     echo -e "${BLUE}Uptime:${NC} $(uptime -p)"
 }
 
@@ -131,20 +131,25 @@ get_memory_usage() {
         else
             echo "0%"
         fi
-    elif [[ -f /proc/meminfo ]]; then
-        local total=$(grep '^MemTotal:' /proc/meminfo | awk '{print $2}')
-        local available=$(grep '^MemAvailable:' /proc/meminfo | awk '{print $2}')
-        if [[ -z "$available" ]]; then
-            available=$(grep '^MemFree:' /proc/meminfo | awk '{print $2}')
-        fi
-        if [[ $total -gt 0 && -n "$available" ]]; then
-            local used=$((total - available))
-            local usage=$(( used * 100 / total ))
-            echo "${usage}%"
-        else
-            echo "0%"
-        fi
     else
         echo "N/A"
     fi
+}
+
+# Función para modo headless de Gemini con atajo 'g'
+g() {
+    if ! command -v gemini &> /dev/null; then
+        echo "Error: El comando 'gemini' no está instalado o no se encuentra en el PATH."
+        echo "Por favor, instálalo con: npm install -g @google/gemini-cli"
+        return 1
+    fi
+
+    if [ -z "$1" ]; then
+        echo "Uso: g \"tu pregunta\""
+        return 1
+    fi
+
+    # Se elimina la comprobación 'gemini auth test' porque es poco fiable en algunos entornos.
+    # El propio comando 'gemini -p' fallará con un error claro si la autenticación es necesaria.
+    gemini -p "$*"
 }

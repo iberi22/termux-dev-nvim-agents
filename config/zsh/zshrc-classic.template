@@ -29,6 +29,11 @@ plugins=(
 # Cargar Oh My Zsh
 source $ZSH/oh-my-zsh.sh
 
+# Cargar funciones personalizadas
+if [ -f "$HOME/.config/zsh/functions.zsh" ]; then
+    source "$HOME/.config/zsh/functions.zsh"
+fi
+
 # ====================================
 # CONFIGURACIÓN DE ENTORNO
 # ====================================
@@ -216,10 +221,7 @@ if [[ -f "$HOME/.ai-env" ]]; then
     source "$HOME/.ai-env"
 fi
 
-# Start AI agent with ':' if available
-if [[ -x "$HOME/bin/colon" ]]; then
-    alias :='$HOME/bin/colon'
-fi
+
 
 # ====================================
 # CONFIGURACIÓN FINAL

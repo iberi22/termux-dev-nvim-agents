@@ -3,7 +3,7 @@
 ## Phase 1: Stabilización Instalador (Done/In Progress)
 
 - [x] Migración completa a OAuth2 (Gemini CLI oficial)
-- [x] Agente `:` headless (gemini-2.5-flash)
+- [x] Agente `g` headless (gemini-2.5-flash)
 - [x] Corrección /tmp → $HOME/.cache y TMPDIR
 - [x] CI verde (BATS + ShellCheck + shfmt + LF)
 - [x] Versión visible en banners/README

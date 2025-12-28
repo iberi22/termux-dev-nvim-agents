@@ -6,11 +6,12 @@ Sistema automatizado de configuración de Termux con agente de IA integrado usan
 
 ## ✨ Características Principales
 
-- **🤖 Agente IA Integrado**: Usa `: "tu pregunta"` para interactuar con Gemini 2.5-flash
+- **🤖 Agente IA Integrado**: Usa `g "tu pregunta"` para interactuar con Gemini 2.5-flash
 - **⚡ Instalación Automática**: Un solo comando instala todo el entorno
 - **🔐 Autenticación OAuth2**: Sin API keys manuales, autenticación persistente
 - **🛠️ Entorno Completo**: Git, Node.js, Zsh, SSH configurados automáticamente
 - **📱 Optimizado para Termux**: Especialmente diseñado para desarrollo en Android
+- **✅ Validación de Dependencias**: Script de validación para asegurar que todas las dependencias de los agentes de IA estén instaladas.
 
 ## 🚀 Instalación Rápida
 
@@ -24,24 +25,24 @@ curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/in
 - ✅ **Node.js LTS** para herramientas de desarrollo
 - ✅ **Zsh + Oh My Zsh** con configuración personalizada
 - ✅ **Gemini CLI** con autenticación OAuth2
-- ✅ **Agente IA** accesible con `: "pregunta"`
+- ✅ **Agente IA** accesible con `g "pregunta"`
 - ✅ **Configuración SSH** para acceso remoto (opcional)
 - ⚠️ **Neovim** disponible opcionalmente
 
 ## 🤖 Usando el Agente IA
 
-Una vez instalado, usa el comando `:` (dos puntos) para interactuar:
+Una vez instalado, usa el comando `g` para interactuar:
 
 ```bash
 # Ejemplos de uso
-: "¿Cómo instalar Python en Termux?"
-: "Configurar GitHub SSH"
-: "Crear script de backup automático"
-: "¿Por qué falla mi aplicación Node.js?"
-: "Mejores prácticas para desarrollo móvil"
-termux-ai-agent --help      # Ayuda completa
-termux-ai-agent --status    # Estado del sistema
-termux-ai-agent --setup     # Reconfigurar Gemini CLI
+g "¿Cómo instalar Python en Termux?"
+g "Configurar GitHub SSH"
+g "Crear script de backup automático"
+g "¿Por qué falla mi aplicación Node.js?"
+g "Mejores prácticas para desarrollo móvil"
+gemini --help      # Ayuda completa
+# gemini --status    # Comando no disponible actualmente
+gemini auth login     # Reconfigurar autenticación Gemini CLI
 ```
 
 ## 📋 Requisitos
@@ -86,16 +87,16 @@ cd termux-dev-nvim-agents
 
 ## 🆘 Solución de Problemas
 
-### Problema: Comando `:` no funciona
+### Problema: Comando g no funciona
 
 ```bash
 # Verificar instalación
-which colon
-termux-ai-agent --status
+which g
+gemini --version
 
-# Reinstalar agente
-curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/termux-ai-agent.sh -o ~/bin/termux-ai-agent
-chmod +x ~/bin/termux-ai-agent
+# Reinstalar alias
+# El comando 'g' es un alias. Asegúrate de que tu ~/.zshrc o ~/.bashrc esté siendo cargado
+# y que contenga la línea: source ~/termux-ai-setup/config/zsh/functions.zsh
 ```
 
 ### Problema: Error de autenticación Gemini
@@ -132,16 +133,16 @@ npm --version
 ### Desarrollo Web
 
 ```bash
-: "Crear proyecto React en Termux"
-: "Configurar servidor de desarrollo"
+g "Crear proyecto React en Termux"
+g "Configurar servidor de desarrollo"
 ```
 
 ### Automatización
 
 ```bash
-: "Script para backup de código"
-: "Optimizar Termux para desarrollo"
-: "Instalar herramientas de línea de comandos"
+g "Script para backup de código"
+g "Optimizar Termux para desarrollo"
+g "Instalar herramientas de línea de comandos"
 ```
 
 ## 🔐 Configuración SSH (Opcional)
@@ -196,11 +197,11 @@ See "🆘 Solución de Problemas" section above for common fixes.
 
 ## AI Commands
 
-Use ':' to ask Gemini. Examples:
+Use 'g' to ask Gemini. Examples:
 
 ```bash
-: "¿Cómo instalar Python en Termux?"
-: "Configurar GitHub SSH"
+g "¿Cómo instalar Python en Termux?"
+g "Configurar GitHub SSH"
 ```
 
 ## 📚 Documentación

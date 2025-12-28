@@ -7,7 +7,7 @@ Instalar y mantener un entorno de desarrollo en Termux es lento y propenso a err
 ## Goals
 
 - Instalación automática sin prompts (noninteractive apt/dpkg) y logs claros.
-- Agente IA por comando `:` con Gemini OAuth2.
+- Agente IA por comando `g` con Gemini OAuth2.
 - Panel post‑instalación para estado, utilidades y servicios.
 - Documentación viva basada en specs y progreso actualizado.
 
@@ -28,7 +28,7 @@ Instalar y mantener un entorno de desarrollo en Termux es lento y propenso a err
 ## Success Criteria
 
 - Instalación completa sin intervención; salida verbose opcional; logs en `~/termux-setup.log`.
-- `:` funciona y abre agente IA; `termux-ai-panel` visible en PATH.
+- `g` funciona y abre agente IA; `termux-ai-panel` visible en PATH.
 - Documentación minimalista spec-kit: README.md + GEMINI.md + AGENTS.md + specs/.
 - README y PROGRESS actualizados en cada release.
 

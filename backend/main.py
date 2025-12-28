@@ -166,7 +166,7 @@ async def get_disk_usage() -> Dict[str, str]:
     # Check specific directories
     important_dirs = {
         ".npm": home / ".npm",
-        "termux-ai": home / "termux-dev-nvim-agents",
+        "termux-ai": home / "termux-ai-setup",
         "src": home / "src",
         ".config": home / ".config"
     }
