@@ -82,6 +82,7 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - `install.sh`: migrado a `set -Eeuo pipefail`, IFS seguro y traps centralizados (`ERR`, `INT`, `EXIT`) con resúmenes finales y códigos de salida preservados; helper genérico `run_with_retry` para `pkg` con reintentos y mensajes estructurados. Los flags `--force`, `--reset-state` y `--clean` ahora generan mensajes de estado homogéneos y la ejecución del `setup` se controla sin `exec` para reportar fallos correctamente.
 - `setup.sh`: mismas garantías de strict mode, captura de comandos fallidos y salida con resúmenes en `cleanup`; fallos de módulos actualizan `SCRIPT_EXIT_CODE` aunque la instalación continúe, y la instalación automática registra en `add_summary` el estado escrito en `~/.termux-ai-setup/INSTALL_DONE`.
 - Ambos scripts: logging tipo CLI-friendly con `info/warn/error`, instrucciones claras para revisar `setup.log` y sintaxis verificada con `bash -n`.
+- `scripts/validate-agents.sh`: nuevo orquestador de validaciones (core checks: git, node, npm, zsh, curl, wget) con salida estructurada para facilitar la detección del componente fallido.
 
 ## 2025-09-22
 
