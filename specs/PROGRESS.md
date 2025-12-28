@@ -199,4 +199,19 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - README actualizado con enlaces a docs y regla de mantener PROGRESS.md.
 - ROADMAP actualizado: AGENTS.md y GEMINI.md marcados como completados.
 ### Corrección de CI - Módulo SSH
-- **Fallo en test SSH resuelto**: Corregido path relativo en test_ssh_module.bats causando que lint.sh no encontrara el archivo, y advertencia SC2088 en test-installation.sh cambiando ~ por \C:\Users\belal
+- **Fallo en test SSH resuelto**: Corregido path relativo en test_ssh_module.bats causando que lint.sh no encontrara el archivo, y advertencia SC2088 en test-installation.sh cambiando ~ por $HOME.
+
+## 2025-12-28 (v2025-09-25.1b42acb)
+
+### Integración de Ramas y Mejoras en Instalador
+
+- **Integración de ramas**: Unificado `feature/windows-nvim-install`, `feature/hexagonal-validate` y `pr-3` en `main`.
+- **Módulo 07-local-ssh-server.sh mejorado**:
+  - Fusionado enfoque modular con helper scripts (`ssh-local-start` etc.) de la rama windows.
+  - Mantenido logging en español y estructura robusta de `main`.
+  - Soporte mejorado para configuración automática y helpers en PATH.
+- **Validación Final Incorporada**:
+  - `setup.sh` ahora incluye paso de validación final con `scripts/validate-agents.sh`.
+  - Fix: Uso de rutas absolutas (`$SCRIPT_DIR`) para evitar error "No such file".
+- **Tests**:
+  - Unificada lógica de `lint_check` en `tests/bats/test_helper.bash`.
