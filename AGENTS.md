@@ -12,7 +12,7 @@ Este proyecto integra agentes de IA en Termux con foco en Gemini CLI (OAuth2). O
 
 - Instalación: `npm install -g @google/gemini-cli` (Node.js >= 20 requerido).
 - Autenticación: `gemini` y elige “Login with Google” (OAuth); o `gemini auth login` según flujo actual.
-- Modelos: puedes fijar `-m gemini-2.5-flash` (rápido) o configurar `~/.gemini/settings.json` con `model.name`.
+- Modelos: puedes fijar `-m gemini-1.5-flash` (rápido) o configurar `~/.gemini/settings.json` con `model.name`.
 - Modo headless: `gemini -p "tu pregunta"` o vía nuestro wrapper `:`.
 - Documentación oficial:
   - NPM: [@google/gemini-cli](https://www.npmjs.com/package/@google/gemini-cli)

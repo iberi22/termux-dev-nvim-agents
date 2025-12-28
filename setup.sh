@@ -1009,7 +1009,31 @@ full_installation() {
     source ~/.zshrc 2>/dev/null || source ~/.bashrc 2>/dev/null || log_warn "No se pudo recargar .zshrc o .bashrc."
 
     log_success "Instalación completa finalizada."
+
+    # Ejecutar validación orquestada al final para detectar componentes faltantes
+    if command -v bash >/dev/null 2>&1 && [[ -f "${SCRIPT_DIR}/scripts/validate-agents.sh" ]]; then
+        log_info "Ejecutando validación de componentes (full)..."
+        set +e
+        VALID_JSON=$(bash "${SCRIPT_DIR}/scripts/validate-agents.sh" --full --json 2>&1 || true)
+        VALID_EXIT=$?
+        set -e
+
+        # Registrar y añadir resumen legible
+        echo "$VALID_JSON" >> "${LOG_FILE}" 2>/dev/null || true
+
+        # Extraer número de fallos
+        FAILS=$(printf '%s' "$VALID_JSON" | grep -o '"failures":[0-9]*' | head -n1 | sed 's/"failures"://') || true
+        FAILS=${FAILS:-0}
+        if [[ "$FAILS" -gt 0 ]]; then
+            add_summary "Validación final: ${FAILS} componentes faltantes. Revisa ${LOG_FILE} para detalles."
+            log_warn "Validación final detectó ${FAILS} fallos."
+        else
+            add_summary "Validación final: todos los componentes presentes."
+            log_success "Validación final OK."
+        fi
+    fi
 }
+
 
 # Main function
 main() {

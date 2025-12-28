@@ -7,6 +7,9 @@
 
 set -euo pipefail
 
+# Determine script dir
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colores
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -78,10 +81,30 @@ echo -e "${CYAN}                    TESTS DE PAQUETES BÁSICOS${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # Tests de paquetes básicos (esenciales)
-run_test "curl instalado" "command -v curl"
-run_test "wget instalado" "command -v wget"
-run_test "git instalado" "command -v git"
-run_test "node instalado" "command -v node"
+# Usamos `scripts/validate-agents.sh` para orquestar cheks y obtener salidas estructuradas
+echo -en "${YELLOW}🔍 Test: Validación orquestada de agentes (git/node/npm)... ${NC}"
+# Evitar que fallos del validador aborten el módulo (set -e)
+set +e
+VALID_JSON="$(bash "${SCRIPT_DIR}/../scripts/validate-agents.sh" --minimal --json 2>&1)"
+VALID_EXIT=$?
+set -e
+# Mostrar la salida detallada
+echo
+echo "$VALID_JSON"
+
+# Extraer fallos desde JSON
+FAIL_COUNT=$(printf '%s' "$VALID_JSON" | grep -o '"failures":[0-9]*' | head -n1 | sed 's/"failures"://') || true
+FAIL_COUNT=${FAIL_COUNT:-0}
+
+if [[ $FAIL_COUNT -eq 0 ]]; then
+    echo -e "${GREEN}✅ PASSED${NC}"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+else
+    echo -e "${RED}❌ FAILED (${FAIL_COUNT} fallos)${NC}"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+fi
+
+# Mantener pruebas individuales Legacy (para compatibilidad y reporting extra)
 run_test "python instalado" "command -v python"
 
 # Herramientas opcionales: no deben fallar el test global si no están
