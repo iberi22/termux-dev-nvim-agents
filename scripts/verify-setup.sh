@@ -50,6 +50,7 @@ section() {
 section "Core Files"
 check "Main setup script exists" "[[ -f setup.sh ]]"
 check "Installation script exists" "[[ -f install.sh ]]"
+check "Validador de agentes (scripts/validate-agents.sh)" "[[ -f scripts/validate-agents.sh ]]" "true"
 check "README.md exists" "[[ -f README.md ]]"
 check "AGENTS.md exists" "[[ -f AGENTS.md ]]"
 check "GEMINI.md exists" "[[ -f GEMINI.md ]]"
