@@ -3,9 +3,13 @@
 # ====================================
 # TERMUX AI SETUP - INSTALADOR RÁPIDO
 # Script de instalación con un comando
-SCRIPT_VERSION="2025-09-25.1b42aca"
-SCRIPT_COMMIT="c68a0a0"
 # ====================================
+SCRIPT_VERSION="2025-09-25.1b42acc"
+SCRIPT_COMMIT="git-local"
+
+# Force UTF-8 encoding to avoid visual artifacts
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
 
 set -Eeuo pipefail
 IFS=$'\n\t'
@@ -25,7 +29,7 @@ FORCE_MODULES=false
 RESET_STATE=false
 CLEAN_INSTALL=false
 
-# Colores
+# Colores (ANSI standard)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -34,11 +38,20 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# Directorio de instalación
+INSTALL_DIR="$HOME/termux-ai-setup"
+LOG_FILE="$INSTALL_DIR/setup.log"
+
 log() {
     local color="$1"
     local icon="$2"
     shift 2
+    # Print to stdout with color
     printf "%b%s%b %s\n" "$color" "$icon" "$NC" "$*"
+    # Log to file without color (ensure dir exists first)
+    if [[ -d "$INSTALL_DIR" ]]; then
+        echo "[$(date +'%H:%M:%S')] $icon $*" >> "$LOG_FILE" 2>/dev/null || true
+    fi
 }
 
 info() {
@@ -92,18 +105,31 @@ cleanup() {
     if [[ $exit_code -eq 0 ]]; then
         SCRIPT_STATUS="success"
         if ((${#SUMMARY_LINES[@]} > 0)); then
-            printf "%b📋 Resumen:%b\n" "$BLUE" "$NC"
+            printf "\n%b📋 Resumen:%b\n" "$BLUE" "$NC"
             for line in "${SUMMARY_LINES[@]}"; do
                 printf "  • %s\n" "$line"
             done
         fi
         success "${SCRIPT_NAME} finalizado en ${elapsed}s."
     else
+        echo ""
+        error "=========================================="
+        error "   LA INSTALACIÓN FALLÓ (Code $exit_code)"
+        error "=========================================="
         if [[ -n "$SCRIPT_FAILURE_CMD" ]]; then
-            error "Último comando fallido: ${SCRIPT_FAILURE_CMD}"
+            error "Comando fallido: ${SCRIPT_FAILURE_CMD}"
         fi
-        warn "Revisa los logs en $INSTALL_DIR/setup.log si el repositorio se descargó."
-        error "${SCRIPT_NAME} abortado tras ${elapsed}s (código ${exit_code})."
+
+        if [[ -f "$LOG_FILE" ]]; then
+            echo -e "\n${YELLOW}--- Últimas 15 líneas del log ($LOG_FILE) ---${NC}"
+            tail -n 15 "$LOG_FILE" 2>/dev/null || true
+            echo -e "${YELLOW}---------------------------------------------${NC}"
+            warn "Por favor revisa el archivo $LOG_FILE para más detalles."
+        else
+            warn "No se pudo leer el archivo de log."
+        fi
+
+        error "${SCRIPT_NAME} abortado tras ${elapsed}s."
     fi
 
     exit "$exit_code"
@@ -137,9 +163,6 @@ REPO_NAME="termux-dev-nvim-agents"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}"
 
-# Directorio de instalación
-INSTALL_DIR="$HOME/termux-ai-setup"
-
 run_with_retry() {
     local description="$1"
     shift
@@ -167,13 +190,14 @@ run_with_retry() {
     return 1
 }
 
+# Banner simplificado (ASCII safe)
 show_banner() {
     clear
     echo -e "${PURPLE}"
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║   TERMUX AI SETUP - INSTALADOR RÁPIDO  | v${SCRIPT_VERSION}        ║"
-    echo "║         🚀 Instalación automática para Termux AI            ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "=========================================================="
+    echo "  TERMUX AI SETUP - INSTALADOR RAPIDO | v${SCRIPT_VERSION}"
+    echo "         > Instalacion automatica para Termux AI"
+    echo "=========================================================="
     echo -e "${NC}\n"
 }
 
@@ -279,6 +303,10 @@ run_main_setup() {
     fi
 
     cd "$INSTALL_DIR"
+
+    # Inicializar log file en instalación limpia
+    touch "$LOG_FILE"
+
     chmod +x setup.sh 2>/dev/null || true
 
     info "Iniciando instalación completamente automática..."
@@ -309,6 +337,8 @@ run_main_setup() {
     fi
 
     info "Ejecutando setup principal (${setup_args[*]})..."
+
+    # Capturar salida para debug si falla
     if ./setup.sh "${setup_args[@]}"; then
         add_summary "Instalación automática completada exitosamente."
         success "Setup principal finalizado."
