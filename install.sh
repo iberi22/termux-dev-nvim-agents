@@ -369,11 +369,8 @@ main() {
     check_termux
     install_basic_tools
 
-    info "Validando dependencias de los agentes de IA..."
-    if ! ./scripts/validate-agents.sh; then
-        error "La validación de dependencias de los agentes de IA falló. Por favor, revisa los errores antes de continuar."
-        exit 1
-    fi
+    # Validation delegated to setup.sh after cloning
+
 
     run_main_setup
 }
