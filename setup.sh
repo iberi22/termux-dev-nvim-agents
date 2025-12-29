@@ -7,6 +7,10 @@
 # Quick install: wget -qO- https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 # ====================================
 
+# Enforce UTF-8 to fix font rendering issues
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -132,16 +136,28 @@ cleanup() {
     local elapsed=$(( $(date +%s) - SCRIPT_START_TS ))
 
     if [[ $exit_code -ne 0 ]]; then
+        echo ""
+        echo -e "${RED}==============================================${NC}"
+        echo -e "${RED}   INSTALACIÓN FALLIDA (Código $exit_code)${NC}"
+        echo -e "${RED}==============================================${NC}"
+
         if [[ -n "$SCRIPT_FAILURE_CMD" ]]; then
-            echo -e "${RED}[ERROR] Último comando fallido: ${SCRIPT_FAILURE_CMD}${NC}"
+            echo -e "${RED}Comando fallido: ${SCRIPT_FAILURE_CMD}${NC}"
         fi
-        echo -e "${YELLOW}[INFO] Consulta ${LOG_FILE} para más detalles.${NC}"
-        echo -e "${RED}[ERROR] ${SCRIPT_NAME} abortado tras ${elapsed}s (código ${exit_code}).${NC}"
+
+        if [[ -f "$LOG_FILE" ]]; then
+            echo -e "\n${YELLOW}--- Últimas 20 líneas del log ($LOG_FILE) ---${NC}"
+            tail -n 20 "$LOG_FILE" 2>/dev/null || true
+            echo -e "${YELLOW}---------------------------------------------${NC}"
+            echo -e "${YELLOW}>> Revisa el archivo ${LOG_FILE} para ver el error completo.${NC}"
+        fi
+
+        echo -e "${RED}Aborted after ${elapsed}s.${NC}"
         log "[ERROR] Script aborted after ${elapsed}s (code ${exit_code})"
     else
         log "[INFO] Script completed successfully in ${elapsed}s"
         if ((${#SUMMARY_LINES[@]} > 0)); then
-            echo -e "${CYAN}[INFO] Resumen rápido:${NC}"
+            echo -e "\n${CYAN}[INFO] Resumen rápido:${NC}"
             for line in "${SUMMARY_LINES[@]}"; do
                 echo -e "  • ${line}"
             done
