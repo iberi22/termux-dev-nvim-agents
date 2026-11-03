@@ -2,8 +2,9 @@
 
 ## Phase 1: Stabilización Instalador (Done/In Progress)
 
-- [x] Migración completa a OAuth2 (Gemini CLI oficial)
-- [x] Agente `g` headless (gemini-2.5-flash)
+- [x] Selección interactiva de componentes + `--components` / `--no-menu` (v0.2.0)
+- [x] Cinco CLIs de IA: claude, opencode, codex, wrangler, agy (manual)
+- [x] Agente `g` headless (envuelve `opencode run`)
 - [x] Corrección /tmp → $HOME/.cache y TMPDIR
 - [x] CI verde (BATS + ShellCheck + shfmt + LF)
 - [x] Versión visible en banners/README
@@ -34,7 +35,7 @@
 ## Phase 5: Integraciones IA
 
 - [x] AGENTS.md con agentes soportados y flujos
-- [x] GEMINI.md con guías de OAuth2, modelos y agentes
+- [x] Instalador per-CLI con detección idempotente (v0.2.0)
 - [ ] Extender prompts del agente para tareas del panel
 
 ## Phase 6: Distribución y Calidad

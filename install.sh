@@ -363,8 +363,8 @@ main() {
     printf "%bEste script instalará automáticamente:%b\n" "$YELLOW" "$NC"
     printf "  • Git, Node.js, Zsh con Oh My Zsh\n"
     printf "  • Configuración SSH y Git\n"
-    printf "  • Gemini CLI con autenticación OAuth2\n"
-    printf "  • Agente IA integrado (comando ':')\n\n"
+    printf "  • CLIs de IA: claude, opencode, codex, wrangler (+ agy manual)\n"
+    printf "  • Comando 'g' para consultas rápidas a opencode\n\n"
 
     check_termux
     install_basic_tools

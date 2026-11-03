@@ -66,16 +66,19 @@ check_system_health() {
         echo -e "${RED}❌ Neovim: No instalado${NC}"
     fi
 
-    # Gemini CLI
-    if command -v gemini >/dev/null 2>&1; then
-        if gemini auth test >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ Gemini CLI: Autenticado${NC}"
+    # AI CLIs (v0.2.0): claude, opencode, codex, wrangler and agy
+    local cli
+    for cli in claude opencode codex wrangler agy; do
+        if command -v "$cli" >/dev/null 2>&1; then
+            local cli_version
+            cli_version=$("$cli" --version 2>/dev/null | head -n 1 || true)
+            echo -e "${GREEN}✅ ${cli}: ${cli_version:--}${NC}"
+        elif [[ "$cli" == "agy" ]]; then
+            echo -e "${YELLOW}⚠️ agy: no instalado (manual: https://antigravity.google)${NC}"
         else
-            echo -e "${YELLOW}⚠️ Gemini CLI: No autenticado${NC}"
+            echo -e "${RED}❌ ${cli}: No instalado${NC}"
         fi
-    else
-        echo -e "${RED}❌ Gemini CLI: No instalado${NC}"
-    fi
+    done
 
     # SSH status
     if pgrep sshd >/dev/null 2>&1; then
@@ -143,6 +146,39 @@ show_github_projects() {
     if [[ "$found_repos" == false ]]; then
         echo -e "${YELLOW}⚠️ No se encontraron repositorios en $SRC_DIR${NC}"
     fi
+    echo ""
+}
+
+# Function to show the AI CLI inventory (v0.2.0)
+show_ai_clis() {
+    echo -e "${CYAN}🤖 CLIs de IA${NC}"
+    echo -e "${CYAN}================${NC}"
+
+    local cli
+    for cli in claude opencode codex wrangler agy; do
+        case "$cli" in
+            claude) echo -e "${BLUE}claude${NC}   - Anthropic Claude Code" ;;
+            opencode) echo -e "${BLUE}opencode${NC} - Agente multi-proveedor (DeepSeek, GLM, modelos gratis)" ;;
+            codex) echo -e "${BLUE}codex${NC}    - OpenAI Codex CLI" ;;
+            wrangler) echo -e "${BLUE}wrangler${NC} - Cloudflare developer CLI (no es un agente)" ;;
+            agy) echo -e "${BLUE}agy${NC}      - Google Antigravity (instalación manual)" ;;
+        esac
+
+        if command -v "$cli" >/dev/null 2>&1; then
+            local cli_path cli_version
+            cli_path=$(command -v "$cli")
+            cli_version=$("$cli" --version 2>/dev/null | head -n 1 || true)
+            echo -e "           ${GREEN}instalado${NC}  ${cli_path}  ${cli_version:--}"
+        elif [[ "$cli" == "agy" ]]; then
+            echo -e "           ${YELLOW}manual${NC}     descarga: https://antigravity.google"
+        else
+            echo -e "           ${RED}ausente${NC}    instala con: npm install -g <paquete>"
+        fi
+        echo ""
+    done
+
+    echo -e "${YELLOW}Instala o reinstala con: bash modules/03-ai-integration.sh${NC}"
+    echo -e "${YELLOW}Filtra CLIs con: TERMUX_AI_COMPONENTS=claude,codex bash modules/03-ai-integration.sh${NC}"
     echo ""
 }
 
@@ -293,10 +329,11 @@ show_panel_menu() {
     echo -e "${WHITE}│  6. 🖥️  Iniciar Servidor HTTP (Puerto 9999)    │${NC}"
     echo -e "${GREEN}│  7. 🌐 Iniciar Interfaz Web Completa (3000/8000)│${NC}"
     echo -e "${WHITE}│  8. 📊 Vista Completa del Sistema              │${NC}"
+    echo -e "${WHITE}│ 10. 🤖 Estado de los CLIs de IA                │${NC}"
     echo -e "${WHITE}│  9. 🔄 Volver al Setup Principal               │${NC}"
     echo -e "${WHITE}│ 99. 🚪 Salir                                   │${NC}"
     echo -e "${CYAN}└─────────────────────────────────────────────────┘${NC}"
-    echo -e "\n${YELLOW}Select an option [1-9, 99]:${NC} "
+    echo -e "\n${YELLOW}Select an option [1-10, 99]:${NC} "
 }
 
 # Function to show complete system overview
@@ -329,6 +366,11 @@ main() {
         "ssh-key")
             show_banner
             show_ssh_key
+            exit 0
+            ;;
+        "agents"|"clis"|"ai")
+            show_banner
+            show_ai_clis
             exit 0
             ;;
         "http"|"server")
@@ -375,6 +417,9 @@ main() {
             8)
                 show_complete_overview
                 ;;
+            10)
+                show_ai_clis
+                ;;
             9)
                 if [[ -f "$INSTALL_DIR/setup.sh" ]]; then
                     echo -e "${BLUE}🔄 Lanzando setup principal...${NC}"
@@ -388,7 +433,7 @@ main() {
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[ERROR] Opción inválida. Selecciona 1-9 o 99.${NC}"
+                echo -e "${RED}[ERROR] Opción inválida. Selecciona 1-10 o 99.${NC}"
                 sleep 2
                 ;;
         esac

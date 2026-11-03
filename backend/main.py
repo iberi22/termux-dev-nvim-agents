@@ -6,6 +6,7 @@ FastAPI server with WebSocket support for real-time system monitoring
 
 import asyncio
 import os
+import shlex
 import subprocess
 import json
 import shutil
@@ -44,13 +45,22 @@ app.mount("/socket.io", socket_app)
 if Path("../web-ui/dist").exists():
     app.mount("/", StaticFiles(directory="../web-ui/dist", html=True), name="static")
 
+# AI CLIs tracked by the panel (v0.2.0). 'agy' (Google Antigravity) has no npm
+# package: it is detected like the rest, but its absence is only a warning.
+AGENT_BINARIES = ["claude", "opencode", "codex", "wrangler", "agy"]
+MANUAL_AGENTS = {"agy"}
+
 # Data models
 class SystemStatus(BaseModel):
     node: bool = False
     git: bool = False
     zsh: bool = False
     neovim: bool = False
-    gemini: bool = False
+    claude: bool = False
+    opencode: bool = False
+    codex: bool = False
+    wrangler: bool = False
+    agy: bool = False
     ssh: bool = False
 
 class GitProject(BaseModel):
@@ -140,18 +150,40 @@ async def check_system_status() -> SystemStatus:
     stdout, _, code = await run_command("nvim --version")
     status.neovim = code == 0
 
-    # Check Gemini CLI
-    stdout, _, code = await run_command("gemini --version")
-    if code == 0:
-        # Check if authenticated
-        _, _, auth_code = await run_command("gemini auth test")
-        status.gemini = auth_code == 0
+    # Check the AI CLIs: claude, opencode, codex, wrangler and agy.
+    # Detection is a plain PATH lookup, so nothing is executed.
+    for agent in AGENT_BINARIES:
+        setattr(status, agent, shutil.which(agent) is not None)
 
     # Check SSH server
     stdout, _, code = await run_command("pgrep sshd")
     status.ssh = code == 0
 
     return status
+
+
+async def get_agent_inventory() -> List[dict]:
+    """Return name / installed / path / version for every tracked AI CLI."""
+    inventory = []
+
+    for agent in AGENT_BINARIES:
+        path = shutil.which(agent)
+        version = None
+
+        if path:
+            stdout, _, code = await run_command(f"{shlex.quote(path)} --version")
+            if code == 0 and stdout:
+                version = stdout.splitlines()[0]
+
+        inventory.append({
+            "name": agent,
+            "installed": path is not None,
+            "path": path,
+            "version": version,
+            "manual": agent in MANUAL_AGENTS,
+        })
+
+    return inventory
 
 async def get_disk_usage() -> Dict[str, str]:
     """Get disk usage information"""
@@ -257,6 +289,7 @@ async def connect(sid, environ):
 
     # Send initial data
     await sio.emit("system_status", system_status.dict(), room=sid)
+    await sio.emit("agents_status", {"agents": await get_agent_inventory()}, room=sid)
     await sio.emit("disk_usage", disk_usage, room=sid)
     await sio.emit("git_projects", [p.dict() for p in git_projects], room=sid)
 
@@ -309,31 +342,53 @@ async def action(sid, data):
                 "level": "info"
             }, room=sid)
 
-        elif action_type == "gemini_auth_status":
-            # Check Gemini CLI auth status
-            stdout, stderr, code = await run_command("gemini auth test")
-            if code == 0:
-                await sio.emit("log", {"message": "Gemini CLI autenticado", "level": "success"}, room=sid)
-                await sio.emit("gemini_auth", {"authenticated": True, "details": stdout}, room=sid)
+        elif action_type == "agents_status":
+            # Report the five AI CLIs tracked by the panel
+            agents = await get_agent_inventory()
+            await sio.emit("agents_status", {"agents": agents}, room=sid)
+
+            installed = [a["name"] for a in agents if a["installed"]]
+            missing = [a["name"] for a in agents if not a["installed"]]
+
+            await sio.emit("log", {
+                "message": "CLIs instalados: " + (", ".join(installed) if installed else "ninguno"),
+                "level": "success" if installed else "warning"
+            }, room=sid)
+
+            if missing:
+                await sio.emit("log", {
+                    "message": "CLIs ausentes: " + ", ".join(missing),
+                    "level": "warning"
+                }, room=sid)
+
+            if "agy" in missing:
+                await sio.emit("log", {
+                    "message": "agy (Google Antigravity) no está en npm: descárgalo en https://antigravity.google",
+                    "level": "info"
+                }, room=sid)
+
+        elif action_type == "run_agent_cli":
+            # Run a whitelisted agent with a prompt, streaming its output
+            agent = params.get("agent") if isinstance(params, dict) else None
+            prompt = params.get("prompt") if isinstance(params, dict) else None
+
+            if agent not in AGENT_BINARIES:
+                await sio.emit("log", {"message": f"Agente no permitido: {agent}", "level": "warning"}, room=sid)
+            elif agent == "agy":
+                await sio.emit("log", {"message": "agy se usa desde su propia app; no se lanza desde el panel.", "level": "warning"}, room=sid)
+            elif not shutil.which(agent):
+                await sio.emit("log", {"message": f"{agent} no está instalado", "level": "warning"}, room=sid)
+            elif not prompt:
+                await sio.emit("log", {"message": "Falta el prompt", "level": "warning"}, room=sid)
             else:
-                await sio.emit("log", {"message": f"Gemini CLI no autenticado: {stderr or stdout}", "level": "warning"}, room=sid)
-                await sio.emit("gemini_auth", {"authenticated": False, "details": stderr or stdout}, room=sid)
-
-        elif action_type == "gemini_login":
-            # Iniciar el flujo oficial de login con navegador (OAuth)
-            await sio.emit("log", {"message": "Iniciando login de Gemini CLI (se abrirá el navegador)...", "level": "info"}, room=sid)
-
-            # Ejecutar login y transmitir la salida en tiempo real
-            exit_code = await stream_command("gemini auth login", room=sid, prefix="[gemini] ")
-
-            if exit_code == 0:
-                await sio.emit("log", {"message": "Login de Gemini finalizado. Verificando estado...", "level": "success"}, room=sid)
-            else:
-                await sio.emit("log", {"message": f"El proceso de login terminó con código {exit_code}. Intentando verificar estado...", "level": "warning"}, room=sid)
-
-            # Re-chequear estado tras intentar login
-            stdout3, stderr3, code3 = await run_command("gemini auth test")
-            await sio.emit("gemini_auth", {"authenticated": code3 == 0, "details": stdout3 or stderr3}, room=sid)
+                await sio.emit("task_start", {"task": f"agent:{agent}"}, room=sid)
+                # Only 'opencode' has a documented non-interactive 'run' subcommand.
+                if agent == "opencode":
+                    cmd = f"opencode run {shlex.quote(prompt)}"
+                else:
+                    cmd = f"{shlex.quote(agent)} {shlex.quote(prompt)}"
+                exit_code = await stream_command(cmd, room=sid, prefix=f"[{agent}] ")
+                await sio.emit("task_complete", {"task": f"agent:{agent}", "exitCode": exit_code}, room=sid)
 
         elif action_type == "run_module":
             # Execute allowed setup modules

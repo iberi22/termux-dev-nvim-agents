@@ -56,13 +56,19 @@ load "test_helper"
 }
 
 @test "README contains required sections" {
+    # v0.2.0 README: English, interactive installer, five AI CLIs.
     local sections=(
-        "Quick Installation"
-        "SSH/SFTP Access"
+        "What's new in v0.2.0"
+        "Requirements"
+        "Install"
+        "Interactive menu"
+        "What gets installed"
+        "Usage"
         "Troubleshooting"
-        "AI Commands"
+        "Uninstall"
+        "License"
     )
-    
+
     for section in "${sections[@]}"; do
         run grep -q "$section" "$BATS_TEST_DIRNAME/../../README.md"
         [ "$status" -eq 0 ]

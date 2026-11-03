@@ -53,8 +53,8 @@ npm run lint
 add-ssh-key.ps1
 AGENTS.md
 backend/
+CHANGELOG.md
 config/
-GEMINI.md
 install-ssh-server.ps1
 install.sh
 LICENSE

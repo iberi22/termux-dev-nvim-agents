@@ -2,6 +2,29 @@
 
 Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes, docs) indicando fecha y resumen.
 
+## 2026-11-03 (v0.2.0)
+
+### Instalador interactivo, cinco CLIs de IA y README en inglés
+
+- **Instalador interactivo**: `setup.sh` añade una fase de selección de componentes por grupos
+  (Base system, Shell + editor, AI CLIs, SSH) con submenú por CLI. Comandos: `1-4` alternar,
+  `a` todo, `n` nada, `d` instalar, `q` salir. El grupo base queda siempre activo.
+- **Sin menú cuando no hay TTY**: `curl ... | bash` sigue instalando todo, y se añaden
+  `--components=claude,opencode,codex` y `--no-menu` para automatización.
+- **Se retira el CLI de IA de Google**: ya no existe; se elimina del instalador, del panel, del
+  backend, del web UI, de la configuración de Neovim y de la documentación (guía del CLI borrada).
+- **Cinco CLIs**: `claude` (`@anthropic-ai/claude-code`), `opencode` (`opencode-ai`),
+  `codex` (`@openai/codex`), `wrangler` (`wrangler`) y `agy` (Google Antigravity, manual desde
+  https://antigravity.google).
+- `modules/03-ai-integration.sh` reescrito como framework per-CLI idempotente con tabla resumen
+  (componente / estado / versión). `agy` nunca hace fallar el módulo.
+- `scripts/validate-agents.sh` valida los cinco CLIs y trata la ausencia de `agy` como warning.
+  Corregido el uso de `local` fuera de función que rompía la validación.
+- `backend/main.py` y `web-ui/src/main.js` listan y detectan los cinco CLIs (`shutil.which`).
+- `package.json` sube a `0.2.0`; se añade este `CHANGELOG.md`.
+- **README reescrito en inglés**: requisitos, uno-liner, menú interactivo, tabla de lo instalado,
+  uso, troubleshooting y desinstalación.
+
 ## 2025-09-25 (v3)
 
 ### Licencia, Versionado y Despliegue Final
@@ -19,7 +42,7 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 
 - **Eliminación de código legacy**: Funciones rastafari obsoletas en `01-zsh-setup.sh`, archivo duplicado `03-ai-integration-updated.sh`
 - **Consolidación de scripts**: Eliminados scripts CI/CD no esenciales (`ci-local.sh`, `update-version.sh`, `colon-command.sh`), mantenidos solo los core
-- **Estructura spec-kit implementada**: Documentación consolidada en 3 archivos principales (README.md, GEMINI.md, AGENTS.md) + carpeta specs/
+- **Estructura spec-kit implementada**: Documentación consolidada en README.md + AGENTS.md + carpeta specs/
 - **Limpieza documentación**: Eliminados 10+ archivos .md obsoletos, información consolidada en README con sección Windows
 - **Referencias specs restauradas**: Enlaces a SPEC.md, ROADMAP.md, TASKS.md, PROGRESS.md en README.md
 - **Package.json actualizado**: Scripts simplificados, referencias a archivos eliminados removidas
@@ -59,11 +82,11 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - Validación con lints: código verificado sin errores de sintaxis
 - Despliegue: cambios commited y pushed a rama main exitosamente
 
-### Instalacion base saneada y Gemini CLI resiliente
+### Instalacion base saneada y CLI de IA resiliente
 
 - `modules/00-base-packages.sh`: elimina pkg de la lista esencial, reemplaza exa por eza en los opcionales y ajusta aliases para usar eza como reemplazo transparente.
-- `setup.sh`: agrega prepare_npm_env_for_gemini e install_gemini_cli_with_retries, asegura Node/npm antes de instalar, aplica reintentos con registro y fija gemini-2.5-flash como modelo por defecto.
-- Resultado: la corrida base deja de fallar por paquetes inexistentes y la instalacion de Gemini CLI es ahora tolerante a errores transitorios.
+- `setup.sh`: agrega helpers de entorno npm e instalacion con reintentos, asegura Node/npm antes de instalar y aplica reintentos con registro en el log.
+- Resultado: la corrida base deja de fallar por paquetes inexistentes y la instalacion del CLI de IA es ahora tolerante a errores transitorios.
 
 ### Termux UX y resiliencia del setup automático
 
@@ -100,12 +123,12 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 - Corrección de /tmp→$HOME/.cache establecida previamente; validación con Termux.
 - Prompt final: `passwd`, claves SSH y sshd permanente.
 - Nuevo `termux-ai-panel` para estado, servicios y utilidades.
-- Docs iniciales: SPEC, ROADMAP, TASKS, PROGRESS, AGENTS, GEMINI.
+- Docs iniciales: SPEC, ROADMAP, TASKS, PROGRESS y AGENTS.
 
 ### Mantenimiento y Lint
 
 - QUICK_COMMANDS.md: correcciones de markdownlint (MD005/MD007/MD022/MD031/MD040), enlaces formateados y sección URLs revisada.
-- Política OAuth2-only para Gemini reforzada: eliminado `GEMINI_API_KEY` de `config/.ai-env.template` y actualizado enlace a autenticación de Gemini CLI.
+- Política OAuth2-only reforzada: eliminada la API key del CLI de IA en `config/.ai-env.template`.
 
 ### Sistema Post-Instalación Completado
 
@@ -116,7 +139,7 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
   - Instalación del comando global `termux-ai-panel`
 
 - **Panel de Control** (`scripts/termux-ai-panel.sh`):
-  - Estado del sistema: Node.js, Git, Zsh, Neovim, Gemini CLI, SSH server
+  - Estado del sistema: Node.js, Git, Zsh, Neovim, CLIs de IA, SSH server
   - Uso del disco: tamaños de directorios importantes
   - Proyectos Git: detección automática en `~/src` con estado de cambios
   - Acciones: mostrar llave SSH, habilitar SSH, servidor HTTP en 9999
@@ -159,7 +182,7 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
   - `modules/00-base-packages.sh`: Skip de prompts interactivos de Git
   - `modules/03-ai-integration.sh`: Instalación de CLIs sin OAuth automático
   - `modules/05-ssh-setup.sh`: Generación de SSH keys sin prompts
-  - `setup.sh`: Deshabilitación de OAuth login automático de Gemini
+  - `setup.sh`: Deshabilitado el login OAuth automático del CLI de IA durante la instalación
 
 ### Mejoras de Robustez
 
@@ -171,16 +194,16 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 
 ### Status de CLIs de IA
 
-- ✅ **@google/gemini-cli**: Instalación robusta con manejo de errores node-gyp
+- ✅ **CLI de IA principal (npm)**: Instalación robusta con manejo de errores node-gyp
 - ⚠️ **@openai/codex**: Opcional, manejo de fallos graceful
 - ⚠️ **@qwen-code/qwen-code**: Opcional, manejo de fallos graceful
-- ✅ **Comando `:`**: Wrapper funcional para consultas rápidas a Gemini
+- ✅ **Comando `g`**: Wrapper funcional para consultas rápidas al CLI de IA
 
 ### Autenticación Manual Post-Instalación
 
 - OAuth2 automático deshabilitado para evitar prompts interactivos
 - Autenticación manual requerida post-instalación:
-  - `gemini auth login` para Google Gemini CLI
+  - login OAuth del CLI de IA (retirado en v0.2.0)
   - `codex login` para OpenAI Codex (si disponible)
   - `qwen setup` para Qwen Code (si disponible)
   - Servidores de desarrollo en puertos 3000 (frontend) y 8000 (backend)
@@ -195,9 +218,9 @@ Regla: Este archivo debe actualizarse con cada cambio relevante (features, fixes
 ### Documentación
 
 - AGENTS.md creado con detalle de agentes y uso del comando `:`.
-- GEMINI.md creado con guía completa de instalación, OAuth2, modelos y headless.
+- Guía del CLI de IA creada (retirada en v0.2.0, ver AGENTS.md).
 - README actualizado con enlaces a docs y regla de mantener PROGRESS.md.
-- ROADMAP actualizado: AGENTS.md y GEMINI.md marcados como completados.
+- ROADMAP actualizado: AGENTS.md marcado como completado.
 ### Corrección de CI - Módulo SSH
 - **Fallo en test SSH resuelto**: Corregido path relativo en test_ssh_module.bats causando que lint.sh no encontrara el archivo, y advertencia SC2088 en test-installation.sh cambiando ~ por $HOME.
 

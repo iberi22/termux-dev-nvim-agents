@@ -43,8 +43,10 @@ setup_ai_environment_file() {
     log_info "Creando un nuevo archivo '${AI_ENV_FILE}'..."
     cat > "$AI_ENV_FILE" << 'EOF'
 # AI Environment Configuration
-# Use 'gemini auth login' for Gemini CLI (OAuth2). API keys are optional.
-CURRENT_AI_PROVIDER="gemini-cli"
+# Default provider for CodeCompanion inside Neovim.
+# CLI agents are installed by modules/03-ai-integration.sh (claude, opencode,
+# codex, wrangler) and configured with their own login commands.
+CURRENT_AI_PROVIDER="copilot"
 OPENAI_API_KEY=""
 ANTHROPIC_API_KEY=""
 EOF

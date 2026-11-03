@@ -7,7 +7,9 @@ Instalar y mantener un entorno de desarrollo en Termux es lento y propenso a err
 ## Goals
 
 - Instalación automática sin prompts (noninteractive apt/dpkg) y logs claros.
-- Agente IA por comando `g` con Gemini OAuth2.
+- Selección de componentes interactiva (o por flags) antes de instalar.
+- Cinco CLIs de IA: `claude`, `opencode`, `codex`, `wrangler` y `agy` (manual).
+- Agente IA por comando `g` (envuelve `opencode run`).
 - Panel post‑instalación para estado, utilidades y servicios.
 - Documentación viva basada en specs y progreso actualizado.
 
@@ -29,16 +31,17 @@ Instalar y mantener un entorno de desarrollo en Termux es lento y propenso a err
 
 - Instalación completa sin intervención; salida verbose opcional; logs en `~/termux-setup.log`.
 - `g` funciona y abre agente IA; `termux-ai-panel` visible en PATH.
-- Documentación minimalista spec-kit: README.md + GEMINI.md + AGENTS.md + specs/.
+- Documentación minimalista spec-kit: README.md + AGENTS.md + specs/.
 - README y PROGRESS actualizados en cada release.
 
-## Implementation Status (Post-Refactoring v2)
+## Implementation Status (v0.2.0)
 
 ✅ **Core completado:**
 
-- Instalación automática con comando único
-- Agente IA OAuth2 con comando `:` headless
-- Panel termux-ai-panel para estado del sistema
+- Instalación automática con comando único, o interactiva por grupos de componentes
+- Cinco CLIs de IA seleccionables: `claude`, `opencode`, `codex`, `wrangler`, `agy`
+- Agente `g` headless (envuelve `opencode run`)
+- Panel `termux-ai-panel` para estado del sistema, incluido el inventario de CLIs
 - Documentación consolidada según spec-kit
 
 ✅ **Calidad de código:**

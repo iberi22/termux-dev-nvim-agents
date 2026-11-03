@@ -77,22 +77,23 @@ sysupdate() {
 
 # Función para configurar API keys
 setup-ai-keys() {
-    echo -e "${BLUE}Configurando agentes IA con OAuth2...${NC}"
+    echo -e "${BLUE}Configurando agentes IA...${NC}"
 
-    # Los agentes IA ahora usan OAuth2 automático
-    echo -e "${CYAN}Los agentes IA (Codex, Gemini, Qwen) se configurarán automáticamente${NC}"
-    echo -e "${CYAN}con autenticación OAuth2 durante la instalación.${NC}"
+    echo -e "${CYAN}Los CLIs de IA (claude, opencode, codex) se instalan con${NC}"
+    echo -e "${CYAN}modules/03-ai-integration.sh y cada uno gestiona su propio login.${NC}"
 
     # Información para el usuario
     cat > "$HOME/.ai-info" <<'AI_INFO'
-# Información de Agentes IA - Termux AI Setup
+# Información de Agentes IA - Termux AI Setup (v0.2.0)
 #
-# Agentes disponibles después de la instalación:
-# - gemini auth login    # Autenticación Google OAuth2
-# - codex login         # Autenticación OpenAI OAuth2
-# - qwen-code           # Agente Qwen para código
+# CLIs disponibles después de la instalación:
+# - claude              # Anthropic Claude Code
+# - opencode            # Agente multi-proveedor (DeepSeek, GLM, modelos gratis)
+# - codex               # OpenAI Codex CLI
+# - wrangler whoami     # Cloudflare developer CLI (no es un agente)
+# - agy                 # Google Antigravity (instalación manual: https://antigravity.google)
 #
-# Uso: Los agentes se activan automáticamente después de login OAuth2
+# Uso: el atajo 'g "tu pregunta"' envía un prompt puntual a 'opencode run'.
 AI_INFO
 
     echo -e "${GREEN}Información de agentes IA configurada!${NC}"
@@ -136,20 +137,23 @@ get_memory_usage() {
     fi
 }
 
-# Función para modo headless de Gemini con atajo 'g'
+# Atajo 'g': consulta puntual a un agente IA en modo headless.
+# Apunta a 'opencode run' (equivalente al viejo wrapper de un solo turno).
+# Si prefieres otro agente, cambia AGENT_CMD / AGENT_HEADLESS aquí abajo:
+#   AGENT_CMD="claude"   AGENT_HEADLESS=("-p")
+#   AGENT_CMD="codex"    AGENT_HEADLESS=("exec")
 g() {
-    if ! command -v gemini &> /dev/null; then
-        echo "Error: El comando 'gemini' no está instalado o no se encuentra en el PATH."
-        echo "Por favor, instálalo con: npm install -g @google/gemini-cli"
-        return 1
-    fi
-
     if [ -z "$1" ]; then
         echo "Uso: g \"tu pregunta\""
         return 1
     fi
 
-    # Se elimina la comprobación 'gemini auth test' porque es poco fiable en algunos entornos.
-    # El propio comando 'gemini -p' fallará con un error claro si la autenticación es necesaria.
-    gemini -p "$*"
+    if ! command -v opencode &> /dev/null; then
+        echo "Error: 'opencode' no está instalado o no está en el PATH."
+        echo "Instálalo con: npm install -g opencode-ai"
+        echo "O repunta la función 'g' a otro agente en ~/.zsh/functions.zsh"
+        return 1
+    fi
+
+    opencode run "$*"
 }
