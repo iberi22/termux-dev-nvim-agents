@@ -7,14 +7,16 @@ local function load_ai_env()
   local ai_env_file = vim.fn.expand("~/.ai-env")
   local env = {}
 
-  -- Default values - OAuth2 based authentication
-  env.CURRENT_AI_PROVIDER = "gemini-cli"
+  -- Default values. CodeCompanion is the primary assistant, and its default
+  -- adapter is 'copilot'; switch providers at runtime with <leader>ap.
+  -- The CLI agents (claude, opencode, codex, wrangler) are installed by
+  -- modules/03-ai-integration.sh and each one manages its own credentials.
+  env.CURRENT_AI_PROVIDER = "copilot"
   env.OPENAI_API_KEY = ""
   env.ANTHROPIC_API_KEY = ""
   env.CHUTES_API_KEY = ""
   env.MOONSHOT_API_KEY = ""
   env.GLM_API_KEY = ""
-  -- Note: GEMINI_API_KEY removed - use 'gemini auth login' for OAuth2
 
   if vim.fn.filereadable(ai_env_file) == 1 then
     for line in io.lines(ai_env_file) do
@@ -129,15 +131,6 @@ return {
             schema = {
               model = {
                 default = "claude-3.5-sonnet",
-              },
-            },
-          })
-        end,
-        copilot_gemini = function()
-          return require("codecompanion.adapters").extend("copilot", {
-            schema = {
-              model = {
-                default = "gemini-2.0-flash-exp",
               },
             },
           })
@@ -470,10 +463,11 @@ return {
     },
   },
 
-  -- Claude Code - Direct Claude integration
+  -- Claude Code CLI integration (the 'claude' agent installed by 03-ai-integration).
+  -- Provides :ClaudeCode inside a floating terminal, using the local CLI's own login.
   {
     "greggh/claude-code.nvim",
-    enabled = false, -- Disabled by default, can be enabled by user
+    enabled = true,
     dependencies = {
       "nvim-lua/plenary.nvim",
     },
@@ -488,24 +482,22 @@ return {
     end,
   },
 
-  -- Gemini integration
-  {
-    "jonroosevelt/gemini-cli.nvim",
-    enabled = true,
-    cmd = { "Gemini", "GeminiChat" },
-    keys = {
-      { "<leader>gc", "<cmd>Gemini<cr>", desc = "Gemini Chat" },
-      { "<leader>gq", "<cmd>GeminiChat<cr>", desc = "Gemini Quick" },
-    },
-    config = function()
-      -- NOTE: Using system gemini CLI with OAuth2 instead of API key
-      -- Run 'gemini auth login' to authenticate
-      require("gemini").setup({
-        model = "gemini-2.5-flash",
-        -- OAuth2 authentication is handled by system gemini CLI
-      })
-    end,
-  },
+  -- ---------------------------------------------------------------------------
+  -- Other CLI agents: opencode, codex, wrangler, agy
+  --
+  -- These are terminal-first tools and are run from a shell or from Neovim's
+  -- built-in :terminal / :!  There is no plugin spec here on purpose: only add
+  -- one if you have verified that the plugin exists and is maintained.
+  --
+  -- Suggested (no plugin required):
+  --   :terminal opencode            " provider-agnostic agent
+  --   :terminal codex               " OpenAI Codex
+  --   :!wrangler whoami             " Cloudflare CLI
+  --   :terminal agy                 " Google Antigravity (manual install)
+  --
+  -- To enable Claude Code for a specific project, run ':ClaudeCode' from the
+  -- project root; it uses whatever login the 'claude' binary already has.
+  -- ---------------------------------------------------------------------------
 
   -- Blink compatibility for AI completions
   {

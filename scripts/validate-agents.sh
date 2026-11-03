@@ -30,13 +30,51 @@ done
 if [[ "$MINIMAL" == true ]]; then
     COMPONENTS=(git node npm)
 elif [[ "$FULL" == true ]]; then
-    COMPONENTS=(git node npm zsh curl wget gemini)
+    COMPONENTS=(git node npm zsh curl wget claude opencode codex wrangler agy)
 else
     COMPONENTS=(git node npm)
 fi
 
+# Components whose absence is only a warning, never a failure.
+# 'agy' (Google Antigravity) has no npm package and must be downloaded by hand.
+WARN_ONLY=(agy)
+
+# When the interactive installer exported a CLI selection, only validate the
+# CLIs the user asked for: an unselected CLI is not a missing component.
+if [[ -n "${TERMUX_AI_COMPONENTS:-}" && "${TERMUX_AI_COMPONENTS}" != "all" ]]; then
+    SELECTED_CLIS=" ${TERMUX_AI_COMPONENTS//,/ } "
+    FILTERED=()
+    for comp in "${COMPONENTS[@]}"; do
+        case "$comp" in
+            claude | opencode | codex | wrangler | agy)
+                case "$SELECTED_CLIS" in
+                    *" $comp "*) FILTERED+=("$comp") ;;
+                    *) : ;; # not selected: do not validate it
+                esac
+                ;;
+            *)
+                FILTERED+=("$comp")
+                ;;
+        esac
+    done
+    COMPONENTS=("${FILTERED[@]}")
+fi
+
 results=()
 failures=()
+warnings=()
+
+# Returns 0 when the component is warning-only.
+is_warn_only() {
+    local needle="$1"
+    local candidate
+    for candidate in "${WARN_ONLY[@]}"; do
+        if [[ "$candidate" == "$needle" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
 
 probe_version(){
     local cmd="$1"
@@ -48,7 +86,11 @@ probe_version(){
         zsh) ver=$(zsh --version 2>/dev/null || true) ;;
         curl) ver=$(curl --version 2>/dev/null | head -n1 || true) ;;
         wget) ver=$(wget --version 2>/dev/null | head -n1 || true) ;;
-        gemini) ver=$(gemini --version 2>/dev/null || true) ;;
+        claude) ver=$(claude --version 2>/dev/null | head -n1 || true) ;;
+        opencode) ver=$(opencode --version 2>/dev/null | head -n1 || true) ;;
+        codex) ver=$(codex --version 2>/dev/null | head -n1 || true) ;;
+        wrangler) ver=$(wrangler --version 2>/dev/null | head -n1 || true) ;;
+        agy) ver=$(agy --version 2>/dev/null | head -n1 || true) ;;
         *) ver="" ;;
     esac
     echo "$ver"
@@ -56,9 +98,12 @@ probe_version(){
 
 for comp in "${COMPONENTS[@]}"; do
     if command -v "$comp" >/dev/null 2>&1; then
-        local_path=$(command -v "$comp" 2>/dev/null || echo "")
+        comp_path=$(command -v "$comp" 2>/dev/null || echo "")
         version=$(probe_version "$comp" || true)
-        results+=("OK|${comp}|${local_path}|${version}")
+        results+=("OK|${comp}|${comp_path}|${version}")
+    elif is_warn_only "$comp"; then
+        results+=("WARN|${comp}|not found")
+        warnings+=("${comp}")
     else
         results+=("FAIL|${comp}|not found")
         failures+=("${comp}")
@@ -74,6 +119,7 @@ done
 if [[ "$JSON_OUT" == true ]]; then
     total=${#results[@]}
     failures_count=${#failures[@]}
+    warnings_count=${#warnings[@]}
 
     # Build JSON array (simple, avoids jq dependency)
     json_items=""
@@ -88,7 +134,7 @@ if [[ "$JSON_OUT" == true ]]; then
     # Remove trailing comma
     json_items="${json_items%,}"
 
-    json_out="{\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"total\":${total},\"failures\":${failures_count},\"results\":[${json_items}] }"
+    json_out="{\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"total\":${total},\"failures\":${failures_count},\"warnings\":${warnings_count},\"results\":[${json_items}] }"
 
     if [[ "$PRETTY" == true ]]; then
         # Pretty print using python if available
@@ -104,11 +150,17 @@ fi
 
 # Log the run
 {
-    echo "[validate-agents] $(date +'%Y-%m-%d %H:%M:%S') - checked ${#COMPONENTS[@]} components - failures=${#failures[@]}"
+    echo "[validate-agents] $(date +'%Y-%m-%d %H:%M:%S') - checked ${#COMPONENTS[@]} components - failures=${#failures[@]} warnings=${#warnings[@]}"
     for line in "${results[@]}"; do
         echo "    $line"
     done
 } >> "$LOG_FILE" 2>/dev/null || true
+
+if ((${#warnings[@]} > 0)); then
+    for warn_comp in "${warnings[@]}"; do
+        echo "WARN: componente opcional ausente (requiere instalación manual): ${warn_comp}"
+    done
+fi
 
 if ((${#failures[@]} > 0)); then
     exit ${#failures[@]}

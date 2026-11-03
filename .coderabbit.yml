@@ -41,5 +41,5 @@ knowledge_base:
     enabled: true
     filePatterns:
       - "AGENTS.md"
-      - "GEMINI.md"
       - "specs/*.md"
+      - "README.md"

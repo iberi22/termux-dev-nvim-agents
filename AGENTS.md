@@ -1,56 +1,75 @@
 # 🤖 Agentes de IA Soportados
 
-Este proyecto integra agentes de IA en Termux con foco en Gemini CLI (OAuth2). Otros CLIs como Codex y Qwen son opcionales. Esta guía resume capacidades, instalación y uso.
+Este proyecto instala cinco CLIs en Termux: cuatro por npm (`claude`, `opencode`, `codex`,
+`wrangler`) y uno de instalación manual (`agy`, Google Antigravity). No hay ningún agente
+obligatorio: `setup.sh` te deja elegir cuáles quieres.
 
 ## Resumen
 
-- Obligatorio: Google Gemini CLI (@google/gemini-cli) con autenticación OAuth2.
-- Opcionales: OpenAI Codex (si está disponible) y Qwen Code. Se intentan instalar, pero no son requisito.
-- Acceso rápido: usa `:` para consultas headless al modelo por defecto.
+| key | npm package | binario | instalación |
+|-----|-------------|---------|-------------|
+| `claude` | `@anthropic-ai/claude-code` | `claude` | automática |
+| `opencode` | `opencode-ai` | `opencode` | automática |
+| `codex` | `@openai/codex` | `codex` | automática |
+| `wrangler` | `wrangler` | `wrangler` | automática |
+| `agy` | — (no hay paquete npm) | `agy` | **manual**: https://antigravity.google |
 
-## Gemini CLI (obligatorio)
+Selección por grupos: `bash setup.sh` abre el menú interactivo. Para automatización:
 
-- Instalación: `npm install -g @google/gemini-cli` (Node.js >= 20 requerido).
-- Autenticación: `gemini` y elige “Login with Google” (OAuth); o `gemini auth login` según flujo actual.
-- Modelos: puedes fijar `-m gemini-1.5-flash` (rápido) o configurar `~/.gemini/settings.json` con `model.name`.
-- Modo headless: `gemini -p "tu pregunta"` o vía nuestro wrapper `:`.
-- Documentación oficial:
-  - NPM: [@google/gemini-cli](https://www.npmjs.com/package/@google/gemini-cli)
-  - README y docs: [google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
-  - Configuración: [configuration.md](https://raw.githubusercontent.com/google-gemini/gemini-cli/HEAD/docs/cli/configuration.md)
-  - Autenticación: [authentication.md](https://raw.githubusercontent.com/google-gemini/gemini-cli/HEAD/docs/cli/authentication.md)
+```bash
+bash setup.sh --components=claude,opencode,codex   # sin menú
+TERMUX_AI_COMPONENTS=claude,codex bash modules/03-ai-integration.sh   # solo el módulo
+```
 
-### Comando `:` (wrapper headless)
+`TERMUX_AI_COMPONENTS` acepta una lista separada por comas o espacios, o `all`.
 
-- Atajo del sistema que envía prompts a Gemini con el modelo por defecto.
-- Si no hay login: se te pedirá ejecutar `gemini auth login`.
-- Ejemplos:
-  - `: "Explica cómo configurar SSH en Termux"`
-  - `: "Genera un script bash para respaldo incremental"`
+## Claude Code (`claude`)
 
-## OpenAI Codex (opcional)
+- Instalación: `npm install -g @anthropic-ai/claude-code` (Node.js >= 20).
+- Uso: `claude` en el directorio del proyecto.
+- Integración con Neovim: plugin `greggh/claude-code.nvim` (habilitado en `config/neovim`),
+  comando `:ClaudeCode`.
 
-- Intento de instalación: `@openai/codex` o `openai-codex` si existe.
-- Autenticación: algunos bins ofrecen `codex login` (OAuth); puede no estar disponible.
-- Uso: `codex "escribe un scraper en Python"`.
+## OpenCode (`opencode`)
 
-## Qwen Code (opcional)
+- Instalación: `npm install -g opencode-ai`.
+- Uso: `opencode` (TUI) u `opencode run "tu tarea"` (un solo turno).
+- Es agnóstico de proveedor: sirve para DeepSeek, GLM, modelos gratuitos y proveedores locales.
+- El atajo de shell `g "tu pregunta"` apunta aquí; se puede repuntar en `config/zsh/functions.zsh`.
 
-- Paquetes candidatos: `qwen-code` o `@qwen/qwen-code`.
-- Configuración: algunos exponen `qwen` o `qwen-code` con comando `setup`.
-- Uso: `qwen "refactor this function"` o `qwen-code "generate unit tests"`.
+## OpenAI Codex (`codex`)
+
+- Instalación: `npm install -g @openai/codex`.
+- Uso: `codex` en el directorio del proyecto.
+
+## Cloudflare Wrangler (`wrangler`)
+
+- No es un agente, es la CLI de desarrollo de Cloudflare (Workers, Pages, KV, D1).
+- Instalación: `npm install -g wrangler`. Requiere Node.js 22 o superior.
+- Uso: `wrangler whoami`, `wrangler deploy`.
+
+## Google Antigravity (`agy`)
+
+- **No existe paquete npm.** El instalador solo lo detecta y, si falta, avisa con la URL.
+- Descarga manual: https://antigravity.google
+- Una ausencia de `agy` es un **warning**, nunca un fallo de instalación.
+- `modules/99-clean-reset.sh` no lo desinstala: lo gestiona su propio instalador.
 
 ## Reglas y recomendaciones
 
-- Sin API keys para Gemini: usa únicamente OAuth2 (Login with Google). No utilices `GEMINI_API_KEY` en este proyecto.
-- Actualiza PROGRESS.md: cada cambio en agentes o flujos debe registrarse.
-- Versiones y modelos: preferimos `gemini-2.5-flash` por rapidez; puedes cambiarlo con `-m` o en `settings.json`.
+- Actualiza `specs/PROGRESS.md` con cada cambio en agentes o flujos.
+- Todos los instaladores son idempotentes: si el binario existe, se reporta su `--version` y no se
+  reinstala nada.
+- Antes de instalar por npm a mano, exporta el guard de node-gyp de Termux:
+  `export GYP_DEFINES="android_ndk_path=/dev/null"`.
 
 ## Solución de problemas
 
-- Gemini no autenticado:
-  - Ejecuta `gemini auth login` y valida con `gemini auth test`.
-- Node.js faltante:
-  - Instala Node.js 20+; en Termux usamos `apt` y ajustamos entorno.
-- Errores de permisos en /tmp:
-  - El proyecto ya usa `$HOME/.cache`; asegúrate de tener espacio libre.
+- **npm EACCES en el prefijo global**: `npm config set prefix "$HOME/.npm-global"` y añade
+  `$HOME/.npm-global/bin` al `PATH`.
+- **El CLI se instala pero no aparece**: el prefijo global de npm no está en el `PATH`; abre una
+  shell nueva.
+- **`wrangler` no arranca**: necesita Node.js 22+ (`pkg upgrade nodejs`).
+- **`agy` no aparece**: normal, no está en npm; descárgalo desde https://antigravity.google.
+- **Node.js faltante**: el módulo `00-base-packages` lo instala, junto con npm.
+- **Errores de permisos en /tmp**: el proyecto usa `$HOME/.cache`; asegúrate de tener espacio.

@@ -13,9 +13,15 @@ let systemStatus = {
   git: false,
   zsh: false,
   neovim: false,
-  gemini: false,
+  claude: false,
+  opencode: false,
+  codex: false,
+  wrangler: false,
+  agy: false,
   ssh: false
 };
+
+let agentInventory = [];
 
 let diskUsage = {};
 let gitProjects = [];
@@ -92,8 +98,8 @@ function renderApp() {
               🖥️ Iniciar HTTP Server (9999)
             </button>
             <div class="grid grid-cols-2 gap-3">
-              <button id="gemini-auth-status-btn" class="btn w-full">🤖 Estado Auth Gemini</button>
-              <button id="gemini-login-btn" class="btn w-full">🔐 Login Gemini</button>
+              <button id="agents-status-btn" class="btn w-full">🤖 Estado CLIs IA</button>
+              <button id="agents-refresh-btn" class="btn w-full">🔄 Refrescar CLIs</button>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <button id="ssh-test-btn" class="btn w-full">🔍 Probar SSH GitHub</button>
@@ -142,7 +148,11 @@ function renderSystemStatus() {
     { name: 'Git', key: 'git' },
     { name: 'Zsh', key: 'zsh' },
     { name: 'Neovim', key: 'neovim' },
-    { name: 'Gemini CLI', key: 'gemini' },
+    { name: 'Claude Code', key: 'claude' },
+    { name: 'OpenCode', key: 'opencode' },
+    { name: 'Codex', key: 'codex' },
+    { name: 'Wrangler', key: 'wrangler' },
+    { name: 'Antigravity (agy)', key: 'agy' },
     { name: 'SSH Server', key: 'ssh' }
   ];
 
@@ -213,16 +223,16 @@ function setupEventListeners() {
     addLog('[ACTION] Iniciando servidor HTTP en puerto 9999...', 'info');
   });
 
-  // Gemini auth status
-  document.getElementById('gemini-auth-status-btn').addEventListener('click', () => {
-    socket.emit('action', { type: 'gemini_auth_status' });
-    addLog('[ACTION] Verificando estado de autenticación de Gemini...', 'info');
+  // AI CLIs status (v0.2.0: claude, opencode, codex, wrangler, agy)
+  document.getElementById('agents-status-btn').addEventListener('click', () => {
+    socket.emit('action', { type: 'agents_status' });
+    addLog('[ACTION] Consultando estado de los CLIs de IA...', 'info');
   });
 
-  // Gemini login
-  document.getElementById('gemini-login-btn').addEventListener('click', () => {
-    socket.emit('action', { type: 'gemini_login' });
-    addLog('[ACTION] Iniciando login de Gemini...', 'info');
+  // Refresh AI CLIs
+  document.getElementById('agents-refresh-btn').addEventListener('click', () => {
+    socket.emit('action', { type: 'agents_status' });
+    addLog('[ACTION] Refrescando inventario de CLIs...', 'info');
   });
 
   // Test SSH GitHub
@@ -281,18 +291,15 @@ function connectWebSocket() {
     addLog(data.message, data.level);
   });
 
-  socket.on('gemini_auth', (data) => {
-    const text = data.authenticated ? 'Gemini autenticado' : 'Gemini no autenticado';
-    addLog(`[GEMINI] ${text}`, data.authenticated ? 'success' : 'warning');
-  });
-
-  socket.on('gemini_auth_flow', (data) => {
-    const url = data.url;
-    showModal('Completar Login de Gemini', `
-      <p class="mb-2">Abre la siguiente URL para completar el login:</p>
-      <p><a href="${url}" target="_blank" class="text-blue-400 underline">${url}</a></p>
-    `);
-    addLog('[GEMINI] URL de autenticación mostrada', 'info');
+  socket.on('agents_status', (data) => {
+    agentInventory = data.agents || [];
+    const lines = agentInventory.map(agent => {
+      if (agent.installed) {
+        return `${agent.name}: ${agent.version || agent.path}`;
+      }
+      return `${agent.name}: ${agent.manual ? 'manual (https://antigravity.google)' : 'no instalado'}`;
+    });
+    addLog(`[AGENTS] ${lines.join(' | ')}`, 'info');
   });
 
   socket.on('task_start', (data) => {

@@ -1,256 +1,186 @@
-# 🚀 Termux AI Setup - Entorno de Desarrollo con IA (v2025-09-25.1b42aca)
+# Termux Dev + Neovim + AI Agents
+
+An interactive Termux installer that turns an Android phone into a full AI-assisted development
+environment: zsh, Neovim, an SSH server and five CLI agents.
 
 [![CI](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/iberi22/termux-dev-nvim-agents/actions/workflows/ci.yml)
 
-Sistema automatizado de configuración de Termux con agente de IA integrado usando Gemini CLI. Instalación con un comando y asistente inteligente para administrar tu entorno de desarrollo.
+## What's new in v0.2.0
 
-## ✨ Características Principales
+- **Interactive component selection.** `bash setup.sh` now opens a menu where you pick which
+  groups to install and, inside the AI group, which CLI agents you actually want.
+- **Gemini CLI removed.** The Google Gemini CLI no longer exists, so the installer no longer
+  references, installs or configures it anywhere.
+- **Five CLIs instead of one agent.** `claude`, `opencode`, `codex`, `wrangler` and `agy`
+  (Google Antigravity, installed manually — see below).
+- **No forced installs any more.** Nothing is installed behind your back: every CLI is opt-in,
+  and an agent you do not select is simply not touched.
 
-- **🤖 Agente IA Integrado**: Usa `g "tu pregunta"` para interactuar con Gemini 2.5-flash
-- **⚡ Instalación Automática**: Un solo comando instala todo el entorno
-- **🔐 Autenticación OAuth2**: Sin API keys manuales, autenticación persistente
-- **🛠️ Entorno Completo**: Git, Node.js, Zsh, SSH configurados automáticamente
-- **📱 Optimizado para Termux**: Especialmente diseñado para desarrollo en Android
-- **✅ Validación de Dependencias**: Script de validación para asegurar que todas las dependencias de los agentes de IA estén instaladas.
+## Requirements
 
-## 🚀 Instalación Rápida
+- **Termux from F-Droid**, not from the Play Store. The Play Store build is abandoned and pulls
+  in incompatible package paths.
+- **Android 7.0 (API 24) or newer.**
+- **About 2 GB of free storage** for Termux packages, Node.js, Neovim and the npm CLIs.
+- A working internet connection during installation.
+- Node.js 22+ is recommended if you plan to use `wrangler`.
+
+## Install
+
+One-liner (clones the repo, installs everything, no questions asked):
 
 ```bash
 curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
 ```
 
-### ¿Qué instala automáticamente?
+> Piping into `bash` means stdin is not a terminal, so the interactive menu is skipped and
+> **everything** is installed. That is intentional: it keeps the one-liner usable for automation.
 
-- ✅ **Git** con configuración SSH para GitHub
-- ✅ **Node.js LTS** para herramientas de desarrollo
-- ✅ **Zsh + Oh My Zsh** con configuración personalizada
-- ✅ **Gemini CLI** con autenticación OAuth2
-- ✅ **Agente IA** accesible con `g "pregunta"`
-- ✅ **Configuración SSH** para acceso remoto (opcional)
-- ⚠️ **Neovim** disponible opcionalmente
-
-## 🤖 Usando el Agente IA
-
-Una vez instalado, usa el comando `g` para interactuar:
+To get the menu, clone the repository and run the setup script directly:
 
 ```bash
-# Ejemplos de uso
-g "¿Cómo instalar Python en Termux?"
-g "Configurar GitHub SSH"
-g "Crear script de backup automático"
-g "¿Por qué falla mi aplicación Node.js?"
-g "Mejores prácticas para desarrollo móvil"
-gemini --help      # Ayuda completa
-# gemini --status    # Comando no disponible actualmente
-gemini auth login     # Reconfigurar autenticación Gemini CLI
-```
-
-## 📋 Requisitos
-
-- **Android** con Termux instalado
-- **Conexión a internet** para descargas
-- **Cuenta Google** para autenticación Gemini CLI
-
-### Instalación en Windows (Desarrollo/Testing)
-
-Para desarrollo en Windows usando Android Emulator:
-
-```powershell
-# 1. Instalar Android Studio y crear AVD con Android 13+
-# 2. Descargar Termux desde F-Droid en el emulador
-# 3. Ejecutar en Termux dentro del emulador:
-curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
-```
-
-**Alternativamente**, usa WSL2 para una experiencia nativa:
-
-```bash
-# En WSL2 Ubuntu/Debian
-curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
-```
-
-## 🔧 Configuración Manual
-
-Si prefieres instalación paso a paso:
-
-```bash
-# Descargar repositorio
 git clone https://github.com/iberi22/termux-dev-nvim-agents.git
 cd termux-dev-nvim-agents
-
-# Instalación interactiva
-./quick-setup.sh
-
-# O instalación automática
-./quick-setup.sh --auto
+bash setup.sh
 ```
 
-## 🆘 Solución de Problemas
-
-### Problema: Comando g no funciona
+Non-interactive automation is also supported:
 
 ```bash
-# Verificar instalación
-which g
-gemini --version
-
-# Reinstalar alias
-# El comando 'g' es un alias. Asegúrate de que tu ~/.zshrc o ~/.bashrc esté siendo cargado
-# y que contenga la línea: source ~/termux-ai-setup/config/zsh/functions.zsh
+bash setup.sh --components=claude,opencode,codex   # pick the CLIs, no menu
+bash setup.sh auto --no-menu                       # full install, fully unattended
 ```
 
-### Problema: Error de autenticación Gemini
+## Interactive menu
+
+Running `bash setup.sh` and choosing *Full installation* opens the component menu:
+
+| Key | Group | Modules |
+|-----|-------|---------|
+| `1` | Base system (always on) | `00-user-input`, `00-network-fixes`, `00-fix-conflicts`, `00-system-optimization`, `00-base-packages` |
+| `2` | Shell + editor | `01-zsh-setup`, `02-neovim-setup`, `06-fonts-setup` |
+| `3` | AI CLIs | `03-ai-integration` (then a sub-menu per CLI) |
+| `4` | SSH | `07-local-ssh-server`, `05-ssh-setup` |
+
+Commands: a number toggles that group, `a` selects everything, `n` clears everything (the base
+system stays on), `d` installs what is selected, `q` quits without installing anything.
+
+Group 3 opens a second menu for the individual agents:
+
+| Key | Agent | What it is |
+|-----|-------|------------|
+| `1` | `claude` | Anthropic Claude Code, the official agentic coding CLI |
+| `2` | `opencode` | Provider-agnostic agent (DeepSeek, GLM, free models, local providers) |
+| `3` | `codex` | OpenAI Codex CLI |
+| `4` | `wrangler` | Cloudflare developer CLI — not an agent, but part of the toolchain |
+| `5` | `agy` | Google Antigravity. **No npm package**: you must download it from <https://antigravity.google> |
+
+Selecting nothing beyond the base system is valid: the installer runs the base modules only and
+finishes successfully.
+
+## What gets installed
+
+| Group | Component | Source | Verify with |
+|-------|-----------|--------|-------------|
+| Base | Git, Node.js, npm, Python, build tools | `pkg` | `git --version`, `node --version` |
+| Base | Termux tweaks, network fixes, conflict cleanup | local scripts | — |
+| Shell | Zsh + Oh My Zsh + prompt theme | `pkg` / upstream | `zsh --version` |
+| Editor | Neovim + Lua config (LSP, Telescope, AI plugins) | `pkg` + repo config | `nvim --version` |
+| Editor | FiraCode Nerd Font | repo assets | `ls ~/.termux/font.ttf` |
+| AI | `claude` | `@anthropic-ai/claude-code` | `claude --version` |
+| AI | `opencode` | `opencode-ai` | `opencode --version` |
+| AI | `codex` | `@openai/codex` | `codex --version` |
+| AI | `wrangler` | `wrangler` | `wrangler --version` |
+| AI | `agy` | manual download | `agy --version` |
+| SSH | OpenSSH server + helper scripts | `pkg` | `ssh -V` |
+| SSH | GitHub keys and `~/.ssh/config` | repository helpers | `ssh -T git@github.com` |
+
+Every npm-backed CLI is idempotent: if the binary already exists it is reported with its version
+and left alone.
+
+## Usage
 
 ```bash
-# Reconfigurar autenticación
-gemini auth login
+# Anthropic Claude Code — interactive session in the current directory
+claude
 
-# Verificar estado
-gemini auth test
+# OpenCode — pipe a single task and exit
+opencode run "explain the function in server.go"
+
+# OpenAI Codex
+codex
+
+# Cloudflare Wrangler — check who you are authenticated as
+wrangler whoami
+
+# Google Antigravity (after the manual install)
+agy
 ```
 
-### Problema: Node.js no encontrado
+A convenience shell function is installed for quick one-shot prompts:
 
 ```bash
-# Verificar instalación
-node --version
-npm --version
+g "resize the PNGs in this folder"
 ```
 
-## �️ Herramientas Instaladas
-
-| Herramienta | Propósito | Comando de Verificación |
-|-------------|-----------|------------------------|
-| Git | Control de versiones | `git --version` |
-| Node.js | Runtime JavaScript | `node --version` |
-| Zsh | Shell avanzado | `zsh --version` |
-| Oh My Zsh | Framework Zsh | `ls ~/.oh-my-zsh` |
-| Gemini CLI | IA Google | `gemini --version` |
-| SSH | Acceso remoto | `ssh -V` |
-
-## 🎯 Casos de Uso Comunes
-
-### Desarrollo Web
-
-```bash
-g "Crear proyecto React en Termux"
-g "Configurar servidor de desarrollo"
-```
-
-### Automatización
-
-```bash
-g "Script para backup de código"
-g "Optimizar Termux para desarrollo"
-g "Instalar herramientas de línea de comandos"
-```
-
-## 🔐 Configuración SSH (Opcional)
-
-Para acceso remoto a tu dispositivo, el script instala y configura un servidor SSH.
-
-### Gestión del Servidor SSH
-
-Hemos incluido scripts de ayuda para facilitar la gestión del servidor:
-
--   `ssh-local-start`: Inicia el servidor SSH.
--   `ssh-local-stop`: Detiene el servidor SSH.
--   `ssh-local-info`: Muestra la información de conexión actual (IP, puerto, etc.).
-
-**Ejemplo de uso:**
-
-```bash
-# Iniciar el servidor y ver cómo conectarse
-ssh-local-start
-```
-
-Para conectar desde otra máquina en la misma red:
-
-```bash
-# El puerto por defecto es 8022
-ssh -p 8022 tu_usuario@IP_DEL_DISPOSITIVO
-```
-
-## Quick Installation
-
-One-liner (see "Instalación Rápida" above):
-
-```bash
-curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
-```
-
-## SSH/SFTP Access
-
-Examples (see "Configuración SSH" above):
-
-```bash
-ssh -p 8022 usuario@IP_DEL_DISPOSITIVO
-```
-
-```bash
-sftp -P 8022 usuario@IP_DEL_DISPOSITIVO
-```
+`g` runs `opencode run`, so it uses whichever provider you configured for OpenCode. It is a plain
+function in `config/zsh/functions.zsh`: repoint it to `claude`, `codex` or anything else by editing
+that file.
 
 ## Troubleshooting
 
-See "🆘 Solución de Problemas" section above for common fixes.
+**`npm install -g` fails with EACCES on the global prefix**
 
-## AI Commands
-
-Use 'g' to ask Gemini. Examples:
-
-```bash
-g "¿Cómo instalar Python en Termux?"
-g "Configurar GitHub SSH"
-```
-
-## 📚 Documentación
-
-- **[AGENTS.md](./AGENTS.md)** - Agentes IA soportados y configuración
-- **[GEMINI.md](./GEMINI.md)** - Guía completa del CLI de Gemini
-- **Especificaciones y Roadmap**: [SPEC](./specs/SPEC.md) · [ROADMAP](./specs/ROADMAP.md) · [TASKS](./specs/TASKS.md) · [PROGRESS](./specs/PROGRESS.md)
-
-> **Regla del proyecto**: cada cambio relevante debe actualizar `specs/PROGRESS.md`.
-
-## 🤝 Contribuir
+Termux prefixes are per-user, so this usually means npm is pointing at a read-only location.
+Reset the prefix and retry:
 
 ```bash
-# Fork del repositorio
-git clone https://github.com/TU_USUARIO/termux-dev-nvim-agents.git
-
-# Crear rama para cambios
-git checkout -b nueva-caracteristica
-
-# Realizar cambios y commit
-git commit -m "Agregar nueva característica"
-
-# Push y crear Pull Request
-git push origin nueva-caracteristica
+mkdir -p "$HOME/.npm-global"
+npm config set prefix "$HOME/.npm-global"
+export PATH="$HOME/.npm-global/bin:$PATH"   # add this to ~/.zshrc to make it permanent
 ```
 
-## � Licencia
+**A CLI installs but the binary is not found**
 
-MIT License - Ve [LICENSE](./LICENSE) para más detalles.
+The npm global prefix is not on your `PATH`. Add `$HOME/.npm-global/bin` (or whatever
+`npm config get prefix` prints, plus `/bin`) to `PATH` and open a new shell.
 
-## 🙏 Agradecimientos
+**node-gyp build errors while installing a CLI**
 
-- **Google Gemini** por la API de IA
-- **Termux Community** por el entorno Android
-- **Oh My Zsh** por el framework de shell
-
-## 📞 Soporte
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/iberi22/termux-dev-nvim-agents/issues)
-- � **Discusiones**: [GitHub Discussions](https://github.com/iberi22/termux-dev-nvim-agents/discussions)
-- 📧 **Email**: Crear issue para contacto
-
----
-
-### ⭐ Apóyanos
-
-Si te ha sido útil, considera dar una estrella al repositorio.
+Termux has no Android NDK wired into Node.js. The installer exports
+`GYP_DEFINES="android_ndk_path=/dev/null"` before every npm install to make packages skip the
+native build. If you install a package by hand, do the same:
 
 ```bash
-# Comando rápido de instalación
-curl -L https://raw.githubusercontent.com/iberi22/termux-dev-nvim-agents/main/install.sh | bash
+export GYP_DEFINES="android_ndk_path=/dev/null"
+npm install -g <package>
 ```
+
+**`wrangler` refuses to start**
+
+Wrangler requires Node.js 22 or newer. Check with `node --version`; if it is older, update with
+`pkg upgrade nodejs`, or install `nodejs-lts`.
+
+**`agy` is missing after the install**
+
+That is expected. Google Antigravity is not published on npm, so the installer only reports it.
+Download it from <https://antigravity.google>, install it, and re-run `scripts/validate-agents.sh`
+to confirm. A missing `agy` is a warning, never a failure.
+
+**Can I see the installer logs?**
+
+Yes: `~/termux-ai-setup/setup.log` and the legacy `setup.log` in the repository root.
+
+## Uninstall
+
+Full reset — removes Neovim config, AI workflows, the five CLIs, fonts and optionally zsh and SSH:
+
+```bash
+bash modules/99-clean-reset.sh
+```
+
+The script asks before every destructive step, and offers to reinstall when it is done.
+
+## License
+
+MIT License with Non-Commercial Restriction. See [LICENSE](./LICENSE) for the exact terms.

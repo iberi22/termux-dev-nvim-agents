@@ -56,7 +56,7 @@ npm run build
 
 ### Dashboard Principal
 
-- **Estado del Sistema**: Node.js, Git, Zsh, Neovim, Gemini CLI, SSH
+- **Estado del Sistema**: Node.js, Git, Zsh, Neovim, CLIs de IA (claude, opencode, codex, wrangler, agy), SSH
 - **Uso del Disco**: Tamaños de directorios importantes
 - **Proyectos Git**: Repositorios en `~/src` con estado de cambios
 - **Logs en Tiempo Real**: Actividad del sistema y acciones
@@ -66,6 +66,8 @@ npm run build
 - 🔑 **Mostrar Llave SSH**: Visualiza la clave pública para GitHub
 - 🌐 **Habilitar SSH**: Activa el servidor SSH permanente
 - 🖥️ **Servidor HTTP**: Control del servidor en puerto 9999
+- 🤖 **Estado CLIs IA**: Inventario de `claude`, `opencode`, `codex`, `wrangler` y `agy`
+  (con ruta y versión; `agy` es instalación manual desde https://antigravity.google)
 
 ### Estado de Conexión
 

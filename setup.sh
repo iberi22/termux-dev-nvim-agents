@@ -172,7 +172,7 @@ show_banner() {
     clear
     echo -e "${PURPLE}"
     echo "=============================================="
-    echo "           TERMUX AI SETUP v2.0"
+    echo "           TERMUX AI SETUP v0.2.0"
     echo "   Automated System for AI Development in Termux"
     echo "=============================================="
     echo -e "${NC}
@@ -292,164 +292,7 @@ run_module() {
 }
 
 
-# Function to setup Gemini CLI (original interactive)
-setup_gemini_cli() {
-    echo -e "${YELLOW}🤖 Configurando Gemini CLI...${NC}"
-
-    # Verificar si Node.js está instalado
-    if ! command -v node &>/dev/null; then
-        echo -e "${YELLOW}📦 Node.js requerido para Gemini CLI, instalando...${NC}"
-        if ! run_module "00-base-packages"; then
-            echo -e "${RED}❌ Error instalando dependencias${NC}"
-            return 1
-        fi
-    fi
-
-    # Instalar Gemini CLI
-    if ! command -v gemini &>/dev/null; then
-        echo -e "${YELLOW}📦 Instalando Gemini CLI...${NC}"
-        npm install -g @google/gemini-cli
-    fi
-
-    # Configurar autenticación (DESACTIVADO - solo instala CLI)
-    # if ! gemini auth test &>/dev/null; then
-    #     echo -e "${CYAN}🔐 Configura la autenticación OAuth2 con Google${NC}"
-    #     gemini auth login
-    # fi
-    echo -e "${YELLOW}ℹ️ Autenticación OAuth2 omitida. Usar 'gemini auth login' manualmente si es necesario.${NC}"
-
-    echo -e "${GREEN}✅ Gemini CLI configurado${NC}"
-}
-
-# Function to setup Gemini CLI (automatic mode)
-prepare_npm_env_for_gemini() {
-    if ! command -v npm &>/dev/null; then
-        return 0
-    fi
-
-    local npm_prefix="${HOME}/.npm-global"
-    local current_prefix
-    current_prefix=$(npm config get prefix 2>/dev/null || echo "")
-
-    if [[ -z "$current_prefix" || "$current_prefix" == "null" ]]; then
-        current_prefix=""
-    fi
-
-    if [[ "$current_prefix" != "$npm_prefix" ]]; then
-        npm config set prefix "$npm_prefix" >/dev/null 2>&1 || true
-    fi
-
-    if [[ ":$PATH:" != *":${npm_prefix}/bin:"* ]]; then
-        export PATH="${npm_prefix}/bin:${PATH}"
-    fi
-
-    export NPM_CONFIG_PREFIX="$npm_prefix"
-    export npm_config_prefix="$npm_prefix"
-}
-
-install_gemini_cli_with_retries() {
-    local packages=("@google/gemini-cli@latest" "@google/gemini-cli")
-    local max_attempts=3
-    local attempt
-    local pkg
-
-    for pkg in "${packages[@]}"; do
-        attempt=1
-        while (( attempt <= max_attempts )); do
-            log "[INFO] Installing ${pkg} (attempt ${attempt}/${max_attempts})"
-            if npm install -g "$pkg" --unsafe-perm --no-progress >>"$LOG_FILE" 2>&1; then
-                return 0
-            fi
-
-            log "[WARN] npm install for ${pkg} failed (attempt ${attempt})"
-            echo -e "${YELLOW}[WARN] npm install ${pkg} failed (attempt ${attempt}). Retrying...${NC}"
-            sleep $(( attempt * 5 ))
-            attempt=$(( attempt + 1 ))
-        done
-    done
-
-    log "[ERROR] Unable to install @google/gemini-cli after retries"
-    return 1
-}
-
-setup_gemini_cli_auto() {
-    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        echo -e "${BLUE}[AUTO] Configurando Gemini CLI automaticamente...${NC}"
-    else
-        echo -e "${YELLOW}[INFO] Configurando Gemini CLI...${NC}"
-    fi
-
-    if ! command -v node &>/dev/null; then
-        if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-            echo -e "${CYAN}[INFO] Instalando Node.js antes de Gemini CLI...${NC}"
-        else
-            echo -e "${YELLOW}[INFO] Node.js requerido para Gemini CLI, instalando dependencias base...${NC}"
-        fi
-
-        if ! run_module "00-base-packages"; then
-            echo -e "${RED}[ERROR] Error instalando dependencias previas para Gemini CLI${NC}"
-            return 1
-        fi
-    fi
-
-    if ! command -v npm &>/dev/null; then
-        echo -e "${YELLOW}[INFO] npm no disponible; reintentando dependencias base...${NC}"
-        if ! run_module "00-base-packages"; then
-            echo -e "${RED}[ERROR] No se pudo asegurar npm para Gemini CLI${NC}"
-            return 1
-        fi
-    fi
-
-    prepare_npm_env_for_gemini
-
-    if command -v gemini &>/dev/null; then
-        local current_version
-        current_version=$(gemini --version 2>/dev/null || echo "desconocida")
-        echo -e "${GREEN}[OK] Gemini CLI ya disponible (v${current_version})${NC}"
-    else
-        echo -e "${CYAN}[INFO] Instalando @google/gemini-cli...${NC}"
-        if ! install_gemini_cli_with_retries; then
-            echo -e "${RED}[ERROR] Error instalando Gemini CLI. Revisa ${LOG_FILE}${NC}"
-            add_summary "Gemini CLI no se pudo instalar automaticamente"
-            return 1
-        fi
-    fi
-
-    if command -v gemini &>/dev/null; then
-        local version
-        version=$(gemini --version 2>/dev/null || echo "desconocida")
-        echo -e "${GREEN}[OK] Gemini CLI v${version} instalado${NC}"
-
-        if [[ "${TERMUX_AI_AUTO:-}" == "1" ]]; then
-            mkdir -p "$HOME/.gemini" 2>/dev/null || true
-            cat > "$HOME/.gemini/settings.json" <<'EOF'
-{
-  "model": {
-    "name": "gemini-2.5-flash"
-  },
-  "safety": {
-    "threshold": "BLOCK_ONLY_HIGH"
-  }
-}
-EOF
-            echo -e "${GREEN}[OK] Modelo predeterminado configurado: gemini-2.5-flash${NC}"
-        fi
-    else
-        echo -e "${RED}[ERROR] Gemini CLI no se detecta en el PATH tras la instalacion${NC}"
-        add_summary "Gemini CLI no se detecta tras la instalacion"
-        return 1
-    fi
-
-    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        echo -e "${CYAN}[INFO] Autenticacion OAuth2 se realizara mas tarde con 'gemini auth login'.${NC}"
-    else
-        echo -e "${YELLOW}[INFO] Autenticacion OAuth2 omitida. Ejecuta 'gemini auth login' cuando sea necesario.${NC}"
-    fi
-
-    echo -e "${GREEN}[OK] Gemini CLI configurado${NC}"
-}
-
-# Function for post-installation configuration (automatic mode)
+# Detects the user's shell in Termux (falls back to bash or sh).
 detect_termux_shell() {
     local shell_path="${SHELL:-}"
     if [[ -n "$shell_path" && -x "$shell_path" ]]; then
@@ -743,8 +586,6 @@ EOF
         fi
     fi
 
-    # Configuración final de autenticación Gemini CLI
-    configure_gemini_auth_final
 }
 
 # Configuración automática de Git y SSH
@@ -780,38 +621,6 @@ EOF
     fi
 }
 
-# Configuración final de autenticación Gemini CLI
-configure_gemini_auth_final() {
-    if [[ "${TERMUX_AI_SILENT:-}" == "1" ]]; then
-        echo -e "${CYAN}ℹ️ Gemini CLI instalado. Usa 'gemini auth login' para configurar OAuth2 cuando sea necesario${NC}"
-        return 0
-    fi
-
-    echo -e "\n${CYAN}🤖 Configuración final de Gemini CLI:${NC}"
-
-    if command -v gemini >/dev/null 2>&1; then
-        echo -e "${BLUE}¿Deseas configurar la autenticación OAuth2 con Google ahora?${NC}"
-        echo -e "${YELLOW}Esto te permitirá usar el comando ':' para consultas IA${NC}"
-        read -p "Configurar autenticación Gemini ahora? (y/N): " setup_gemini_auth
-
-        if [[ "$setup_gemini_auth" =~ ^[Yy]$ ]]; then
-            echo -e "${CYAN}🔐 Iniciando proceso de autenticación OAuth2...${NC}"
-            gemini auth login || echo -e "${YELLOW}⚠️ Autenticación no completada. Puedes configurarla más tarde con 'gemini auth login'${NC}"
-
-            # Verificar autenticación
-            if gemini auth test >/dev/null 2>&1; then
-                echo -e "${GREEN}✅ Autenticación Gemini configurada correctamente${NC}"
-                echo -e "${CYAN}💡 Ahora puedes usar: : \"tu pregunta aquí\"${NC}"
-            else
-                echo -e "${YELLOW}⚠️ Autenticación no verificada${NC}"
-            fi
-        else
-            echo -e "${CYAN}ℹ️ Podrás configurar la autenticación más tarde con: gemini auth login${NC}"
-        fi
-    else
-        echo -e "${RED}❌ Gemini CLI no encontrado${NC}"
-    fi
-}
 post_installation_setup() {
     echo -e "${CYAN}=============================================${NC}"
     echo -e "${GREEN}🎉 ¡Instalación Completada con Éxito!${NC}"
@@ -836,7 +645,7 @@ post_installation_setup() {
     if [[ "$setup_ssh_user" =~ ^[Yy]$ ]]; then
         echo -e "${BLUE}[INFO] El usuario SSH será: $(whoami)${NC}"
         echo -e "${CYAN}Asegúrate de tener una contraseña configurada para este usuario.${NC}"
-        if ! passwd -S $(whoami) >/dev/null 2>&1 || passwd -S $(whoami) | grep -q "NP"; then
+        if ! passwd -S "$(whoami)" >/dev/null 2>&1 || passwd -S "$(whoami)" | grep -q "NP"; then
             echo -e "${YELLOW}⚠️ No tienes contraseña configurada. Vamos a configurarla...${NC}"
             passwd
         else
@@ -964,6 +773,361 @@ EOF
     echo -e "${GREEN}✅ Comando 'termux-ai-panel' instalado${NC}"
 }
 
+# ============================================================
+# v0.2.0 - INTERACTIVE COMPONENT SELECTION
+# ============================================================
+
+# AI CLIs the installer knows about, in menu order.
+AI_COMPONENT_KEYS=("claude" "opencode" "codex" "wrangler" "agy")
+AI_SELECTED=()
+
+# Group toggles. The base system is forced ON: every other group
+# depends on the packages it installs.
+SELECT_GROUP_BASE=1
+SELECT_GROUP_SHELL=1
+SELECT_GROUP_AI=1
+SELECT_GROUP_SSH=1
+
+# Trims leading and trailing whitespace.
+trim() {
+    local value="$1"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
+# Reads a group toggle variable by name ("1" = on).
+group_state() {
+    local var_name="$1"
+    if [[ "${!var_name}" == "1" ]]; then
+        printf 'on'
+    else
+        printf 'off'
+    fi
+}
+
+# Flips a group toggle variable by name.
+toggle_group() {
+    local var_name="$1"
+    if [[ "${!var_name}" == "1" ]]; then
+        printf -v "$var_name" '%s' "0"
+    else
+        printf -v "$var_name" '%s' "1"
+    fi
+}
+
+# Human readable description for an AI CLI key.
+ai_component_label() {
+    case "$1" in
+        claude) printf '%s' "Anthropic Claude Code" ;;
+        opencode) printf '%s' "Provider-agnostic agent (DeepSeek, GLM, free models)" ;;
+        codex) printf '%s' "OpenAI Codex" ;;
+        wrangler) printf '%s' "Cloudflare developer CLI (not an agent)" ;;
+        agy) printf '%s' "Google Antigravity - manual install required" ;;
+        *) printf '%s' "unknown component" ;;
+    esac
+}
+
+# Adds an AI CLI key to AI_SELECTED, ignoring duplicates.
+ai_add_selected() {
+    local candidate="$1"
+    local existing
+    for existing in "${AI_SELECTED[@]}"; do
+        if [[ "$existing" == "$candidate" ]]; then
+            return 0
+        fi
+    done
+    AI_SELECTED+=("$candidate")
+    return 0
+}
+
+# Removes an AI CLI key from AI_SELECTED.
+ai_remove_selected() {
+    local needle="$1"
+    local existing
+    local -a remaining=()
+    for existing in "${AI_SELECTED[@]}"; do
+        if [[ "$existing" != "$needle" ]]; then
+            remaining+=("$existing")
+        fi
+    done
+    if ((${#remaining[@]} > 0)); then
+        AI_SELECTED=("${remaining[@]}")
+    else
+        AI_SELECTED=()
+    fi
+}
+
+# Returns 0 when the given AI CLI key is currently selected.
+ai_is_selected() {
+    local needle="$1"
+    local existing
+    for existing in "${AI_SELECTED[@]}"; do
+        if [[ "$existing" == "$needle" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Comma separated view of AI_SELECTED (for display).
+selected_ai_summary() {
+    local IFS=' '
+    if ((${#AI_SELECTED[@]} == 0)); then
+        printf 'no CLI selected'
+        return 0
+    fi
+    printf '%s' "${AI_SELECTED[*]// /, }"
+}
+
+# Comma separated value exported as TERMUX_AI_COMPONENTS.
+selected_ai_export_value() {
+    local joined=""
+    local key
+    for key in "${AI_SELECTED[@]}"; do
+        if [[ -z "$joined" ]]; then
+            joined="$key"
+        else
+            joined="${joined},${key}"
+        fi
+    done
+    printf '%s' "$joined"
+}
+
+# Populates AI_SELECTED from a comma/space separated list. 'all' or an
+# empty value selects every CLI.
+parse_ai_components() {
+    local raw="${1:-all}"
+    local -a requested=()
+    local item
+    local trimmed
+
+    AI_SELECTED=()
+    trimmed="$(trim "$raw")"
+
+    if [[ -z "$trimmed" || "$trimmed" == "all" ]]; then
+        AI_SELECTED=("${AI_COMPONENT_KEYS[@]}")
+        return 0
+    fi
+
+    raw="${raw//,/ }"
+    # IFS is scoped to this read: setup.sh runs with IFS=$'\n\t'.
+    IFS=' ' read -r -a requested <<<"$raw" || true
+
+    for item in "${requested[@]}"; do
+        item="$(trim "$item")"
+        case "$item" in
+            '')
+                continue
+                ;;
+            all)
+                AI_SELECTED=("${AI_COMPONENT_KEYS[@]}")
+                ;;
+            claude | opencode | codex | wrangler | agy)
+                ai_add_selected "$item"
+                ;;
+            *)
+                log_warn "Unknown AI component: '${item}' (ignored)."
+                ;;
+        esac
+    done
+    return 0
+}
+
+# Prints one toggle line of the component menu.
+print_group_line() {
+    local number="$1"
+    local label="$2"
+    local state="$3"
+    local detail="$4"
+    local mark="${RED}[ ]${NC}"
+    if [[ "$state" == "on" ]]; then
+        mark="${GREEN}[x]${NC}"
+    fi
+    echo -e " ${mark} ${number}. ${WHITE}${label}${NC}  ${CYAN}${detail}${NC}"
+}
+
+# Renders the top level component menu.
+show_component_menu() {
+    echo ""
+    echo -e "${CYAN}┌──────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│              SELECT WHAT TO INSTALL   (v0.2.0)               │${NC}"
+    echo -e "${CYAN}└──────────────────────────────────────────────────────────────┘${NC}"
+    print_group_line "1" "Base system" "on" "00-user-input, 00-network-fixes, 00-fix-conflicts, 00-system-optimization, 00-base-packages"
+    print_group_line "2" "Shell + editor" "$(group_state SELECT_GROUP_SHELL)" "01-zsh-setup, 02-neovim-setup, 06-fonts-setup"
+    print_group_line "3" "AI CLIs" "$(group_state SELECT_GROUP_AI)" "03-ai-integration -> $(selected_ai_summary)"
+    print_group_line "4" "SSH" "$(group_state SELECT_GROUP_SSH)" "07-local-ssh-server, 05-ssh-setup"
+    echo ""
+    echo -e "${YELLOW}Base system is always installed: every other group depends on it.${NC}"
+    echo -e "${BLUE}Commands: ${WHITE}1-4${BLUE} toggle group | ${WHITE}a${BLUE} all | ${WHITE}n${BLUE} none | ${WHITE}d${BLUE} done + install | ${WHITE}q${BLUE} quit${NC}"
+    echo -ne "${YELLOW}Selection: ${NC}"
+}
+
+# Renders the per-CLI sub-menu for the AI group.
+show_ai_submenu() {
+    local index=1
+    local key
+    local state
+
+    echo ""
+    echo -e "${CYAN}┌──────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│                    AI CLIs TO INSTALL                        │${NC}"
+    echo -e "${CYAN}└──────────────────────────────────────────────────────────────┘${NC}"
+    for key in "${AI_COMPONENT_KEYS[@]}"; do
+        state="off"
+        if ai_is_selected "$key"; then
+            state="on"
+        fi
+        print_group_line "$index" "$key" "$state" "$(ai_component_label "$key")"
+        index=$((index + 1))
+    done
+    echo ""
+    echo -e "${YELLOW}agy is not published on npm: it must be downloaded from https://antigravity.google${NC}"
+    echo -e "${BLUE}Commands: ${WHITE}1-5${BLUE} toggle CLI | ${WHITE}a${BLUE} all | ${WHITE}n${BLUE} none | ${WHITE}d${BLUE} back${NC}"
+    echo -ne "${YELLOW}Selection: ${NC}"
+}
+
+# Aborts the selection phase without installing anything.
+abort_selection() {
+    echo ""
+    log_warn "Selection cancelled: nothing was installed."
+    exit 0
+}
+
+# Sub-menu loop for the AI CLIs.
+select_ai_components_menu() {
+    local choice
+    local key
+    local index
+
+    while true; do
+        show_ai_submenu
+        read -r choice || choice="d"
+        choice="$(trim "$choice")"
+        case "$choice" in
+            1 | 2 | 3 | 4 | 5)
+                index=1
+                for key in "${AI_COMPONENT_KEYS[@]}"; do
+                    if ((index == choice)); then
+                        if ai_is_selected "$key"; then
+                            ai_remove_selected "$key"
+                        else
+                            ai_add_selected "$key"
+                        fi
+                        break
+                    fi
+                    index=$((index + 1))
+                done
+                ;;
+            a | A)
+                AI_SELECTED=("${AI_COMPONENT_KEYS[@]}")
+                ;;
+            n | N)
+                AI_SELECTED=()
+                ;;
+            d | D | "")
+                break
+                ;;
+            q | Q)
+                abort_selection
+                ;;
+            *)
+                echo -e "${RED}Unknown command: '${choice}'.${NC}"
+                ;;
+        esac
+    done
+}
+
+# Returns 0 when the interactive menu must be shown.
+selection_menu_enabled() {
+    if [[ "${TERMUX_AI_NO_MENU:-0}" == "1" ]]; then
+        return 1
+    fi
+    # An explicit CLI list is already a complete non-interactive answer.
+    if [[ -n "${TERMUX_AI_COMPONENTS:-}" ]]; then
+        return 1
+    fi
+    if [[ "${TERMUX_AI_AUTO:-0}" == "1" ]]; then
+        return 1
+    fi
+    # Piped installs (curl ... | bash) have no TTY: install everything.
+    if [[ ! -t 0 ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# Runs the selection phase and leaves the result in SELECT_GROUP_* and
+# AI_SELECTED.
+select_installation_components() {
+    # Defaults preserve the pre-0.2.0 behaviour: everything installed.
+    SELECT_GROUP_BASE=1
+    SELECT_GROUP_SHELL=1
+    SELECT_GROUP_AI=1
+    SELECT_GROUP_SSH=1
+    AI_SELECTED=("${AI_COMPONENT_KEYS[@]}")
+
+    # --components=... wins over the menu and over the defaults.
+    if [[ -n "${TERMUX_AI_COMPONENTS:-}" ]]; then
+        parse_ai_components "$TERMUX_AI_COMPONENTS"
+        log_info "AI CLIs requested via --components: $(selected_ai_summary)"
+        return 0
+    fi
+
+    if ! selection_menu_enabled; then
+        log_info "Component menu disabled (no TTY or --no-menu): installing everything."
+        return 0
+    fi
+
+    local choice
+
+    while true; do
+        show_component_menu
+        read -r choice || choice="d"
+        choice="$(trim "$choice")"
+        case "$choice" in
+            1)
+                echo -e "${YELLOW}Base system is mandatory and always selected.${NC}"
+                ;;
+            2)
+                toggle_group SELECT_GROUP_SHELL
+                ;;
+            3)
+                toggle_group SELECT_GROUP_AI
+                if [[ "$SELECT_GROUP_AI" == "1" ]]; then
+                    select_ai_components_menu
+                fi
+                ;;
+            4)
+                toggle_group SELECT_GROUP_SSH
+                ;;
+            a | A)
+                SELECT_GROUP_SHELL=1
+                SELECT_GROUP_AI=1
+                SELECT_GROUP_SSH=1
+                AI_SELECTED=("${AI_COMPONENT_KEYS[@]}")
+                ;;
+            n | N)
+                SELECT_GROUP_SHELL=0
+                SELECT_GROUP_AI=0
+                SELECT_GROUP_SSH=0
+                AI_SELECTED=()
+                ;;
+            d | D | "")
+                break
+                ;;
+            q | Q)
+                abort_selection
+                ;;
+            *)
+                echo -e "${RED}Unknown command: '${choice}'.${NC}"
+                ;;
+        esac
+    done
+
+    log_info "Selection -> shell=$(group_state SELECT_GROUP_SHELL) ai=$(group_state SELECT_GROUP_AI) ssh=$(group_state SELECT_GROUP_SSH) clis=$(selected_ai_summary)"
+}
+
 # Function for complete installation
 full_installation() {
     log_info "Iniciando la instalación completa y automática..."
@@ -973,20 +1137,48 @@ full_installation() {
         log_info "Modo automático detectado. La instalación procederá sin menús."
     fi
 
-    # --- Module Execution Order ---
+    # --- Component Selection (v0.2.0) ---
+    # Decides which groups run. Exits the script when the user quits.
+    select_installation_components
+
+    # Propagate the chosen CLI keys to 03-ai-integration. An empty list means
+    # the AI group has to be skipped (nothing to install there).
+    if ((${#AI_SELECTED[@]} > 0)); then
+        TERMUX_AI_COMPONENTS="$(selected_ai_export_value)"
+        export TERMUX_AI_COMPONENTS
+    fi
+
+    # --- Module Execution Order (built from the selection) ---
     local modules=(
         "00-user-input"            # NUEVO: Recolecta toda la información del usuario al principio.
         "00-network-fixes"         # Arregla problemas de red y timeouts.
         "00-fix-conflicts"         # Arregla conflictos de configuración.
         "00-system-optimization"   # Permisos, servicios, optimizaciones.
         "00-base-packages"         # Paquetes base con configuración automática.
-        "01-zsh-setup"             # Zsh + Oh My Zsh.
-        "02-neovim-setup"          # Neovim con configuración completa.
-        "06-fonts-setup"           # FiraCode Nerd Font como predeterminado.
-        "03-ai-integration"        # Agentes IA con últimas versiones.
-        "07-local-ssh-server"      # Servidor SSH persistente.
-        "05-ssh-setup"             # Claves SSH para GitHub (usa datos de 00-user-input).
     )
+
+    if ((SELECT_GROUP_SHELL == 1)); then
+        modules+=("01-zsh-setup")     # Zsh + Oh My Zsh.
+        modules+=("02-neovim-setup")  # Neovim con configuración completa.
+        modules+=("06-fonts-setup")   # FiraCode Nerd Font como predeterminado.
+    fi
+
+    if ((SELECT_GROUP_AI == 1)); then
+        if ((${#AI_SELECTED[@]} > 0)); then
+            modules+=("03-ai-integration") # CLIs de IA seleccionados.
+        else
+            log_warn "AI group enabled but no CLI selected: skipping 03-ai-integration."
+        fi
+    fi
+
+    if ((SELECT_GROUP_SSH == 1)); then
+        modules+=("07-local-ssh-server") # Servidor SSH persistente.
+        modules+=("05-ssh-setup")        # Claves SSH para GitHub.
+    fi
+
+    if ((${#modules[@]} == 5)); then
+        log_info "Only the base system was selected: running base modules only."
+    fi
 
     local install_status=0
     for module in "${modules[@]}"; do
@@ -1022,7 +1214,8 @@ full_installation() {
 
     # Reload shell configuration to apply changes immediately
     log_info "Recargando la configuración de la shell para aplicar los cambios..."
-    source ~/.zshrc 2>/dev/null || source ~/.bashrc 2>/dev/null || log_warn "No se pudo recargar .zshrc o .bashrc."
+    # shellcheck disable=SC1090
+    source "$HOME/.zshrc" 2>/dev/null || source "$HOME/.bashrc" 2>/dev/null || log_warn "No se pudo recargar .zshrc o .bashrc."
 
     log_success "Instalación completa finalizada."
 
@@ -1069,6 +1262,13 @@ main() {
             --reset-state)
                 reset_state=true
                 ;;
+            --no-menu)
+                export TERMUX_AI_NO_MENU=1
+                ;;
+            --components=*)
+                export TERMUX_AI_COMPONENTS="${1#*=}"
+                export TERMUX_AI_NO_MENU=1
+                ;;
             --verbose)
                 export TERMUX_AI_VERBOSE=1
                 ;;
@@ -1088,10 +1288,18 @@ main() {
 Uso: ./setup.sh [auto] [opciones]
 
 Opciones:
-  auto             Ejecuta la instalación completa sin menú
-  -f, --force      Reejecuta todos los módulos aunque ya estén completados
-  --reset-state    Limpia el estado almacenado de módulos antes de iniciar
-  -h, --help       Muestra esta ayuda y termina
+  auto                     Ejecuta la instalación completa sin menú principal
+  -f, --force              Reejecuta todos los módulos aunque ya estén completados
+  --reset-state            Limpia el estado almacenado de módulos antes de iniciar
+  --no-menu                Omite el menú interactivo de componentes (instala todo)
+  --components=<lista>     CLIs de IA a instalar, separados por comas
+                           (claude,opencode,codex,wrangler,agy | all)
+  -h, --help               Muestra esta ayuda y termina
+
+Ejemplos:
+  ./setup.sh                                  # menú interactivo de componentes
+  ./setup.sh --components=claude,opencode     # automatización, sin menú
+  ./setup.sh auto --no-menu                   # instalación completa desatendida
 EOF
         return 0
     fi
@@ -1116,6 +1324,7 @@ EOF
 
     if [[ "$mode" == "auto" ]]; then
         echo -e "${BLUE}🤖 Running in automatic mode...${NC}"
+        export TERMUX_AI_NO_MENU=1
         full_installation
         exit $?
     fi

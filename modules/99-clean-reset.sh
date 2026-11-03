@@ -55,19 +55,24 @@ main() {
 
   # 3) CLIs de IA instalados globalmente vía npm
   if command -v npm >/dev/null 2>&1; then
-  info "Desinstalando CLIs de IA globales (@openai/codex, @google/gemini-cli, @qwen-code/qwen-code, legacy generative-ai-cli)"
+    info "Desinstalando CLIs de IA globales (@anthropic-ai/claude-code, opencode-ai, @openai/codex, wrangler)"
+    npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+    npm uninstall -g opencode-ai >/dev/null 2>&1 || true
     npm uninstall -g @openai/codex >/dev/null 2>&1 || true
-    npm uninstall -g @google/gemini-cli >/dev/null 2>&1 || true
-  npm uninstall -g @google/generative-ai-cli >/dev/null 2>&1 || true
-    npm uninstall -g @qwen-code/qwen-code >/dev/null 2>&1 || true
+    npm uninstall -g wrangler >/dev/null 2>&1 || true
     npm cache clean --force >/dev/null 2>&1 || true
     # También limpiar binarios huérfanos del prefijo global
     NPM_BIN=$(npm bin -g 2>/dev/null || echo "")
     if [[ -n "$NPM_BIN" ]]; then
-  rm -f "$NPM_BIN/codex" "$NPM_BIN/gemini" "$NPM_BIN/qwen" "$NPM_BIN/qwen-code" 2>/dev/null || true
+      rm -f "$NPM_BIN/claude" "$NPM_BIN/opencode" "$NPM_BIN/codex" "$NPM_BIN/wrangler" 2>/dev/null || true
     fi
   else
     warn "npm no está disponible; saltando desinstalación de CLIs de IA"
+  fi
+
+  # 'agy' (Google Antigravity) no se instala por npm: se avisa y se deja intacto.
+  if command -v agy >/dev/null 2>&1; then
+    warn "agy (Google Antigravity) se instaló manualmente y NO se elimina automáticamente."
   fi
 
   # 4) Fuentes de Termux
@@ -78,7 +83,7 @@ main() {
   # 5) Variables y archivos de IA
   info "Eliminando variables y archivos de entorno de IA"
   rm -f "$HOME/.ai-env" "$HOME/.ai-info" 2>/dev/null || true
-  # Note: OAuth2 tokens are managed by gemini CLI automatically
+  # Nota: las credenciales OAuth2 las gestiona cada CLI en su propio directorio de config.
 
   # 6) Zsh y Oh My Zsh (opcional)
   if confirm "¿Eliminar también configuración de Zsh y Oh My Zsh? (mantendrá Bash funcional)"; then
@@ -98,7 +103,8 @@ main() {
 
   # 8) Limpieza de caches comunes
   info "Eliminando caches comunes"
-  rm -rf "$HOME/.cache/ai" "$HOME/.cache/gemini" "$HOME/.cache/codex" "$HOME/.cache/qwen" 2>/dev/null || true
+  rm -rf "$HOME/.cache/ai" "$HOME/.cache/claude" "$HOME/.cache/opencode" \
+         "$HOME/.cache/codex" "$HOME/.cache/wrangler" 2>/dev/null || true
 
   ok "Limpieza completada"
 

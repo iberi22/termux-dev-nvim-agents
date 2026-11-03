@@ -203,29 +203,18 @@ run_test "ai-help ejecutable" "test -x ~/bin/ai-help"
 run_test_with_output "\$HOME/bin en PATH" "echo \$PATH" "/bin"
 
 # Tests de CLIs IA instalados con npm
-echo -en "${YELLOW}🔍 Test: Codex CLI (codex)... ${NC}"
-if command -v codex >/dev/null 2>&1; then
-    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
-else
-    echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
-fi
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-
-echo -en "${YELLOW}🔍 Test: Gemini CLI (gemini)... ${NC}"
-if command -v gemini >/dev/null 2>&1; then
-    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
-else
-    echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
-fi
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-
-echo -en "${YELLOW}🔍 Test: Qwen CLI (qwen/qwen-code)... ${NC}"
-if command -v qwen >/dev/null 2>&1 || command -v qwen-code >/dev/null 2>&1; then
-    echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
-else
-    echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
-fi
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
+for cli_key in claude opencode codex wrangler agy; do
+    echo -en "${YELLOW}🔍 Test: CLI IA (${cli_key})... ${NC}"
+    if command -v "$cli_key" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ PRESENTE${NC}"; TESTS_PASSED=$((TESTS_PASSED + 1));
+    elif [[ "$cli_key" == "agy" ]]; then
+        # 'agy' (Google Antigravity) no está en npm: su ausencia es solo un aviso.
+        echo -e "${YELLOW}⚠️  AUSENTE (instalación manual: https://antigravity.google)${NC}";
+    else
+        echo -e "${YELLOW}⏭️  SKIPPED (no instalado)${NC}";
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+done
 
 echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${CYAN}                   TESTS DE WORKFLOWS IA${NC}"
