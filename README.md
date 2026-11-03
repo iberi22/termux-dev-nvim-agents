@@ -127,6 +127,19 @@ g "resize the PNGs in this folder"
 function in `config/zsh/functions.zsh`: repoint it to `claude`, `codex` or anything else by editing
 that file.
 
+### SSH helpers
+
+The SSH group (`07-local-ssh-server`) installs a persistent sshd plus three helper commands:
+
+| Command | What it does |
+|---|---|
+| `ssh-local-start` | Starts the local SSH server in the background |
+| `ssh-local-stop` | Stops it again |
+| `ssh-local-info` | Prints the port, the username, the device IPs and the exact `ssh` command to use from another machine |
+
+`ssh-local-info` is the one to reach for first: run it on the phone and it tells you precisely how
+to connect from your laptop.
+
 ## Troubleshooting
 
 **`npm install -g` fails with EACCES on the global prefix**
